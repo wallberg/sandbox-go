@@ -1,0 +1,13 @@
+*~
+\#*
+.\#*
+*.pyc
+.pydevproject
+test.py
+test.txt
+.vscode
+test.sh
+TODO.txt
+problems.html
+*.code-workspace
+com/github/wallberg/euler

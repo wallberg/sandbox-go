@@ -1,0 +1,5 @@
+#!/bin/bash
+
+HOME_DIR=/Users/wallberg/git/python
+
+${HOME_DIR}/run ${HOME_DIR}/runtests.py --directory=${HOME_DIR} "$@"
