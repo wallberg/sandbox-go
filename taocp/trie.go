@@ -12,8 +12,8 @@ type PrefixTrie struct {
 	Nodes [][]int // the trie
 }
 
-// FinalLetter is the node value stored in the last letter of the word, instead of
-// the next node in the sequence
+// FinalLetter is the node value stored in the last letter of the word, instead
+// of the next node in the sequence
 const FinalLetter int = -1
 
 // NewPrefixTrie creates a new empty PrefixTrie for words of length size
@@ -23,8 +23,6 @@ func NewPrefixTrie(size int) PrefixTrie {
 
 // Add adds a new word to the trie
 func (trie *PrefixTrie) Add(word string) {
-
-	defer func() { trie.Count++ }()
 
 	word = strings.ToLower(word)
 
@@ -64,6 +62,9 @@ func (trie *PrefixTrie) Add(word string) {
 			node = nextNode
 		}
 	}
+
+	// Increment the word count
+	trie.Count++
 }
 
 // Traverse sends to the out channel all words of the trie, in lexicographic
