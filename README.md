@@ -1,3 +1,3 @@
-# Fun with Python Programming
+# Fun with Programming
 
-Implemented using Python 3
+My playground for programming
