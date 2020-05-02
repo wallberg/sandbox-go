@@ -4,6 +4,14 @@ import (
 	"testing"
 )
 
+func TestTrie(t *testing.T) {
+	// Basically we succeed if there are no compile time errors
+	var trie Trie
+	prefixTrie := NewPrefixTrie(1)
+	trie = &prefixTrie
+	trie.Add("a")
+}
+
 func TestNewPrefixTrie(t *testing.T) {
 	trie := NewPrefixTrie(3)
 

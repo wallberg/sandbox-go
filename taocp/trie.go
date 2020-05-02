@@ -4,6 +4,12 @@ import (
 	"strings"
 )
 
+// Trie represents a trie for words of all the same size
+type Trie interface {
+	Add(string)
+	Traverse(chan string)
+}
+
 // PrefixTrie represents a trie for words with the full prefix path
 // by letter (a-z only)
 type PrefixTrie struct {
