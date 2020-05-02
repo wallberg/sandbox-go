@@ -1,7 +1,10 @@
 package taocp
 
 import (
+	"fmt"
 	"strings"
+
+	"github.com/gobuffalo/packr"
 )
 
 // Trie represents a trie for words of all the same size
@@ -125,4 +128,23 @@ func (trie *PrefixTrie) Traverse(out chan string) {
 			}
 		}
 	}
+}
+
+// LoadSGBWords loads the Stanford GraphBase 5-letter words into a Trie
+func LoadSGBWords(trie *Trie) error {
+	// Load in ./assets/sgb-words.txt
+	box := packr.NewBox("./assets")
+
+	wordsString, err := box.FindString("sgb-words.txt")
+	if err != nil {
+		return fmt.Errorf("Error reading assets/sgb-words.txt: %s", err)
+	}
+
+	// Add each word to the Trie
+	words := strings.Split(wordsString, "\n")
+	for _, word := range words[0 : len(words)-1] {
+		(*trie).Add(word)
+	}
+
+	return nil
 }

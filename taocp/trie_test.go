@@ -98,3 +98,18 @@ func TestTraverse(t *testing.T) {
 		t.Errorf("Expected word array of %s; got %s", expectedWords, words)
 	}
 }
+
+func TestLoadSGBWords(t *testing.T) {
+	var trie Trie
+	prefixTrie := NewPrefixTrie(5)
+	trie = &prefixTrie
+	err := LoadSGBWords(&trie)
+
+	if err != nil {
+		t.Errorf("Error: %s", err)
+	}
+
+	if prefixTrie.Count != 5757 {
+		t.Errorf("Expected trie.Count of 5757; got %d", prefixTrie.Count)
+	}
+}
