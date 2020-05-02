@@ -148,3 +148,25 @@ func LoadSGBWords(trie *Trie) error {
 
 	return nil
 }
+
+// LoadOSPD4Words loads the Official Scrabble Player's Dictionary, Version 4,
+// n-letter words into a Trie
+func LoadOSPD4Words(trie *Trie, n int) error {
+	// Load in ./assets/.txt
+	box := packr.NewBox("./assets")
+
+	wordsString, err := box.FindString("ospd4.txt")
+	if err != nil {
+		return fmt.Errorf("Error reading assets/ospd4.txt: %s", err)
+	}
+
+	// Add each n-letter word to the Trie
+	words := strings.Split(wordsString, "\n")
+	for _, word := range words[0 : len(words)-1] {
+		if len(word) == n {
+			(*trie).Add(word)
+		}
+	}
+
+	return nil
+}

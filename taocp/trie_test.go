@@ -113,3 +113,30 @@ func TestLoadSGBWords(t *testing.T) {
 		t.Errorf("Expected trie.Count of 5757; got %d", prefixTrie.Count)
 	}
 }
+
+func TestLoadOSPD4Words(t *testing.T) {
+	var trie Trie
+	var prefixTrie PrefixTrie
+
+	prefixTrie = NewPrefixTrie(6)
+	trie = &prefixTrie
+	err := LoadOSPD4Words(&trie, 6)
+
+	if err != nil {
+		t.Errorf("Error: %s", err)
+
+	} else if prefixTrie.Count != 15727 {
+		t.Errorf("Expected trie.Count of 15727; got %d", prefixTrie.Count)
+	}
+
+	prefixTrie = NewPrefixTrie(2)
+	trie = &prefixTrie
+	err = LoadOSPD4Words(&trie, 2)
+
+	if err != nil {
+		t.Errorf("Error: %s", err)
+
+	} else if prefixTrie.Count != 101 {
+		t.Errorf("Expected trie.Count of 101; got %d", prefixTrie.Count)
+	}
+}
