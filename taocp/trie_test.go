@@ -219,6 +219,42 @@ func TestCPrefixTrieLoadSGBWords(t *testing.T) {
 	if cPrefixTrie.Count != 5757 {
 		t.Errorf("Expected trie.Count of 5757; got %d", cPrefixTrie.Count)
 	}
+
+	words := make(chan string)
+	go trie.Traverse(words)
+
+	i := 0
+	for word := range words {
+		expected := ""
+		switch i {
+		case 0:
+			expected = "aargh"
+		case 1:
+			expected = "abaca"
+		case 2:
+			expected = "abaci"
+		case 428:
+			expected = "berry"
+		case 1248:
+			expected = "deque"
+		case 2968:
+			expected = "mails"
+		case 4458:
+			expected = "skews"
+		case 5754:
+			expected = "zooks"
+		case 5755:
+			expected = "zooms"
+		case 5756:
+			expected = "zowie"
+		}
+
+		if expected != "" && expected != word {
+			t.Errorf("Expected %s at position %d; got %s", expected, i, word)
+		}
+
+		i++
+	}
 }
 
 func TestPrefixTrieLoadOSPD4Words(t *testing.T) {

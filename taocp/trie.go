@@ -210,13 +210,11 @@ func (trie *CPrefixTrie) Traverse(out chan string) {
 	defer close(out)
 
 	// node pointers, one per letter in the word
-	node := make([]int, trie.Size)
 	link := make([]*Link, trie.Size)
 	word := make([]byte, trie.Size)
 
 	i := 0 // index of letter in the word, node, and letter arrays
 	link[i] = &trie.Nodes[0]
-	node[i] = 0
 
 	for {
 		switch {
@@ -243,8 +241,7 @@ func (trie *CPrefixTrie) Traverse(out chan string) {
 			if i < trie.Size-1 {
 				// Advance to next node
 				i++
-				node[i] = link[i-1].Node
-				link[i] = &trie.Nodes[node[i]]
+				link[i] = &trie.Nodes[link[i-1].Node]
 			} else {
 				// Advance to next letter
 				link[i] = link[i].Right
