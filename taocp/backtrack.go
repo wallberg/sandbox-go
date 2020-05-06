@@ -25,7 +25,7 @@ func visit(x []byte, m int, l int) string {
 //
 //       n, i ⟶
 // m, j  a b l a t e
-//    ↓  a l a t e e
+//    ↓  a l a t e d
 // 	     r a p i n g
 // 	     g r i l s e
 // 	     h e n t e d
