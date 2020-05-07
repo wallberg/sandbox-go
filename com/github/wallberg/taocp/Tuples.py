@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
 
+from com.github.wallberg.taocp.Trie import WordTrie
+
 '''
 The Art of Computer Programming, Volume 4A, Combinatorial Algorithms,
 Part 1, 2011
@@ -58,6 +60,56 @@ def tuples_from_primes(m, n):
         yield tuple(cycle[i:i+n])
 
 
+PI = "3141592653589793238462643383279502884197"
+
+
+def prime_factors(s):
+    '''
+    Return prime factors of s, λ_1...λ_t
+
+    Exercise 101
+    '''
+
+    pfs = []
+    while len(s) > 0:
+        # Find the next smallest suffix
+        min_suffix = None
+        for i in range(0, len(s)):
+            suffix = s[i:]
+            if min_suffix is None or suffix < min_suffix:
+                min_suffix = suffix
+
+        pfs.append(min_suffix)
+        s = s[:(len(s) - len(min_suffix))]
+
+    return tuple(reversed(pfs))
+
+
+def exercise_101():
+    return prime_factors(PI)
+
+
+def exercise_104():
+    words = WordTrie()
+    words.load_sgb_words()
+
+    primes = 0
+    min_nonprime = None
+    max_prime = None
+
+    for word in words:
+        # Test for primeness
+        is_prime = all(word < word[i:] for i in range(1, 5))
+
+        if is_prime:
+            primes += 1
+            max_prime = word
+        elif min_nonprime is None:
+            min_nonprime = word
+
+    return (primes, min_nonprime, max_prime)
+
+
 class Test(unittest.TestCase):
 
     def test_preprimes(self):
@@ -94,6 +146,18 @@ class Test(unittest.TestCase):
         self.assertEqual(result[4], (1, 0, 0, 0))
         self.assertEqual(result[18], (0, 2, 1, 0))
         self.assertEqual(result[80], (2, 0, 0, 0))
+
+    def test_exercise_104(self):
+        self.assertEqual(exercise_104(), (1274, 'abaca', 'rutty'))
+
+    def test_prime_factors(self):
+        self.assertEqual(prime_factors("abc"), ("abc", ))
+        self.assertEqual(prime_factors("cba"), ("c", "b", "a"))
+
+    def test_exercise_101(self):
+        self.assertEqual(exercise_101(), ("3",
+                                          "1415926535897932384626433832795",
+                                          "02884197"))
 
 
 if __name__ == '__main__':
