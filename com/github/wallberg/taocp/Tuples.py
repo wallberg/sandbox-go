@@ -43,6 +43,43 @@ def preprimes(m, n):
             a[k] = a[k-j]
 
 
+def preprimes_desc(m, n):
+    '''
+    Generate all preprime strings for an m-ary alphabet with n
+    length tuples, along with the j index of the prime with n-extension, in
+    decreasing order.
+
+    Algorithm E. Exercise 106.
+    '''
+
+    # E1. [Initialize.]
+    a = [m-1] * (n + 2)
+    a[n+1] = -1
+    j = 1
+
+    while True:
+        # E2. [Visit.]
+        # print(f'E2. {a[1:n+1]}, {j}')
+        yield(tuple(a[1:n+1]), j)
+
+        # E3. [Subtract one.]
+        if a[j] == 0:
+            return
+
+        a[j] -= 1
+        for k in range(j+1, n+1):
+            a[k] = m-1
+
+        # E4. [Prepare to factor.]
+        # print(f'E4. {a=}')
+        j, k = 1, 2
+
+        # F5. [Find the new j.]
+        while a[k-j] <= a[k]:
+            if a[k-j] < a[k]:
+                j = k
+            k += 1
+
 def tuples_from_primes(m, n):
     '''
     Generate all m-ary, n-length tuples using Algorithm F. If we concatenate
@@ -67,22 +104,25 @@ def prime_factors(s):
     '''
     Return prime factors of s, λ_1...λ_t
 
-    Exercise 101
+    Exercise 101. Implemented using "efficient algorithm" step E5 from
+    Exercise 106.
     '''
 
+    n = len(s)
     pfs = []
-    while len(s) > 0:
-        # Find the next smallest suffix
-        min_suffix = None
-        for i in range(0, len(s)):
-            suffix = s[i:]
-            if min_suffix is None or suffix < min_suffix:
-                min_suffix = suffix
+    i, j, k = 0, 1, 2
 
-        pfs.append(min_suffix)
-        s = s[:(len(s) - len(min_suffix))]
+    while i < n:
+        while i+k-1 < n and s[i+k-j-1] <= s[i+k-1]:
+            if s[i+k-j-1] < s[i+k-1]:
+                j = k
+            k += 1
 
-    return tuple(reversed(pfs))
+        pfs.append(s[i:i+j])
+
+        i, j, k = i+j, 1, 2
+
+    return tuple(pfs)
 
 
 def exercise_101():
@@ -127,6 +167,11 @@ class Test(unittest.TestCase):
         self.assertEqual(result[4], ((0, 0, 1, 1), 4))
         self.assertEqual(result[18], ((0, 2, 1, 0), 3))
         self.assertEqual(result[31], ((2, 2, 2, 2), 1))
+
+        result2 = list(preprimes_desc(3, 4))
+        result2.reverse()
+
+        self.assertEqual(result2, result)
 
     def test_tuples_from_primes(self):
         result = list(tuples_from_primes(2, 3))
