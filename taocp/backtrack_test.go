@@ -30,7 +30,7 @@ func TestWordRectangles2by3(t *testing.T) {
 	nTrie.Add("qrs")
 
 	results := make(chan string, n)
-	go WordRectangles(&mTrie, &nTrie, results, 0)
+	go WordRectangles(&mTrie, &nTrie, results, 0, nil)
 
 	count := 0
 	for range results {
@@ -43,7 +43,7 @@ func TestWordRectangles2by3(t *testing.T) {
 
 	mTrie.Add("cd")
 	results = make(chan string, n)
-	go WordRectangles(&mTrie, &nTrie, results, 0)
+	go WordRectangles(&mTrie, &nTrie, results, 0, nil)
 
 	count = 0
 	for result := range results {
@@ -64,8 +64,6 @@ func TestWordRectangles2by3(t *testing.T) {
 
 func TestWordRectangles5x6(t *testing.T) {
 
-	n := 6
-
 	var trie Trie
 
 	mTrie := NewCPrefixTrie(5)
@@ -76,8 +74,21 @@ func TestWordRectangles5x6(t *testing.T) {
 	trie = &nTrie
 	LoadOSPD4Words(&trie, 6)
 
+	t.Run("SingleThread", func(t *testing.T) {
+		singleWordRectangles5x6(t, &mTrie, &nTrie)
+	})
+
+	t.Run("MultiThread", func(t *testing.T) {
+		multiWordRectangles(t, &mTrie, &nTrie)
+	})
+}
+
+func singleWordRectangles5x6(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie) {
+
+	n := 6
+
 	results := make(chan string, n)
-	go WordRectangles(&mTrie, &nTrie, results, 200)
+	go WordRectangles(mTrie, nTrie, results, 200, nil)
 
 	count := 0
 	for result := range results {
@@ -97,5 +108,20 @@ func TestWordRectangles5x6(t *testing.T) {
 
 	if count != 200 {
 		t.Errorf("Expected 200 results; got %d", count)
+	}
+}
+
+func multiWordRectangles(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie) {
+
+	results := make(chan string)
+	go MultiWordRectangles(mTrie, nTrie, results, 5, 26)
+
+	count := 0
+	for range results {
+		count++
+	}
+
+	if count != 130 {
+		t.Errorf("Expected 130 results; got %d", count)
 	}
 }

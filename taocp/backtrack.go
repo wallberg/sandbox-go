@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"bytes"
+	"sync"
 )
 
 // Visit returns a string representation of the word rectangle
@@ -31,7 +32,7 @@ func visit(x []byte, m int, l int) string {
 // 	     h e n t e d
 //
 func WordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
-	out chan<- string, max int) {
+	out chan<- string, max int, initials []byte) {
 
 	// Close out channel on exit
 	defer close(out)
@@ -89,9 +90,21 @@ func WordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 
 		case 3: // B3 [Try x_l.]
 
+			skipLetter := false
+			if l == 0 && initials != nil {
+				// Check if this is an initial letter we should process
+				skipLetter = true
+				for _, initial := range initials {
+					if x[0] == initial {
+						skipLetter = false
+						break
+					}
+				}
+			}
+
 			// Test if P_l holds
 			// ie, Does this possible next letter for m match a prefix for n
-			if node := nTrie.Nodes[a[i][j]][b[i][j].Letter]; node != 0 {
+			if node := nTrie.Nodes[a[i][j]][b[i][j].Letter]; node != 0 && !skipLetter {
 				// Update data structures to facilitate testing P_(l+1)
 				a[i][j+1] = node
 				if i == m-1 {
@@ -130,4 +143,51 @@ func WordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 
 		}
 	}
+}
+
+// MultiWordRectangles returns m x n word rectangles, running in n parallel
+// threads
+func MultiWordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
+	out chan<- string, max int, n int) {
+
+	defer close(out)
+
+	if n < 1 || n > 26 {
+		return
+	}
+
+	// Wait for all WordRectangles() threads to complete
+	var wg sync.WaitGroup
+
+	// Fan in the output of each WordRectangles() thread
+	fanin := func(in <-chan string) {
+		for s := range in {
+			out <- s
+		}
+		wg.Done()
+	}
+	wg.Add(n)
+
+	// Initial letters for each WordRectangles() thread to process
+	// Results are certainly not evenly distributed across initial letters
+	initials := [26]byte{}
+	for i := 0; i < 26; i++ {
+		initials[i] = byte(i)
+	}
+
+	chunkSize := (25 + n) / n
+
+	for start := 0; start < 26; start += chunkSize {
+		end := start + chunkSize
+		if end > 26 {
+			end = 26
+		}
+
+		outChunk := make(chan string)
+		go WordRectangles(mTrie, nTrie, outChunk, max, initials[start:end])
+		go fanin(outChunk)
+	}
+
+	wg.Wait()
+
 }
