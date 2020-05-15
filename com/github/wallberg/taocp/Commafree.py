@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 import unittest
-
+from math import floor
 from itertools import product
+from array import array
 
 from com.github.wallberg.taocp.Backtrack import walkers_backtrack
 from com.github.wallberg.taocp.Tuples import preprimes
@@ -75,6 +76,7 @@ def exercise35(word, words, n=None):
 
     return True
 
+
 def commafree_classes(m, n):
     '''
     Find the largest commafree subset of m-ary tuples of length n.
@@ -129,7 +131,7 @@ def commafree_classes(m, n):
     class_map = {}
     for clas in classes:
         word = clas
-        for i in range(n):
+        for _ in range(n):
             domain.append(word)
             class_map[word] = clas
             word = word[1:n] + word[0:1]
@@ -153,6 +155,166 @@ def commafree_classes(m, n):
                 break
 
     return max_subset
+
+def commafree_four(m, g, max=0):
+    '''
+    Algorithm C. Four-letter commafree codes.
+
+    m - alphabet size
+    g - goal number of words in the code
+    '''
+
+    RED = 0
+    BLUE = 1
+    GREEN = 2
+
+    def alpha(word):
+        ''' Return integer representation of the code word. '''
+        result = 0
+        for letter in word:
+            result *= m
+            result += letter
+
+        return result
+
+    def tostring():
+        ''' String representation of MEM table. '''
+
+        table = []
+        for i in range(22):
+            row = []
+            for j in range(M4):
+                if i == 0:
+                    if MEM[j] == RED:
+                        row.append(' RED')
+                    elif MEM[j] == BLUE:
+                        row.append('BLUE')
+                    else:
+                        row.append('GREN')
+                else:
+                    alf = MEM[i*M4+j]
+                    if alf == 0:
+                        row.append('    ')
+                    elif i % 3 == 2:
+                        row.append(''.join(str(c) for c in ALF[alf]))
+                    else:
+                        row.append('{:-4x}'.format(MEM[i*M4 + j]))
+
+            table.append(' | '.join(row) + '\n')
+
+            if (i+1) % 3 == 1:
+                table.append('-' * (7*M4-3) + '\n')
+
+        return ''.join(table)
+
+    def initialize_lists():
+
+        # Initialize colors to RED
+        for alf in range(M4):
+            MEM[alf] = RED
+
+        # Iterate over word classes
+        for cl, clas in enumerate(word for word, j in preprimes(m, 4)
+                                  if j == 4):
+
+            # Iterate through the 4-cycle of words in this class
+            word = clas
+            for _ in range(4):
+                alf = alpha(word)
+                ALF[alf] = word
+
+                # Skip 0100 and 1000 since they will generate symmetric
+                # duplicates
+                if word != (0, 1, 0, 0) and word != (1, 0, 0, 0):
+
+                    MEM[alf] = BLUE
+
+                    # Insert into 3 prefix and 3 suffix lists
+                    offset = P1OFF
+                    for ps in [alpha(word[0:1] + (0, 0, 0)),
+                            alpha(word[0:2] + (0, 0)),
+                            alpha(word[0:3] + (0, )),
+                            alpha(word[3:4] + (0, 0, 0)),
+                            alpha(word[2:4] + (0, 0)),
+                            alpha(word[1:4] + (0, )),
+                            ]:
+                        tail = offset+M4+ps
+
+                        if MEM[tail] == 0:
+                            MEM[tail] = offset+ps
+
+                        insert(alf, tail, offset-M4)
+
+                        offset += 3*M4
+
+                    # Insert into CLOFF
+                    tail = CLOFF + M4 + (4 * cl)
+
+                    if MEM[tail] == 0:
+                        MEM[tail] = CLOFF+4*cl
+
+                    insert(alf, tail, CLOFF-M4)
+
+                # Cycle
+                word = word[1:4] + word[0:1]
+
+        print(tostring())
+
+    def insert(alf, tail, ihead):
+        ''' Insert a value into the list and the inverted list. '''
+
+        MEM[MEM[tail]] = alf
+        MEM[ihead+alf] = MEM[tail]
+        MEM[tail] += 1
+
+    # C1. [Initialize.]
+    assert 2 <= m <= 7
+
+    M2 = m**2
+    M4 = m**4
+    L = (M4 - M2) // 4
+
+    assert L - m * (m - 1) <= g <= L
+
+    M = floor(23.5 * M4)
+    P1OFF = 2 * M4
+    P2OFF = 5 * M4
+    P3OFF = 8 * M4
+    S1OFF = 11 * M4
+    S2OFF = 14 * M4
+    S3OFF = 17 * M4
+    CLOFF = 20 * M4
+
+    STAMP = [0] * M
+    X = [0] * (L+1)
+    C = [0] * (L+1)
+    S = [0] * (L+1)
+    U = [0] * (L+1)
+    FREE = [0] * L
+    IFREE = [0] * L
+    UNDO = []
+    sigma = 0
+
+    # alpha to code word lookup table
+    ALF = [0] * (16*3 * M)
+
+    # Main table of lists: alpha, P1, P2, P3, S1, S3, S3, CL, POISON
+    MEM = array('I', [0] * M)
+
+    POISON = 22 * M4
+    PP = POISON - 1
+    MEM[PP] = POISON
+
+    level = 1
+    x = 1  # trial word
+    c = 0  # trial word's class
+    s = L - g  # "slack"
+    f = 0  # number of free classes
+    u = 0  # size of the UNDO stack
+
+    # Fill in the tables
+    initialize_lists()
+
 
 class Test(unittest.TestCase):
 
@@ -186,4 +348,6 @@ class Test(unittest.TestCase):
                                   (2, 1, 0), (2, 0, 2), (1, 1, 2), (2, 1, 2)))
 
 if __name__ == '__main__':
-    unittest.main(exit=False)
+    # unittest.main(exit=False)
+
+    commafree_four(2, 3)
