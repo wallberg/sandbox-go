@@ -3,6 +3,7 @@ import unittest
 from math import floor
 from itertools import product
 from array import array
+from copy import copy
 
 from com.github.wallberg.taocp.Backtrack import walkers_backtrack
 from com.github.wallberg.taocp.Tuples import preprimes
@@ -332,15 +333,15 @@ def commafree_four(m, g, max=0):
 
         MEM[a] = v
 
-    def get_word_from_class():
+    def select_next_word():
         '''
-        Get a word from a class with the least number of blue words.
+        Select the next word from a class with the least number of blue words.
         Exercise 44.
         '''
 
         nonlocal M4, MEM, CLOFF, FREE, PP, POISON, x, c
 
-        print('get_word_from_class')
+        print('select_next_word')
 
         r = 5  # number of words in a class with least blue words
 
@@ -364,58 +365,61 @@ def commafree_four(m, g, max=0):
             # Set x to a word in the class
             x = MEM[CLOFF + 4*cl]
 
-        # if r > 1:
-        #     # Use the poison list to find an x that maximizes the number of
-        #     # blue words that could be killed on the other side of the prefix
-        #     # or suffix that contains x.
+        if r > 1:
+            # Use the poison list to find an x that maximizes the number of
+            # blue words that could be killed on the other side of the prefix
+            # or suffix that contains x.
 
-        #     q = 0  # size of the biggest prefix/suffix list in the poison list
-        #     p = POISON  # head of the poison list
-        #     pp = MEM[PP]  # tail of the poison list
+            q = 0  # size of the biggest prefix/suffix list in the poison list
+            p = POISON  # head of the poison list
+            pp = MEM[PP]  # tail of the poison list
 
-        #     # Iterate over poison prefix/suffix list pairs
-        #     while p < pp:
+            # Iterate over poison prefix/suffix list pairs
+            while p < pp:
 
-        #         # MEM[p:p+2] is one poison prefix/suffix list pair
+                # MEM[p:p+2] is one poison prefix/suffix list pair
 
-        #         y = MEM[p]  # head of poison prefix list
-        #         z = MEM[p + 1]  # head of poison suffix list
+                y = MEM[p]  # head of poison prefix list
+                z = MEM[p + 1]  # head of poison suffix list
 
-        #         yp = MEM[y + M4]  # tail of poison prefix list
-        #         zp = MEM[z + M4] # tail of poison suffix list
+                yp = MEM[y + M4]  # tail of poison prefix list
+                zp = MEM[z + M4] # tail of poison suffix list
 
-        #         # Check if either of the lists is empty
-        #         if y == yp or z == zp:
+                # Check if either of the lists is empty
+                if y == yp or z == zp:
 
-        #             # Delete entry p from the poison list
-        #             # (this also advances to next p)
-        #             pp -= 2
-        #             if p != pp:
-        #                 store(p, MEM[pp])
-        #                 store(p+1, MEM[pp+1])
-        #         else:
-        #             # Get the size of each list
-        #             ylen = yp - y
-        #             zlen = zp - z
-        #             print(f'{y=:x}, {yp=:x}, {z=:x}, {zp=:x}')
-        #             # Select a new word if either of the lists is larger than
-        #             # we've seen before.
-        #             if  ylen >= zlen and ylen > q:
-        #                 q = ylen
-        #                 x = MEM[z]
-        #                 cl = ALFC[x]
-        #                 print(f'select {x=} from {z=:x} because {ylen=}')
-        #             elif  ylen < zlen and zlen > q:
-        #                 q = zlen
-        #                 x = MEM[y]
-        #                 cl = ALFC[x]
-        #                 print(f'select {x=} from {y=:x} because {zlen=}')
+                    # Delete entry p from the poison list
+                    # (this also advances to next p)
+                    pp -= 2
+                    if p != pp:
+                        store(p, MEM[pp])
+                        store(p+1, MEM[pp+1])
+                else:
+                    # Get the size of each list
+                    ylen = yp - y
+                    zlen = zp - z
 
-        #             # Advance to next p
-        #             p += 2
+                    print(f'{y=:x}, {yp=:x}, {z=:x}, {zp=:x}')
 
-        #     # Store the new value of the the poison list
-        #     store(PP, pp)
+                    # Select a new word if either of the lists is larger than
+                    # we've seen before.
+                    if ylen >= zlen and ylen > q:
+                        q = ylen
+                        x = MEM[z]
+                        cl = ALFC[x]
+                        print(f'select {x=} from {z=:x} because {ylen=}')
+
+                    elif ylen < zlen and zlen > q:
+                        q = zlen
+                        x = MEM[y]
+                        cl = ALFC[x]
+                        print(f'select {x=} from {y=:x} because {zlen=}')
+
+                    # Advance to next p
+                    p += 2
+
+            # Store the new value of the the poison list
+            store(PP, pp)
 
         c = cl
 
@@ -427,10 +431,14 @@ def commafree_four(m, g, max=0):
         p = delta + omicron  # head pointer
         q = MEM[p + M4] - 1  # tail pointer
 
+        print(f'rem: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
+
         if q >= p:
             # list p isn't closed or being killed
             store(p + M4, q)
             t = MEM[alf + omicron - M4]
+
+            print(f'     {t=:x}, {alf=}')
 
             if t != q:
                 y = MEM[q]
@@ -469,7 +477,7 @@ def commafree_four(m, g, max=0):
         for ps in prefixes_suffixes(ALF[alf]):
             rem(alf, ps, offset)  # remove from pre- or suffix list
             offset += 3*M4
-        rem(x, 4*c, offset)  # remove from class list
+        rem(alf, 4*c, offset)  # remove from class list
 
     def green(alf, c):
         ''' Make alpha GREEN. '''
@@ -488,6 +496,7 @@ def commafree_four(m, g, max=0):
             offset += 3*M4
         p, q = close(4*c, CLOFF)  # close class list
 
+        print(f'RED words in class {c}')
         # Turn the other words in this class RED
         # print(f'{p=}, {q=}')
         for r in range(p, q):
@@ -571,7 +580,7 @@ def commafree_four(m, g, max=0):
 
             else:
                 # Choose a candidate word x and class c
-                get_word_from_class()
+                select_next_word()
                 if first:
                     # x, c = 2, 0
                     first = False
@@ -630,6 +639,8 @@ def commafree_four(m, g, max=0):
                     if y == yp or z == zp:
                         # One of the lists is empty, delete entry p from the
                         # poison list (this also advances to next p)
+                        print(f'removing {MEM[p]:x}:{MEM[p+1]:x} from poison list')
+
                         pp -= 2
                         if p != pp:
                             store(p, MEM[pp])
@@ -659,7 +670,7 @@ def commafree_four(m, g, max=0):
                             # Suffix list is closed and prefix list is open
                             store(y + M4, y)
                             for r in range(y, yp):
-                                red(MEM[r], ALFC[MEM[r]])  # class?
+                                red(MEM[r], ALFC[MEM[r]])
 
                         # Delete entry p from the poison list
                         # (this also advances to next p)
@@ -768,8 +779,20 @@ class Test(unittest.TestCase):
 if __name__ == '__main__':
     # unittest.main(exit=False)
 
+    def count(x):
+        return x.count(1)
+
     codes = list(commafree_four(2, 3))
     for code in codes:
-        print(code)
-    # commafree_four(3, 18)
+        code = sorted(code, key=count)
+        code = [''.join(str(c) for c in word) for word in code]
+        print(', '.join(code))
+
+    print(sum(1 for code in commafree_four(3, 18)))
+    # print(sum(1 for code in commafree_four(3, 18)))
     # commafree_four(7, 588)
+
+    # for code in commafree_classes(2, 4):
+    #     code = sorted(code, key=count)
+    #     code = [''.join(str(c) for c in word) for word in code]
+    #     print(', '.join(code))
