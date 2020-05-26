@@ -4,9 +4,12 @@ from math import floor
 from itertools import product
 from array import array
 from copy import copy
+import logging
 
 from com.github.wallberg.taocp.Backtrack import walkers_backtrack
 from com.github.wallberg.taocp.Tuples import preprimes
+
+logger = logging.getLogger('com.github.wallberg.taocp.Commafree')
 
 '''
 Explore Backtrack Programming from The Art of Computer Programming, Volume 4,
@@ -341,16 +344,16 @@ def commafree_four(m, g, max=0):
 
         nonlocal M4, MEM, CLOFF, FREE, PP, POISON, x, c
 
-        print('select_next_word')
+        logger.debug('select_next_word')
 
         r = 5  # number of words in a class with least blue words
 
         # Iterate over free classes
-        print(f'{f=}, {r=}')
+        # print(f'{f=}, {r=}')
         for k in range(f):
             t = FREE[k]  # a free class
             j = MEM[CLOFF + 4*t + M4] - (CLOFF + 4*t)  # size of class list
-            print(f'{k=}, {t=}, {j=}')
+            # print(f'{k=}, {t=}, {j=}')
 
             # Does this class have the fewest words seen so far?
             if j < r:
@@ -359,7 +362,7 @@ def commafree_four(m, g, max=0):
                     x = -1
                     break
 
-        print(f'{r=}, {cl=}')
+        # print(f'{r=}, {cl=}')
 
         if r > 0:
             # Set x to a word in the class
@@ -399,7 +402,7 @@ def commafree_four(m, g, max=0):
                     ylen = yp - y
                     zlen = zp - z
 
-                    print(f'{y=:x}, {yp=:x}, {z=:x}, {zp=:x}')
+                    # print(f'{y=:x}, {yp=:x}, {z=:x}, {zp=:x}')
 
                     # Select a new word if either of the lists is larger than
                     # we've seen before.
@@ -407,13 +410,13 @@ def commafree_four(m, g, max=0):
                         q = ylen
                         x = MEM[z]
                         cl = ALFC[x]
-                        print(f'select {x=} from {z=:x} because {ylen=}')
+                        # print(f'select {x=} from {z=:x} because {ylen=}')
 
                     elif ylen < zlen and zlen > q:
                         q = zlen
                         x = MEM[y]
                         cl = ALFC[x]
-                        print(f'select {x=} from {y=:x} because {zlen=}')
+                        # print(f'select {x=} from {y=:x} because {zlen=}')
 
                     # Advance to next p
                     p += 2
@@ -431,14 +434,14 @@ def commafree_four(m, g, max=0):
         p = delta + omicron  # head pointer
         q = MEM[p + M4] - 1  # tail pointer
 
-        print(f'rem: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
+        logger.debug(f'rem: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
 
         if q >= p:
             # list p isn't closed or being killed
             store(p + M4, q)
             t = MEM[alf + omicron - M4]
 
-            print(f'     {t=:x}, {alf=}')
+            # print(f'     {t=:x}, {alf=}')
 
             if t != q:
                 y = MEM[q]
@@ -453,7 +456,7 @@ def commafree_four(m, g, max=0):
         p = delta + omicron  # head of the list
         q = MEM[p + M4]  # tail of the list
 
-        print(f'close: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
+        logger.debug(f'close: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
 
         # Check if already closed
         if q != p - 1:
@@ -468,7 +471,7 @@ def commafree_four(m, g, max=0):
 
         nonlocal RED, P1OFF, M4, ALF
 
-        print(f'red: {alf=}, {c=}')
+        logger.debug(f'red: {alf=}, {c=}')
 
         store(alf, RED)
 
@@ -484,7 +487,7 @@ def commafree_four(m, g, max=0):
 
         nonlocal GREEN, P1OFF, CLOFF, M4, ALF
 
-        print(f'green: {alf=}, {c=}')
+        logger.debug(f'green: {alf=}, {c=}')
 
         store(alf, GREEN)
         # print(tostring())
@@ -496,7 +499,7 @@ def commafree_four(m, g, max=0):
             offset += 3*M4
         p, q = close(4*c, CLOFF)  # close class list
 
-        print(f'RED words in class {c}')
+        # print(f'RED words in class {c}')
         # Turn the other words in this class RED
         # print(f'{p=}, {q=}')
         for r in range(p, q):
@@ -505,7 +508,7 @@ def commafree_four(m, g, max=0):
                 # print(tostring())
 
     # C1. [Initialize.]
-    print("C1.")
+    logger.info("C1.")
 
     assert 2 <= m <= 7
 
@@ -561,7 +564,7 @@ def commafree_four(m, g, max=0):
     # Fill in the main tables
     initialize_mem()
 
-    print(tostring())
+    # print(tostring())
 
     first = True
 
@@ -571,10 +574,10 @@ def commafree_four(m, g, max=0):
 
         if step == 'C2':
             # [Enter level.]
-            print(f'C2. {level=}, X={X[:level]}, {x=}, {c=}')
+            logger.info(f'C2. {level=}, X={X[:level]}, {x=}, {c=}')
 
             if level == g:
-                print('C2. Visit!')
+                logger.info(f'C2. visiting {X[:level]}')
                 yield tuple(ALF[alf] for alf in X[:level])
                 step = 'C6'
 
@@ -591,7 +594,7 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C3':
             # [Try the candidate.]
-            print(f'C3. {level=}, X={X[:level]}, {x=}, {c=}')
+            logger.info(f'C3. {level=}, X={X[:level]}, {x=}, {c=}')
 
             U[level] = u
             sigma += 1
@@ -621,7 +624,7 @@ def commafree_four(m, g, max=0):
 
                 p = POISON
 
-                print(tostring())
+                # print(tostring())
 
                 # Iterate over poison prefix/suffix list pairs
                 while p < pp:
@@ -634,12 +637,12 @@ def commafree_four(m, g, max=0):
                     yp = MEM[y + M4]  # tail of poison prefix list
                     zp = MEM[z + M4] # tail of poison suffix list
 
-                    print(f'{p=:x}, {pp=:x}, {y=:x}, {yp=:x}, {z=:x}, {zp=:x}')
+                    # print(f'{p=:x}, {pp=:x}, {y=:x}, {yp=:x}, {z=:x}, {zp=:x}')
 
                     if y == yp or z == zp:
                         # One of the lists is empty, delete entry p from the
                         # poison list (this also advances to next p)
-                        print(f'removing {MEM[p]:x}:{MEM[p+1]:x} from poison list')
+                        # print(f'removing {MEM[p]:x}:{MEM[p+1]:x} from poison list')
 
                         pp -= 2
                         if p != pp:
@@ -649,7 +652,7 @@ def commafree_four(m, g, max=0):
                     elif yp < y and zp < z:
                         # Both lists are closed which means a poisoned pair;
                         # We can't use this word, so try the next word.
-                        print(tostring())
+                        # print(tostring())
                         step = 'C5'
                         break
 
@@ -681,12 +684,9 @@ def commafree_four(m, g, max=0):
 
                 store(PP, pp)
 
-                print(tostring())
-                print('exit C3')
-
         elif step == 'C4':
             # [Make the move.]
-            print(f'C4. {level=}, X={X[:level]}, {x=}, {c=}')
+            logger.info(f'C4. {level=}, X={X[:level]}, {x=}, {c=}')
 
             X[level] = x
             C[level] = c
@@ -708,7 +708,7 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C5':
             # [Try again.]
-            print(f'C5. {level=}, X={X[:level]}, {x=}, {c=}')
+            logger.info(f'C5. {level=}, X={X[:level]}, {x=}, {c=}')
 
             while u > U[level]:
                 u -= 1
@@ -724,7 +724,7 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C6':
             # [Backtrack.]
-            print(f'C6. {level=}, X={X[0:level]}, {x=}, {c=}')
+            logger.info(f'C6. {level=}, X={X[0:level]}, {x=}, {c=}')
 
             level -= 1
 
@@ -776,19 +776,36 @@ class Test(unittest.TestCase):
         self.assertEqual(result, ((0, 0, 1), (0, 0, 2), (1, 1, 0), (2, 0, 1),
                                   (2, 1, 0), (2, 0, 2), (1, 1, 2), (2, 1, 2)))
 
+    def test_commafree_four_2_3(self):
+        codes = sorted([sorted(code) for code in commafree_four(2, 3)])
+        codes = [[''.join(str(c) for c in word) for word in code]
+                 for code in codes]
+
+        self.assertEqual(codes, [['0001', '0011', '0111'],
+                                 ['0001', '0110', '0111'],
+                                 ['0001', '0110', '1110'],
+                                 ['0001', '0111', '1001'],
+                                 ['0001', '1001', '1011'],
+                                 ['0001', '1001', '1101'],
+                                 ['0001', '1001', '1110'],
+                                 ['0001', '1100', '1101'],
+                                 ['0010', '0011', '1011'],
+                                 ['0010', '0011', '1101'],
+                                 ['0010', '0011', '1110'],
+                                 ['0010', '0110', '0111'],
+                                 ['0010', '0110', '1110'],
+                                 ['0010', '1100', '1101'],
+                                ])
+
 if __name__ == '__main__':
     # unittest.main(exit=False)
 
-    def count(x):
-        return x.count(1)
+    logger.addHandler(logging.StreamHandler())
+    logger.setLevel(logging.DEBUG)
 
-    codes = list(commafree_four(2, 3))
-    for code in codes:
-        code = sorted(code, key=count)
-        code = [''.join(str(c) for c in word) for word in code]
-        print(', '.join(code))
+    list(commafree_four(2, 3))
 
-    print(sum(1 for code in commafree_four(3, 18)))
+    # print(sum(1 for code in commafree_four(3, 18)))
     # print(sum(1 for code in commafree_four(3, 18)))
     # commafree_four(7, 588)
 
