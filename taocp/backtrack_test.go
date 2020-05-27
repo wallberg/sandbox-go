@@ -114,7 +114,7 @@ func singleWordRectangles5x6(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie
 func multiWordRectangles(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie) {
 
 	results := make(chan string)
-	go MultiWordRectangles(mTrie, nTrie, results, 5, 26)
+	go MultiWordRectangles(mTrie, nTrie, results, 5, 26, 0)
 
 	count := 0
 	for range results {

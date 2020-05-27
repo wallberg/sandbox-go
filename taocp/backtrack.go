@@ -148,11 +148,15 @@ func WordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 // MultiWordRectangles returns m x n word rectangles, running in n parallel
 // threads
 func MultiWordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
-	out chan<- string, max int, n int) {
+	out chan<- string, max int, n int, i int) {
 
 	defer close(out)
 
 	if n < 1 || n > 26 {
+		return
+	}
+
+	if i < 0 || i > n {
 		return
 	}
 
@@ -166,7 +170,12 @@ func MultiWordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 		}
 		wg.Done()
 	}
-	wg.Add(n)
+
+	if i == 0 {
+		wg.Add(n)
+	} else {
+		wg.Add(1)
+	}
 
 	// Initial letters for each WordRectangles() thread to process
 	// Results are certainly not evenly distributed across initial letters
@@ -177,15 +186,20 @@ func MultiWordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 
 	chunkSize := (25 + n) / n
 
+	j := 1
 	for start := 0; start < 26; start += chunkSize {
 		end := start + chunkSize
 		if end > 26 {
 			end = 26
 		}
 
-		outChunk := make(chan string)
-		go WordRectangles(mTrie, nTrie, outChunk, max, initials[start:end])
-		go fanin(outChunk)
+		if i == 0 || i == j {
+			outChunk := make(chan string)
+			go WordRectangles(mTrie, nTrie, outChunk, max, initials[start:end])
+			go fanin(outChunk)
+		}
+
+		j++
 	}
 
 	wg.Wait()

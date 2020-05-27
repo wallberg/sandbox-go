@@ -24,6 +24,7 @@ SUBCOMMANDS
              -m, --m:       columns of words of size m; default is 5
              -n, --n:       rows of words of size n; default is 6
              -t, --threads: number of execution threads; default is 1
+             -i, --index: which thread to run; default is 0, all of them
              -l, --limit:   limit to number of results per thread; default is 0, unlimited
 `)
 
@@ -31,7 +32,7 @@ SUBCOMMANDS
 }
 
 // cmdWr implements the 'wr' command
-func cmdWr(m int, n int, threads int, limit int) {
+func cmdWr(m int, n int, threads int, limit int, index int) {
 	var trie taocp.Trie
 
 	mTrie := taocp.NewCPrefixTrie(m)
@@ -51,7 +52,7 @@ func cmdWr(m int, n int, threads int, limit int) {
 	}
 
 	words := make(chan string)
-	go taocp.MultiWordRectangles(&mTrie, &nTrie, words, limit, threads)
+	go taocp.MultiWordRectangles(&mTrie, &nTrie, words, limit, threads, index)
 	for word := range words {
 		fmt.Println(word)
 	}
@@ -63,6 +64,7 @@ func main() {
 	wrM := wrCmd.Int("m", 5, "m")
 	wrN := wrCmd.Int("n", 6, "n")
 	wrThreads := wrCmd.Int("t", 1, "threads")
+	wrIndex := wrCmd.Int("i", 0, "index")
 	wrLimit := wrCmd.Int("l", 0, "limit")
 
 	if len(os.Args) < 2 {
@@ -73,7 +75,7 @@ func main() {
 
 	case "wr":
 		wrCmd.Parse(os.Args[2:])
-		cmdWr(*wrM, *wrN, *wrThreads, *wrLimit)
+		cmdWr(*wrM, *wrN, *wrThreads, *wrLimit, *wrIndex)
 
 	default:
 		printUsageAndExit("expected subcommand: wr", 1)
