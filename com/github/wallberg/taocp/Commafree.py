@@ -265,17 +265,26 @@ def commafree_four(m, g, max=0):
             MEM[alf] = RED
 
         # Initialize the prefix and suffix lists
-        for ps1 in (0, m**3):
+        ps1 = 0
+        for _ in range(m):
             MEM[P1OFF+M4+ps1] = P1OFF + ps1
             MEM[S1OFF+M4+ps1] = S1OFF + ps1
 
-            for ps2 in (ps1, ps1 + m**2):
-                MEM[P2OFF+M4+ps2] = P2OFF + ps2
-                MEM[S2OFF+M4+ps2] = S2OFF + ps2
+            ps2 = 0
+            for _ in range(m):
+                MEM[P2OFF+M4+ps1+ps2] = P2OFF + ps1 + ps2
+                MEM[S2OFF+M4+ps1+ps2] = S2OFF + ps1 + ps2
 
-                for ps3 in (ps2, ps2 + m):
-                    MEM[P3OFF+M4+ps3] = P3OFF + ps3
-                    MEM[S3OFF+M4+ps3] = S3OFF + ps3
+                ps3 = 0
+                for _ in range(m):
+                    MEM[P3OFF+M4+ps1+ps2+ps3] = P3OFF + ps1 + ps2 + ps3
+                    MEM[S3OFF+M4+ps1+ps2+ps3] = S3OFF + ps1 + ps2 + ps3
+
+                    ps3 += m
+                ps2 += m**2
+            ps1 += m**3
+
+
 
         # Iterate over word classes
         for cl, clas in enumerate(word for word, j in preprimes(m, 4)
@@ -797,11 +806,18 @@ class Test(unittest.TestCase):
                                  ['0010', '1100', '1101'],
                                 ])
 
-if __name__ == '__main__':
-    # unittest.main(exit=False)
+    def test_commafree_four_3_18(self):
+        # logger.addHandler(logging.StreamHandler())
+        # logger.setLevel(logging.DEBUG)
+        codes = sorted([sorted(code) for code in commafree_four(3, 18)])
+        self.assertEqual(len(codes), 72)
 
-    logger.addHandler(logging.StreamHandler())
-    logger.setLevel(logging.DEBUG)
+        # codes = [[''.join(str(c) for c in word) for word in code]
+if __name__ == '__main__':
+    unittest.main(exit=False)
+
+    # logger.addHandler(logging.StreamHandler())
+    # logger.setLevel(logging.DEBUG)
 
     list(commafree_four(2, 3))
 
