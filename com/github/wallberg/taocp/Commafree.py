@@ -80,6 +80,16 @@ def exercise35(word, words, n=None):
 
     return True
 
+def is_commafree(code):
+    code = list(code)
+    cf = [code[0]]
+    for word in code[1:]:
+        if not exercise35(word, cf):
+            print(f'{word=}, {cf=}')
+            return False
+        cf.append(word)
+
+    return True
 
 def commafree_classes(m, n):
     '''
@@ -807,12 +817,33 @@ class Test(unittest.TestCase):
                                 ])
 
     def test_commafree_four_3_18(self):
-        # logger.addHandler(logging.StreamHandler())
-        # logger.setLevel(logging.DEBUG)
-        codes = sorted([sorted(code) for code in commafree_four(3, 18)])
+
+        codes = [set([''.join(str(c) for c in word) for word in code])
+                 for code in commafree_four(3, 18)]
+
         self.assertEqual(len(codes), 72)
 
-        # codes = [[''.join(str(c) for c in word) for word in code]
+        for code in codes:
+            self.assertTrue(is_commafree(code))
+
+        a = ['0001', '0002', '1001', '1002', '1102', '2001', '2002', '2011',
+             '2012', '2102', '2112']
+        for b in [['2122'], ['2212']]:
+            for c in [['0102','1011','1012'], ['2010','1101','2101']]:
+                for d in [['1202','2202','2111'], ['2021','2022','1112']]:
+                    answer = set(a + b + c + d)
+
+                    self.assertTrue(answer in codes)
+
+        a = ['0001', '0020', '0021', '0022', '1001', '1020', '1021', '1022',
+             '1201', '1202', '1221', '2001', '2201', '2202']
+        for b in [['1121'], ['1211']]:
+            for c in [['1011','1012','2221'], ['1101','2101','1222']]:
+                answer = set(a + b + c)
+
+                self.assertTrue(answer in codes)
+
+
 if __name__ == '__main__':
     unittest.main(exit=False)
 
