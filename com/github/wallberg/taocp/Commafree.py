@@ -10,6 +10,8 @@ from com.github.wallberg.taocp.Backtrack import walkers_backtrack
 from com.github.wallberg.taocp.Tuples import preprimes
 
 logger = logging.getLogger('com.github.wallberg.taocp.Commafree')
+#ger logger.addHandler(logging.StreamHandler())
+# log.setLevel(logging.INFO)
 
 '''
 Explore Backtrack Programming from The Art of Computer Programming, Volume 4,
@@ -91,6 +93,25 @@ def is_commafree(code):
 
     return True
 
+def cyclic_class_key(m, n):
+    ''' Return a key function for sorting word lists by cyclic class. '''
+
+    words = {}  # map words to class key
+
+    for i, clas in enumerate(word for word, j in preprimes(m, n) if j == n):
+        word = clas
+        for j in range(n):
+            words[word] = i*n + j
+
+            # Cycle
+            word = word[1:n] + word[0:1]
+
+    def key(word):
+        return words[word]
+
+    return key
+
+
 def commafree_classes(m, n):
     '''
     Find the largest commafree subset of m-ary tuples of length n.
@@ -170,7 +191,7 @@ def commafree_classes(m, n):
 
     return max_subset
 
-def commafree_four(m, g, max=0):
+def commafree_four(m, g):
     '''
     Algorithm C. Four-letter commafree codes.
 
@@ -181,6 +202,9 @@ def commafree_four(m, g, max=0):
     RED = 0
     BLUE = 1
     GREEN = 2
+
+    DEBUG = logger.isEnabledFor(logging.DEBUG)
+    INFO = logger.isEnabledFor(logging.INFO)
 
     def alpha(word):
         ''' Return integer representation of the code word. '''
@@ -361,9 +385,10 @@ def commafree_four(m, g, max=0):
         Exercise 44.
         '''
 
-        nonlocal M4, MEM, CLOFF, FREE, PP, POISON, x, c
+        nonlocal M4, MEM, CLOFF, FREE, PP, POISON, x, c, DEBUG
 
-        logger.debug('select_next_word')
+        if DEBUG:
+            logger.debug('select_next_word')
 
         r = 5  # number of words in a class with least blue words
 
@@ -448,12 +473,13 @@ def commafree_four(m, g, max=0):
     def rem(alf, delta, omicron):
         ''' Remove an item from a list. '''
 
-        nonlocal M4, MEM
+        nonlocal M4, MEM, DEBUG
 
         p = delta + omicron  # head pointer
         q = MEM[p + M4] - 1  # tail pointer
 
-        logger.debug(f'rem: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
+        if DEBUG:
+            logger.debug(f'rem: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
 
         if q >= p:
             # list p isn't closed or being killed
@@ -470,12 +496,13 @@ def commafree_four(m, g, max=0):
     def close(delta, omicron):
         ''' Close list delta+omicron. '''
 
-        nonlocal M4, MEM
+        nonlocal M4, MEM, DEBUG
 
         p = delta + omicron  # head of the list
         q = MEM[p + M4]  # tail of the list
 
-        logger.debug(f'close: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
+        if DEBUG:
+            logger.debug(f'close: {delta=:x}, {omicron=:x}, {p=:x}, {q=:x}')
 
         # Check if already closed
         if q != p - 1:
@@ -488,9 +515,10 @@ def commafree_four(m, g, max=0):
     def red(alf, c):
         ''' Make alpha RED. '''
 
-        nonlocal RED, P1OFF, M4, ALF
+        nonlocal RED, P1OFF, M4, ALF, DEBUG
 
-        logger.debug(f'red: {alf=}, {c=}')
+        if DEBUG:
+            logger.debug(f'red: {alf=}, {c=}')
 
         store(alf, RED)
 
@@ -504,9 +532,10 @@ def commafree_four(m, g, max=0):
     def green(alf, c):
         ''' Make alpha GREEN. '''
 
-        nonlocal GREEN, P1OFF, CLOFF, M4, ALF
+        nonlocal GREEN, P1OFF, CLOFF, M4, ALF, DEBUG
 
-        logger.debug(f'green: {alf=}, {c=}')
+        if DEBUG:
+            logger.debug(f'green: {alf=}, {c=}')
 
         store(alf, GREEN)
         # print(tostring())
@@ -527,7 +556,8 @@ def commafree_four(m, g, max=0):
                 # print(tostring())
 
     # C1. [Initialize.]
-    logger.info("C1.")
+    if INFO:
+        logger.info("C1.")
 
     assert 2 <= m <= 7
 
@@ -593,11 +623,13 @@ def commafree_four(m, g, max=0):
 
         if step == 'C2':
             # [Enter level.]
-            logger.info(f'C2. {level=}, X={X[:level]}, {x=}, {c=}')
+            if INFO:
+                logger.info(f'C2. {level=}, X={X[:level]}, {x=}, {c=}')
 
-            if level == g:
-                logger.info(f'C2. visiting {X[:level]}')
-                yield tuple(ALF[alf] for alf in X[:level])
+            if level == L:
+                if INFO:
+                    logger.info(f'C2. visiting {X[:level]}')
+                yield tuple(ALF[alf] for alf in X[:L] if alf >= 0)
                 step = 'C6'
 
             else:
@@ -613,7 +645,8 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C3':
             # [Try the candidate.]
-            logger.info(f'C3. {level=}, X={X[:level]}, {x=}, {c=}')
+            if INFO:
+                logger.info(f'C3. {level=}, X={X[:level]}, {x=}, {c=}, {s=}')
 
             U[level] = u
             sigma += 1
@@ -705,7 +738,8 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C4':
             # [Make the move.]
-            logger.info(f'C4. {level=}, X={X[:level]}, {x=}, {c=}')
+            if INFO:
+                logger.info(f'C4. {level=}, X={X[:level]}, {x=}, {c=}')
 
             X[level] = x
             C[level] = c
@@ -727,7 +761,8 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C5':
             # [Try again.]
-            logger.info(f'C5. {level=}, X={X[:level]}, {x=}, {c=}')
+            if INFO:
+                logger.info(f'C5. {level=}, X={X[:level]}, {x=}, {c=}')
 
             while u > U[level]:
                 u -= 1
@@ -743,7 +778,8 @@ def commafree_four(m, g, max=0):
 
         elif step == 'C6':
             # [Backtrack.]
-            logger.info(f'C6. {level=}, X={X[0:level]}, {x=}, {c=}')
+            if INFO:
+                logger.info(f'C6. {level=}, X={X[0:level]}, {x=}, {c=}')
 
             level -= 1
 
@@ -843,20 +879,41 @@ class Test(unittest.TestCase):
 
                 self.assertTrue(answer in codes)
 
+    def test_long_commafree_four_4_57(self):
+        ''' Very long, currently takes 68m on my MacBook. '''
+
+        codes = [set([''.join(str(c) for c in word) for word in code])
+                 for code in commafree_four(4, 57)]
+
+        self.assertEqual(len(codes), 1152)
+
+        for code in codes:
+            self.assertTrue(is_commafree(code))
+
+        answer1 = {'0001', '0002', '0003', '0201', '0203', '1001', '1002',
+                   '1003', '1011', '1013', '1021', '1022', '1023', '1031',
+                   '1032', '1033', '1201', '1203', '1211', '1213', '1221',
+                   '1223', '1231', '1232', '1233', '1311', '1321', '1323',
+                   '1331', '2001', '2002', '2003', '2021', '2022', '2023',
+                   '2201', '2203', '2221', '2223', '3001', '3002', '3003',
+                   '3011', '3013', '3021', '3022', '3023', '3031', '3032',
+                   '3033', '3201', '3203', '3221', '3223', '3321', '3323',
+                   '3331'}
+
+        answer2 = {'0010', '0020', '0030', '0110', '0112', '0113', '0120',
+                   '0121', '0122', '0130', '0131', '0132', '0133', '0210',
+                   '0212', '0213', '0220', '0222', '0230', '0310', '0312',
+                   '0313', '0320', '0322', '0330', '0332', '0333', '1110',
+                   '1112', '1113', '2010', '2030', '2110', '2112', '2113',
+                   '2210', '2212', '2213', '2230', '2310', '2312', '2313',
+                   '2320', '2322', '2330', '2332', '2333', '3110', '3112',
+                   '3113', '3210', '3212', '3213', '3230', '3310', '3312',
+                   '3313'}
+
+        self.assertTrue(answer1 in codes)
+        self.assertTrue(answer2 in codes)
+
 
 if __name__ == '__main__':
     unittest.main(exit=False)
 
-    # logger.addHandler(logging.StreamHandler())
-    # logger.setLevel(logging.DEBUG)
-
-    list(commafree_four(2, 3))
-
-    # print(sum(1 for code in commafree_four(3, 18)))
-    # print(sum(1 for code in commafree_four(3, 18)))
-    # commafree_four(7, 588)
-
-    # for code in commafree_classes(2, 4):
-    #     code = sorted(code, key=count)
-    #     code = [''.join(str(c) for c in word) for word in code]
-    #     print(', '.join(code))
