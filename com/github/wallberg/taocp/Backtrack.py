@@ -242,7 +242,7 @@ def nested_parentheses(n):
         yield ''.join(result)
 
 
-def walkers_backtrack(n, S):
+def walkers_backtrack(n, S, stats=None):
     '''
     Algorithm W. Walker's backtrack.
 
@@ -257,6 +257,9 @@ def walkers_backtrack(n, S):
     x = [None] * n
     domains = [None] * n
     domains_i = [0] * n
+
+    if stats is not None:
+        stats['level_count'] = [0] * n
 
     goto = 'W2'
     while True:
@@ -277,6 +280,10 @@ def walkers_backtrack(n, S):
 
             if domains_i[level-1] < len(domains[level-1]):
                 x[level-1] = domains[level-1][domains_i[level-1]]
+
+                if stats:
+                    stats['level_count'][level-1] += 1
+
                 level += 1
                 goto = 'W2'
             else:
@@ -329,7 +336,7 @@ def n_queens_2(n):
     for x in walkers_backtrack(n, S):
         yield x
 
-def exercise_68():
+def exercise_68(stats=None):
     ''' Solve Exercise 68 using Walker's Backtrack. '''
 
     R = 0
@@ -451,7 +458,7 @@ def exercise_68():
             for j in pointsto[i]:
                 pointsfrom[j].append(i)
 
-    for x in walkers_backtrack(100, S):
+    for x in walkers_backtrack(100, S, stats=stats):
         yield x
 
 def langford_pairs(n):
