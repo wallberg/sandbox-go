@@ -13,7 +13,7 @@ Dancing Links, 2020
 '''
 
 
-def basic_backtrack(n, domain, property):
+def basic_backtrack(n, domain, property, stats=None):
     '''
     Algorithm B. Basic backtrack.
 
@@ -31,6 +31,9 @@ def basic_backtrack(n, domain, property):
     domains = [domain(n, k) for k in range(1, n+1)]
     domains_i = [0] * n
 
+    if stats is not None:
+        stats['level_count'] = [0] * n
+
     goto = 'B2'
     while True:
 
@@ -46,6 +49,9 @@ def basic_backtrack(n, domain, property):
 
         elif goto == 'B3':
             # [Try x_l.]
+
+            if stats:
+                stats['level_count'][level-1] += 1
 
             if property(n, level, x):
                 # print('B3 property holds')
