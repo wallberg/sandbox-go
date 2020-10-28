@@ -13,7 +13,7 @@ Dancing Links, 2020
 '''
 
 
-def exact_cover(options, stats=None):
+def exact_cover(items, options, stats=None):
     '''
     Algorithm X. Exact cover via dancing links.
     '''
@@ -101,16 +101,6 @@ def exact_cover(options, stats=None):
         print('---')
 
     # X1 [Initialize.]
-
-    # Build sorted list of items from the provided options
-    items = set()
-    for option in options:
-        # Check the option sequence is sorted without duplicates
-        assert all(option[i] < option[i+1] for i in range(len(option)-1))
-
-        for item in option:
-            items.add(item)
-    items = sorted(items)
 
     n = len(items)
 
@@ -253,6 +243,29 @@ def exact_cover(options, stats=None):
                 goto = 'X6'
 
 
+def langford_pairs(n):
+    ''' Return solutions for Langford pairs of n values. '''
+
+    items = [i for i in range(1, n+1)] + [('s', j-1) for j in range(1, 2*n+1)]
+
+    options = []
+    for i in range(1, n+1):
+        j = 1
+        k = j + i + 1
+        while k <= 2*n:
+            options.append((i, ('s', j-1), ('s', k-1)))
+            j += 1
+            k += 1
+
+    for solution in exact_cover(items, options):
+        x = [None] * (2 * n)
+        for option in solution:
+            x[option[1][1]] = option[0]
+            x[option[2][1]] = option[0]
+
+        yield tuple(x)
+
+
 EXAMPLE_6 = (('c', 'e'),
              ('a', 'd', 'g'),
              ('b', 'c', 'f'),
@@ -264,9 +277,24 @@ EXAMPLE_6 = (('c', 'e'),
 class Test(unittest.TestCase):
 
     def test_exact_cover(self):
-        result = list(exact_cover(EXAMPLE_6))
+        result = list(exact_cover(('a', 'b', 'c', 'd', 'e', 'f', 'g'),
+                                  EXAMPLE_6))
         self.assertEqual(result, [(('a', 'd', 'f'), ('b', 'g'), ('c', 'e'))])
 
+    def test_langford_pairs(self):
+        result = list(langford_pairs(3))
+        self.assertEqual(result,
+                         [(3, 1, 2, 1, 3, 2),
+                          (2, 3, 1, 2, 1, 3)])
+
+        result = sum(1 for s in langford_pairs(7))
+        self.assertEqual(result, 52)
+
+        result = sum(1 for s in langford_pairs(8))
+        self.assertEqual(result, 300)
+
+        result = sum(1 for s in langford_pairs(9))
+        self.assertEqual(result, 0)
 
 if __name__ == '__main__':
     unittest.main(exit=False)
