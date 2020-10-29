@@ -67,15 +67,38 @@ def exact_cover(items, options, stats=None):
             p = ulink[p]
 
     def solution(x):
+        # Iterate over the options
         options = []
         for p in x:
             option = []
+            # Move back to first element in the option
+            while top[p-1] > 0:
+                p -= 1
+            # Iterate over elements in the option
             q = p
             while top[q] > 0:
                 option.append(name[top[q]])
                 q += 1
             options.append(tuple(option))
         return tuple(options)
+
+    def mrv():
+        ''' Minimum Remaining Values heuristic. '''
+        nonlocal rlink, llen
+
+        theta = -1
+        p = rlink[0]
+        while p != 0:
+            lambd = llen[p]
+            if lambd < theta or theta == -1:
+                theta = lambd
+                i = p
+                if theta == 0:
+                    return i
+
+            p = rlink[p]
+
+        return i
 
     def dump():
         nonlocal name, rlink, dlink
@@ -103,6 +126,9 @@ def exact_cover(items, options, stats=None):
     # X1 [Initialize.]
 
     n = len(items)
+
+    if stats is not None:
+        stats['level_count'] = [0] * n
 
     # Fill out the item tables
     name = [None] * (n + 1)
@@ -175,11 +201,16 @@ def exact_cover(items, options, stats=None):
     level = 0
     x = [None] * n_options
 
+    # dump()
+
     goto = 'X2'
     while True:
 
         if goto == 'X2':
             # [Enter level l.]
+            if stats is not None:
+                stats['level'][i] += 1
+
             if rlink[0] == 0:
                 # visit the solution
                 yield solution(x[0:level])
@@ -189,8 +220,7 @@ def exact_cover(items, options, stats=None):
 
         elif goto == 'X3':
             # [Choose i.]
-            # TODO: Use llen(i) MRV instead
-            i = rlink[0]
+            i = mrv()
             goto = 'X4'
 
         elif goto == 'X4':
@@ -246,22 +276,22 @@ def exact_cover(items, options, stats=None):
 def langford_pairs(n):
     ''' Return solutions for Langford pairs of n values. '''
 
-    items = [i for i in range(1, n+1)] + [('s', j-1) for j in range(1, 2*n+1)]
+    items = [i for i in range(1, n+1)] + [f's{j-1}' for j in range(1, 2*n+1)]
 
     options = []
     for i in range(1, n+1):
         j = 1
         k = j + i + 1
         while k <= 2*n:
-            options.append((i, ('s', j-1), ('s', k-1)))
+            options.append((i, f's{j-1}', f's{k-1}'))
             j += 1
             k += 1
 
     for solution in exact_cover(items, options):
         x = [None] * (2 * n)
         for option in solution:
-            x[option[1][1]] = option[0]
-            x[option[2][1]] = option[0]
+            x[int(option[1][1])] = option[0]
+            x[int(option[2][1])] = option[0]
 
         yield tuple(x)
 
@@ -295,6 +325,9 @@ class Test(unittest.TestCase):
 
         result = sum(1 for s in langford_pairs(9))
         self.assertEqual(result, 0)
+
+        # result = sum(1 for s in langford_pairs(11))
+        # self.assertEqual(result, 35584)
 
 if __name__ == '__main__':
     unittest.main(exit=False)
