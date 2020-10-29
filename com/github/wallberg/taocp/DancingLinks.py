@@ -283,7 +283,9 @@ def langford_pairs(n):
         j = 1
         k = j + i + 1
         while k <= 2*n:
-            options.append((i, f's{j-1}', f's{k-1}'))
+            # Exercise 15: Omit the reversals
+            if i != n - (n % 2 == 0) or j <= n / 2:
+                options.append((i, f's{j-1}', f's{k-1}'))
             j += 1
             k += 1
 
@@ -314,20 +316,20 @@ class Test(unittest.TestCase):
     def test_langford_pairs(self):
         result = list(langford_pairs(3))
         self.assertEqual(result,
-                         [(3, 1, 2, 1, 3, 2),
-                          (2, 3, 1, 2, 1, 3)])
+                         [(3, 1, 2, 1, 3, 2)])
 
         result = sum(1 for s in langford_pairs(7))
-        self.assertEqual(result, 52)
+        self.assertEqual(result, 26)
 
         result = sum(1 for s in langford_pairs(8))
-        self.assertEqual(result, 300)
+        self.assertEqual(result, 150)
 
-        result = sum(1 for s in langford_pairs(9))
+        result = sum(1 for s in langford_pairs(10))
         self.assertEqual(result, 0)
 
-        # result = sum(1 for s in langford_pairs(11))
-        # self.assertEqual(result, 35584)
+    def test_long_langford_pairs(self):
+        result = sum(1 for s in langford_pairs(11))
+        self.assertEqual(result, 17792)
 
 if __name__ == '__main__':
     unittest.main(exit=False)
