@@ -13,9 +13,14 @@ Dancing Links, 2020
 '''
 
 
-def exact_cover(items, options, stats=None):
-    '''
-    Algorithm X. Exact cover via dancing links.
+def exact_cover(items, options, secondary=[], stats=None):
+    '''Algorithm X. Exact cover via dancing links.
+
+    items     -- sequence of primary items
+    options   -- sequence of options; every option must contain at least one
+                 primary item
+    secondary -- sequence of secondary items
+    stats     -- dictionary to accumulate runtime statistics
     '''
 
     def hide(p):
@@ -125,25 +130,34 @@ def exact_cover(items, options, stats=None):
 
     # X1 [Initialize.]
 
-    n = len(items)
+    n1 = len(items)  # number of primary items
+    n2 = len(secondary)  # number of secondary items
+    n = n1 + n2  # total number of items
 
     if stats is not None:
         stats['level_count'] = [0] * n
 
     # Fill out the item tables
-    name = [None] * (n + 1)
-    llink = [None] * (n + 1)
-    rlink = [None] * (n + 1)
+    name = [None] * (n + 2)
+    llink = [None] * (n + 2)
+    rlink = [None] * (n + 2)
 
     i = 0
-    for item in items:
+    for item in list(items) + list(secondary):
         i += 1
         name[i] = item
         llink[i] = i - 1
         rlink[i-1] = i
 
-    llink[0] = n
-    rlink[n] = 0
+    # two doubly linked lists, primary and secondary
+    # head of the primary list is at i=0
+    # head of the secondary list is at i=n+1
+    llink[n+1] = n
+    rlink[n] = n + 1
+    llink[n1+1] = n + 1
+    rlink[n+1] = n1 + 1
+    llink[0] = n1
+    rlink[n1] = 0
 
     # Fill out the option tables
     n_options = len(options)
@@ -274,7 +288,7 @@ def exact_cover(items, options, stats=None):
 
 
 def langford_pairs(n):
-    ''' Return solutions for Langford pairs of n values. '''
+    '''Return solutions for Langford pairs of n values.'''
 
     items = [i for i in range(1, n+1)] + [f's{j-1}' for j in range(1, 2*n+1)]
 
@@ -296,6 +310,33 @@ def langford_pairs(n):
             x[int(option[2][1])] = option[0]
 
         yield tuple(x)
+
+
+def n_queens(n):
+    '''Return solutions for the n-queens problem.'''
+
+    items = []
+    sitems = []
+    options = []
+
+    for i in range(1, n+1):
+        row = 'r' + str(i)
+        items.append(row)
+        for j in range(1, n+1):
+            col = 'c' + str(j)
+            if i == n:
+                items.append(col)
+            up_diag = 'a' + str(i + j)
+            down_diag = 'b' + str(i - j)
+            if up_diag not in sitems:
+                sitems.append(up_diag)
+            if down_diag not in sitems:
+                sitems.append(down_diag)
+
+            options.append((row, col, up_diag, down_diag))
+
+    for solution in exact_cover(items, options, secondary=sitems):
+        yield tuple(option[:2] for option in solution)
 
 
 EXAMPLE_6 = (('c', 'e'),
@@ -330,6 +371,15 @@ class Test(unittest.TestCase):
     def test_long_langford_pairs(self):
         result = sum(1 for s in langford_pairs(11))
         self.assertEqual(result, 17792)
+
+    def test_n_queens(self):
+        result = list(n_queens(4))
+        self.assertEqual(result,
+                         [(('r1', 'c2'), ('r2', 'c4'),
+                           ('r3', 'c1'), ('r4', 'c3')),
+                          (('r1', 'c3'), ('r2', 'c1'),
+                           ('r3', 'c4'), ('r4', 'c2'))])
+
 
 if __name__ == '__main__':
     unittest.main(exit=False)
