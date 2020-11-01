@@ -13,14 +13,19 @@ Dancing Links, 2020
 '''
 
 
-def exact_cover(items, options, secondary=[], stats=None):
+def exact_cover(items, options, secondary=[], stats=None, progress=None):
     '''Algorithm X. Exact cover via dancing links.
 
+    Arguments:
     items     -- sequence of primary items
     options   -- sequence of options; every option must contain at least one
                  primary item
+
+    Keyword Arguments:
     secondary -- sequence of secondary items
     stats     -- dictionary to accumulate runtime statistics
+    progress  -- display progress report, every 'progress' number of level
+                 entries
     '''
 
     def hide(p):
@@ -108,14 +113,6 @@ def exact_cover(items, options, secondary=[], stats=None):
     def dump():
         nonlocal name, rlink, dlink
 
-        # print(n)
-        # print(name)
-        # print(llink)
-        # print(rlink)
-        # print(top)
-        # print(ulink)
-        # print(dlink)
-
         i = 0
         while rlink[i] != 0:
             i = rlink[i]
@@ -128,14 +125,68 @@ def exact_cover(items, options, secondary=[], stats=None):
 
         print('---')
 
+    def show_progress():
+        nonlocal stats, level, n, max_level, x, top, size, llen
+
+        est = 0.0  # estimate of percentage done
+        tcum = 1
+
+        print(f'Current level {level} of max {max_level}')
+
+        # Iterate over the options
+        for p in x[0:level]:
+            # Cyclically gather the items in the option, beginning at p
+            option = []
+            q = p
+            while True:
+                option.append(str(name[top[q]]))
+                q += 1
+                if top[q] <= 0:
+                    q = ulink[q]
+                if q == p:
+                    break
+
+            # Get position stats for this option
+            i = top[p]
+            q = dlink[i]
+            k = 1
+            while q != p and q != i:
+                q = dlink[q]
+                k += 1
+
+            if q != i:
+                kstat = f'{k} of {llen[i]}'
+                tcum *= llen[i]
+                est += (k - 1) / tcum
+            else:
+                kstat = "not in this list"
+
+            print(f'  {" ".join(option)} ({kstat})')
+
+        est += 1 / (2 * tcum)
+
+        print(f"  solutions={stats['solutions']}, nodes={stats['nodes']}, est={est:4.4f}")
+        print('---')
+
     # X1 [Initialize.]
 
     n1 = len(items)  # number of primary items
     n2 = len(secondary)  # number of secondary items
     n = n1 + n2  # total number of items
 
+    if progress is not None:
+        if stats is None:
+            # Track progress the stats dictionary
+            stats = {}
+        assert isinstance(progress, int)
+        theta, delta = progress, progress
+        progress = True
+        max_level = -1
+
     if stats is not None:
         stats['level_count'] = [0] * n
+        stats['nodes'] = 0
+        stats['solutions'] = 0
 
     # Fill out the item tables
     name = [None] * (n + 2)
@@ -223,14 +274,24 @@ def exact_cover(items, options, secondary=[], stats=None):
         if goto == 'X2':
             # [Enter level l.]
             if stats is not None:
-                stats['level'][i] += 1
+                stats['level_count'][level] += 1
+                stats['nodes'] += 1
 
             if rlink[0] == 0:
                 # visit the solution
                 yield solution(x[0:level])
+                if stats is not None:
+                    stats['solutions'] += 1
                 goto = 'X8'
             else:
                 goto = 'X3'
+
+            if progress:
+                if level > max_level:
+                    max_level = level
+                if stats['nodes'] >= theta:
+                    show_progress()
+                    theta += delta
 
         elif goto == 'X3':
             # [Choose i.]
@@ -287,7 +348,7 @@ def exact_cover(items, options, secondary=[], stats=None):
                 goto = 'X6'
 
 
-def langford_pairs(n):
+def langford_pairs(n, **kwargs):
     '''Return solutions for Langford pairs of n values.'''
 
     items = [i for i in range(1, n+1)] + [f's{j-1}' for j in range(1, 2*n+1)]
@@ -303,7 +364,7 @@ def langford_pairs(n):
             j += 1
             k += 1
 
-    for solution in exact_cover(items, options):
+    for solution in exact_cover(items, options, **kwargs):
         x = [None] * (2 * n)
         for option in solution:
             x[int(option[1][1])] = option[0]
@@ -312,7 +373,7 @@ def langford_pairs(n):
         yield tuple(x)
 
 
-def n_queens(n):
+def n_queens(n, **kwargs):
     '''Return solutions for the n-queens problem.'''
 
     items = []
@@ -335,7 +396,7 @@ def n_queens(n):
 
             options.append((row, col, up_diag, down_diag))
 
-    for solution in exact_cover(items, options, secondary=sitems):
+    for solution in exact_cover(items, options, secondary=sitems, **kwargs):
         yield tuple(option[:2] for option in solution)
 
 
