@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 from itertools import islice
-
-from com.github.wallberg.taocp.Trie import WordTrie, PrefixTrie
+from copy import deepcopy
 
 '''
 Explore Dancing Links from The Art of Computer Programming, Volume 4,
@@ -400,6 +399,50 @@ def n_queens(n, **kwargs):
         yield tuple(option[:2] for option in solution)
 
 
+def sudoku(grid, **kwargs):
+    '''Return solutions for SuDoku puzzles.'''
+
+    def build_option(i, j, k, x):
+        '''Build the (p, r, c, b) option. '''
+
+        return(('p' + str(i) + str(j),
+                'r' + str(i) + str(k),
+                'c' + str(j) + str(k),
+                'x' + str(x) + str(k)))
+
+    grid = [[int(n) for n in row] for row in grid]
+
+    # Get the known items provided in grid parameter
+    known_items = set()
+    for i in range(9):  # row number
+        for j in range(9):  # column number
+            k = grid[i][j]  # cell value
+            if k > 0:
+                x = 3 * (i // 3) + (j // 3)  # box number
+                for item in build_option(i, j, k, x):
+                    known_items.add(item)
+
+    items = set()
+    options = []
+
+    for i in range(9):  # row number
+        for j in range(9):  # column number
+            x = 3 * (i // 3) + (j // 3)  # box number
+            for k in range (1, 10):  # cell value
+                option = build_option(i, j, k, x)
+                if all(item not in known_items for item in option):
+                    items.update(option)
+                    options.append(option)
+
+    for solution in exact_cover(list(items), options, **kwargs):
+        sln = deepcopy(grid)
+        for p, r, _, _ in solution:
+            i, j, k = int(p[1]), int(p[2]), int(r[2])
+            sln[i][j] = k
+
+        yield [''.join(str(k) for k in row) for row in sln]
+
+
 EXAMPLE_6 = (('c', 'e'),
              ('a', 'd', 'g'),
              ('b', 'c', 'f'),
@@ -440,6 +483,76 @@ class Test(unittest.TestCase):
                            ('r3', 'c1'), ('r4', 'c3')),
                           (('r1', 'c3'), ('r2', 'c1'),
                            ('r3', 'c4'), ('r4', 'c2'))])
+
+    def test_sudoku(self):
+        pbm1 = ["083921657",
+                "967345821",
+                "251876493",
+                "548132970",
+                "729564138",
+                "136798245",
+                "372689514",
+                "814253769",
+                "695417380"]
+
+        sln1 = ["483921657",
+                "967345821",
+                "251876493",
+                "548132976",
+                "729564138",
+                "136798245",
+                "372689514",
+                "814253769",
+                "695417382"]
+
+        pbm2 = ["300200000",
+                "000107000",
+                "706030500",
+                "070009080",
+                "900020004",
+                "010800050",
+                "009040301",
+                "000702000",
+                "000008006"]
+
+        sln2 = ["351286497",
+                "492157638",
+                "786934512",
+                "275469183",
+                "938521764",
+                "614873259",
+                "829645371",
+                "163792845",
+                "547318926"]
+
+        pbm3 = ["003010000",
+                "415000090",
+                "206500300",
+                "500080009",
+                "070900032",
+                "038004060",
+                "000260403",
+                "000300008",
+                "320007950"]
+
+        sln3 = ['793412685',
+                '415638297',
+                '286579314',
+                '562183749',
+                '174956832',
+                '938724561',
+                '859261473',
+                '647395128',
+                '321847956']
+
+        result = list(sudoku(pbm1))
+        self.assertEqual(result, [sln1])
+
+        result = list(sudoku(pbm2))
+        self.assertEqual(result, [sln2])
+
+        result = list(sudoku(pbm3))
+        self.assertEqual(result, [sln3])
 
 
 if __name__ == '__main__':
