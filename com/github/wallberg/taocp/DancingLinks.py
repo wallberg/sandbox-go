@@ -525,6 +525,7 @@ class Test(unittest.TestCase):
                 "163792845",
                 "547318926"]
 
+        # 29a
         pbm3 = ["003010000",
                 "415000090",
                 "206500300",
@@ -545,6 +546,27 @@ class Test(unittest.TestCase):
                 '647395128',
                 '321847956']
 
+        # 29b
+        pbm4 = ["000000300",
+                "100400000",
+                "000000105",
+                "900000000",
+                "000002600",
+                "000053000",
+                "050800000",
+                "000900070",
+                "083000040"]
+
+        sln4 = ['597218364',
+                '132465897',
+                '864379125',
+                '915684732',
+                '348792651',
+                '276153489',
+                '659847213',
+                '421936578',
+                '783521946']
+
         result = list(sudoku(pbm1))
         self.assertEqual(result, [sln1])
 
@@ -553,6 +575,9 @@ class Test(unittest.TestCase):
 
         result = list(sudoku(pbm3))
         self.assertEqual(result, [sln3])
+
+        result = list(sudoku(pbm4))
+        self.assertEqual(result, [sln4])
 
 
 if __name__ == '__main__':
