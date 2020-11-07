@@ -278,9 +278,9 @@ def exact_cover(items, options, secondary=[], stats=None, progress=None):
 
             if rlink[0] == 0:
                 # visit the solution
-                yield solution(x[0:level])
                 if stats is not None:
                     stats['solutions'] += 1
+                yield solution(x[0:level])
                 goto = 'X8'
             else:
                 goto = 'X3'
@@ -321,6 +321,9 @@ def exact_cover(items, options, secondary=[], stats=None, progress=None):
 
         elif goto == 'X6':
             # [Try again.]
+            if stats is not None:
+                stats['nodes'] += 1
+
             p = x[level] - 1
             while p != x[level]:
                 j = top[p]
