@@ -161,6 +161,8 @@ class Test(unittest.TestCase):
         result = list(word_rectangles(2, 2))
         self.assertEqual(len(result), 2177)
 
+    def test_long_word_rectangles(self):
+
         # 5 x 6 full
         result = list(islice(word_rectangles(5, 6), 191))
 
@@ -174,9 +176,6 @@ class Test(unittest.TestCase):
 
         # result = list(word_rectangles(5, 6))
         # self.assertEqual(len(result), 625415)
-
-        # for solution in word_rectangles(5, 6):
-        #     print(solution)
 
 
 if __name__ == '__main__':

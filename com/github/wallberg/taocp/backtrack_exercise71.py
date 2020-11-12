@@ -567,7 +567,7 @@ class Test(unittest.TestCase):
         result = list(exercise_71_warmup([True, True]))
         self.assertEqual(result, [('A', 'B')])
 
-    def test_exercise_71_all_true(self):
+    def test_long_exercise_71_all_true(self):
 
         stats = {}
         grading = [True] * 20
@@ -577,7 +577,7 @@ class Test(unittest.TestCase):
 
         self.assertEqual(result, [])
 
-    def test_exercise_71_one_false(self):
+    def test_long_exercise_71_one_false(self):
 
         for q in (19, 20):
             stats = {}
