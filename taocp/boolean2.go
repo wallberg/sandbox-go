@@ -6,13 +6,11 @@ package taocp
 // §7.1.1 Boolean Basics
 
 // BitPairs2 returns pairs of indexes of subcubes in v which have all the same
-// bit values except at bit postion j.  Pairs are returned sequentially on the
-// out channel.
+// bit values except at bit postion j.  Pairs are returned are by calling
+// the visit function once for each pair.
 //
 // Exercise 29.
-func BitPairs2(v []int, j int, out chan int) {
-
-	defer close(out)
+func BitPairs2(v []int, j int, visit func(k int, kp int)) {
 
 	// B1. [Initialize.]
 	m := len(v)
@@ -55,8 +53,7 @@ func BitPairs2(v []int, j int, out chan int) {
 
 		// B6. [Record a match.]
 		if v[kp] == v[k]+(1<<j) {
-			out <- k
-			out <- kp
+			visit(k, kp)
 		}
 
 		// B7. [Advance k.]
@@ -71,9 +68,7 @@ func BitPairs2(v []int, j int, out chan int) {
 // order) represented as integer bitstrings.
 //
 // Exercise 30.
-func MaximalSubcubes2(n int, v []int, out chan int) {
-
-	defer close(out)
+func MaximalSubcubes2(n int, v []int, visit func(a int, b int)) {
 
 	// P1. [Initialize.]
 	m := len(v)
@@ -93,21 +88,17 @@ func MaximalSubcubes2(n int, v []int, out chan int) {
 
 	// Determine the j-buddy pairs for the initial subcube list
 	for j := 0; j < n; j++ {
-		pairs := make(chan int)
-		go BitPairs2(v, j, pairs)
-		for k := range pairs {
-			kp := <-pairs
+		BitPairs2(v, j, func(k int, kp int) {
 			T[k] |= (1 << j)
 			T[kp] |= (1 << j)
-		}
+		})
 	}
 	// For each subcube, either output it as maximal or advance it
 	// (with j-buddy) to the next subcube list, with additional wildcard
 	r, s, t := 0, 0, 0
 	for s < m {
 		if T[s] == 0 {
-			out <- 0
-			out <- v[s]
+			visit(0, v[s])
 		} else {
 			S[t] = v[s]
 			T[t] = T[s]
@@ -137,20 +128,16 @@ func MaximalSubcubes2(n int, v []int, out chan int) {
 
 		// P3. [Generate list A.]
 		r, s = t, S[t]
-		pairs := make(chan int)
-		go BitPairs2(S[s:r], j, pairs)
-		for k := range pairs {
-			kp := <-pairs
+		BitPairs2(S[s:r], j, func(k int, kp int) {
 			x := (T[s+k] & T[s+kp]) - (1 << j)
 			if x == 0 {
-				out <- A
-				out <- S[s+k]
+				visit(A, S[s+k])
 			} else {
 				t++
 				S[t] = S[s+k]
 				T[t] = x
 			}
-		}
+		})
 		t++
 		S[t] = r + 1
 	}

@@ -25,23 +25,21 @@ func TestBitPairs2(t *testing.T) {
 
 func testBitPairs2(t *testing.T, v []int, j int, expected []int) {
 
-	results := make(chan int)
-	go BitPairs2(v, j, results)
-
 	i := 0
-	for result := range results {
-		if result != expected[i] {
-			t.Errorf("For case v=%d and j=%d, expected %d for i=%d; got %d",
-				v, j, expected[i], i, result)
+	BitPairs2(v, j, func(k int, kp int) {
+		for _, result := range []int{k, kp} {
+			if result != expected[i] {
+				t.Errorf("For case v=%d and j=%d, expected %d for i=%d; got %d",
+					v, j, expected[i], i, result)
+			}
+			i++
 		}
-		i++
-	}
+	})
 
 	if i != len(expected) {
 		t.Errorf("For case v=%d and j=%d, expected %d results; got %d",
 			v, j, len(expected), i)
 	}
-
 }
 
 func TestMaximalSubcubes2(t *testing.T) {
@@ -65,17 +63,16 @@ func TestMaximalSubcubes2(t *testing.T) {
 
 func testMaximalSubcubes2(t *testing.T, n int, v []int, expected []int) {
 
-	results := make(chan int)
-	go MaximalSubcubes2(n, v, results)
-
 	i := 0
-	for result := range results {
-		if result != expected[i] {
-			t.Errorf("For case v=%d and n=%d, expected %d for i=%d; got %d",
-				v, n, expected[i], i, result)
+	MaximalSubcubes2(n, v, func(a int, b int) {
+		for _, result := range []int{a, b} {
+			if result != expected[i] {
+				t.Errorf("For case v=%d and n=%d, expected %d for i=%d; got %d",
+					v, n, expected[i], i, result)
+			}
+			i++
 		}
-		i++
-	}
+	})
 
 	if i != len(expected) {
 		t.Errorf("For case v=%d and n=%d, expected %d results; got %d",
@@ -92,11 +89,7 @@ func BenchmarkMaximalSubcubes2(b *testing.B) {
 				for i := range v {
 					v[i] = i
 				}
-				results := make(chan int)
-				go MaximalSubcubes2(n, v, results)
-				// Discard the single returned pair
-				<-results
-				<-results
+				MaximalSubcubes2(n, v, func(a int, b int) {})
 			}
 		})
 	}
