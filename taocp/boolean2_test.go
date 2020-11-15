@@ -5,28 +5,28 @@ import (
 	"testing"
 )
 
-// "random" function 7.1.1-(22)
-var F22 = []int{0, 1, 4, 7, 12, 13, 14, 15}
-var F22N = 4
-var F22Subcubes = []int{
-	1, 0, //  000*
-	3, 12, // 11**
-	4, 0, //  0*00
-	8, 4, //  *100
-	8, 7} //  *111
+// // "random" function 7.1.1-(22)
+// var F22 = []int{0, 1, 4, 7, 12, 13, 14, 15}
+// var F22N = 4
+// var F22Subcubes = []int{
+// 	1, 0, //  000*
+// 	3, 12, // 11**
+// 	4, 0, //  0*00
+// 	8, 4, //  *100
+// 	8, 7} //  *111
 
-func TestBitPairs(t *testing.T) {
+func TestBitPairs2(t *testing.T) {
 
-	testBitPairs(t, F22, 0, []int{0, 1, 4, 5, 6, 7})
-	testBitPairs(t, F22, 1, []int{4, 6, 5, 7})
-	testBitPairs(t, F22, 2, []int{0, 2})
-	testBitPairs(t, F22, 3, []int{2, 4, 3, 7})
+	testBitPairs2(t, F22, 0, []int{0, 1, 4, 5, 6, 7})
+	testBitPairs2(t, F22, 1, []int{4, 6, 5, 7})
+	testBitPairs2(t, F22, 2, []int{0, 2})
+	testBitPairs2(t, F22, 3, []int{2, 4, 3, 7})
 }
 
-func testBitPairs(t *testing.T, v []int, j int, expected []int) {
+func testBitPairs2(t *testing.T, v []int, j int, expected []int) {
 
 	results := make(chan int)
-	go BitPairs(v, j, results)
+	go BitPairs2(v, j, results)
 
 	i := 0
 	for result := range results {
@@ -44,29 +44,29 @@ func testBitPairs(t *testing.T, v []int, j int, expected []int) {
 
 }
 
-func TestMaximalSubcubes(t *testing.T) {
+func TestMaximalSubcubes2(t *testing.T) {
 
 	var v []int
 	var expected []int
 
 	v = []int{1, 2, 4, 8}
 	expected = []int{0, 1, 0, 2, 0, 4, 0, 8}
-	testMaximalSubcubes(t, 4, v, expected)
+	testMaximalSubcubes2(t, 4, v, expected)
 
-	testMaximalSubcubes(t, F22N, F22, F22Subcubes)
+	testMaximalSubcubes2(t, F22N, F22, F22Subcubes)
 
 	v = make([]int, 32)
 	for i := range v {
 		v[i] = i
 	}
 	expected = []int{31, 0}
-	testMaximalSubcubes(t, 5, v, expected)
+	testMaximalSubcubes2(t, 5, v, expected)
 }
 
-func testMaximalSubcubes(t *testing.T, n int, v []int, expected []int) {
+func testMaximalSubcubes2(t *testing.T, n int, v []int, expected []int) {
 
 	results := make(chan int)
-	go MaximalSubcubes(n, v, results)
+	go MaximalSubcubes2(n, v, results)
 
 	i := 0
 	for result := range results {
@@ -83,7 +83,7 @@ func testMaximalSubcubes(t *testing.T, n int, v []int, expected []int) {
 	}
 }
 
-func BenchmarkMaximalSubcubes(b *testing.B) {
+func BenchmarkMaximalSubcubes2(b *testing.B) {
 	for n := 4; n < 15; n += 2 {
 		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
@@ -93,7 +93,7 @@ func BenchmarkMaximalSubcubes(b *testing.B) {
 					v[i] = i
 				}
 				results := make(chan int)
-				go MaximalSubcubes(n, v, results)
+				go MaximalSubcubes2(n, v, results)
 				// Discard the single returned pair
 				<-results
 				<-results
