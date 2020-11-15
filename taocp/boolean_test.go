@@ -42,3 +42,42 @@ func testBitPairs(t *testing.T, v []int, j int, expected []int) {
 	}
 
 }
+
+func TestMaximalSubcubes(t *testing.T) {
+
+	var v []int
+	var expected []int
+
+	v = []int{1, 2, 4, 8}
+	expected = []int{0, 1, 0, 2, 0, 4, 0, 8}
+	testMaximalSubcubes(t, 4, v, expected)
+
+	testMaximalSubcubes(t, F22N, F22, F22Subcubes)
+
+	v = make([]int, 32)
+	for i := range v {
+		v[i] = i
+	}
+	expected = []int{31, 0}
+	testMaximalSubcubes(t, 5, v, expected)
+}
+
+func testMaximalSubcubes(t *testing.T, n int, v []int, expected []int) {
+
+	results := make(chan int)
+	go MaximalSubcubes(n, v, results)
+
+	i := 0
+	for result := range results {
+		if result != expected[i] {
+			t.Errorf("For case v=%d and n=%d, expected %d for i=%d; got %d",
+				v, n, expected[i], i, result)
+		}
+		i++
+	}
+
+	if i != len(expected) {
+		t.Errorf("For case v=%d and n=%d, expected %d results; got %d",
+			v, n, len(expected), i)
+	}
+}

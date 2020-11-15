@@ -63,3 +63,95 @@ func BitPairs(v []int, j int, out chan int) {
 		k++
 	}
 }
+
+// MaximalSubcubes returns all maximal subcubes (aka prime implicant) of v.
+// Subcubes are represented as tuples (a, b) where a records the position of
+// the asterisks and b records the bits in non-* positions. n is the size in
+// bits of bitstrings in v. v is the list of implicants (sorted in ascending
+// order) represented as integer bitstrings.
+//
+// Exercise 30.
+func MaximalSubcubes(n int, v []int, out chan int) {
+
+	defer close(out)
+
+	// P1. [Initialize.]
+	m := len(v)
+
+	// The current value of a being processed
+	A := 0
+
+	// Stack S contains |A| + 1 lists of subcubes; each list contains subcubes
+	// with the same a value, in increasing order of a. This includes all lists
+	// with wildcards plus the first list with a=0, equivalent to the input v
+	// list of bitstrings
+	S := make([]int, 2*m+n)
+
+	// Tag bits indicating a matching j-buddy, for each corresponding subcube
+	// in S
+	T := make([]int, 2*m+n)
+
+	// Determine the j-buddy pairs for the initial subcube list
+	for j := 0; j < n; j++ {
+		pairs := make(chan int)
+		go BitPairs(v, j, pairs)
+		for k := range pairs {
+			kp := <-pairs
+			T[k] |= (1 << j)
+			T[kp] |= (1 << j)
+		}
+	}
+	// For each subcube, either output it as maximal or advance it
+	// (with j-buddy) to the next subcube list, with additional wildcard
+	r, s, t := 0, 0, 0
+	for s < m {
+		if T[s] == 0 {
+			out <- 0
+			out <- v[s]
+		} else {
+			S[t] = v[s]
+			T[t] = T[s]
+			t++
+		}
+		s++
+	}
+	S[t] = 0
+
+	for {
+		// P2. [Advance A.]
+		j := 0
+		if S[t] == t { // the topmost list is empty
+			for j < n && A&(1<<j) == 0 {
+				j++
+			}
+		}
+		for j < n && A&(1<<j) != 0 {
+			t = S[t] - 1
+			A -= (1 << j)
+			j++
+		}
+		if j >= n {
+			return
+		}
+		A += (1 << j)
+
+		// P3. [Generate list A.]
+		r, s = t, S[t]
+		pairs := make(chan int)
+		go BitPairs(S[s:r], j, pairs)
+		for k := range pairs {
+			kp := <-pairs
+			x := (T[s+k] & T[s+kp]) - (1 << j)
+			if x == 0 {
+				out <- A
+				out <- S[s+k]
+			} else {
+				t++
+				S[t] = S[s+k]
+				T[t] = x
+			}
+		}
+		t++
+		S[t] = r + 1
+	}
+}
