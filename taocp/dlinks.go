@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"fmt"
+	"strconv"
 )
 
 // Explore Dancing Links from The Art of Computer Programming, Volume 4,
@@ -448,5 +449,56 @@ X8:
 	}
 	level--
 	goto X6
+}
 
+// LangfordPairs uses ExactCover to return solutions for Langford pairs
+// of n values
+func LangfordPairs(n int, stats *Stats, visit func(solution []int)) {
+
+	// Build the list of items
+	items := make([]string, 3*n)
+	for i := 0; i < n; i++ {
+		items[i] = strconv.Itoa(i + 1)
+	}
+	for i := 0; i < 2*n; i++ {
+		items[n+i] = "s" + strconv.Itoa(i)
+	}
+
+	// Build the list of options
+	options := make([][]string, 0)
+	for i := 1; i <= n; i++ {
+		j := 1
+		k := j + i + 1
+		for k <= 2*n {
+			// Exercise 15: Omit the reversals
+			x := 0
+			if n%2 == 0 {
+				x = 1
+			}
+			if i != n-x || j <= n/2 {
+				options = append(options,
+					[]string{
+						strconv.Itoa(i),
+						"s" + strconv.Itoa(j-1),
+						"s" + strconv.Itoa(k-1),
+					})
+			}
+			j++
+			k++
+		}
+	}
+
+	// Generate solutions
+	ExactCover(items, options, []string{}, stats,
+		func(solution [][]string) {
+			x := make([]int, 2*n)
+			for _, option := range solution {
+				value, _ := strconv.Atoi(option[0])
+				i, _ := strconv.Atoi(string(option[1][1]))
+				j, _ := strconv.Atoi(string(option[2][1]))
+
+				x[i], x[j] = value, value
+			}
+			visit(x)
+		})
 }
