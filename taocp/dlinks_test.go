@@ -86,3 +86,59 @@ func BenchmarkLangfordPairs(b *testing.B) {
 		})
 	}
 }
+
+func TestNQueens(t *testing.T) {
+
+	expected0 := []string{
+		"r1", "c2",
+		"r2", "c4",
+		"r3", "c1",
+		"r4", "c3",
+	}
+
+	expected1 := []string{
+		"r1", "c3",
+		"r2", "c1",
+		"r3", "c4",
+		"r4", "c2",
+	}
+
+	count := 0
+	NQueens(4, nil,
+		func(solution []string) {
+			if count == 0 && !reflect.DeepEqual(solution, expected0) {
+				t.Errorf("Expected %v; got %v", expected0, solution)
+			}
+			if count == 1 && !reflect.DeepEqual(solution, expected1) {
+				t.Errorf("Expected %v; got %v", expected1, solution)
+			}
+			count++
+		})
+
+	if count != 2 {
+		t.Errorf("Expected 1 solution; got %d", count)
+	}
+
+	testNQueens(t, 8, 92)
+	testNQueens(t, 11, 2680)
+}
+
+func testNQueens(t *testing.T, n int, expected int) {
+
+	count := 0
+	NQueens(n, nil, func(solution []string) { count++ })
+
+	if count != expected {
+		t.Errorf("Expected 1 solution; got %d", count)
+	}
+}
+
+func BenchmarkNQueens(b *testing.B) {
+	for _, n := range []int{8, 11, 13} {
+		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
+			for repeat := 0; repeat < b.N; repeat++ {
+				NQueens(n, nil, func([]string) {})
+			}
+		})
+	}
+}

@@ -502,3 +502,55 @@ func LangfordPairs(n int, stats *Stats, visit func(solution []int)) {
 			visit(x)
 		})
 }
+
+// NQueens uses ExactCover to return solutions for the n-queens problem
+func NQueens(n int, stats *Stats, visit func(solution []string)) {
+
+	items := make([]string, 2*n)
+	sitems := make([]string, 4*n-2)
+	options := make([][]string, n*n)
+
+	k := 0
+	for i := 0; i < n; i++ {
+		row := "r" + strconv.Itoa(i+1)
+		items[i] = row
+		for j := 0; j < n; j++ {
+			col := "c" + strconv.Itoa(j+1)
+			if i == n-1 {
+				items[j+n] = col
+			}
+			upDiag := "a" + strconv.Itoa(i+j+2)
+			downDiag := "b" + strconv.Itoa(i-j)
+
+			var x int
+
+			for x = 0; sitems[x] != upDiag && sitems[x] != ""; x++ {
+			}
+			if sitems[x] == "" {
+				sitems[x] = upDiag
+			}
+
+			for x = 0; sitems[x] != downDiag && sitems[x] != ""; x++ {
+			}
+			if sitems[x] == "" {
+				sitems[x] = downDiag
+			}
+
+			options[k] = []string{row, col, upDiag, downDiag}
+			k++
+		}
+	}
+
+	// Generate solutions
+	ExactCover(items, options, sitems, stats,
+		func(solution [][]string) {
+			x := make([]string, 2*n)
+			i := 0
+			for _, option := range solution {
+				x[i] = option[0]   // row
+				x[i+1] = option[1] // col
+				i += 2
+			}
+			visit(x)
+		})
+}
