@@ -561,3 +561,88 @@ func NQueens(n int, stats *Stats, visit func(solution []string) bool) {
 			return visit(x)
 		})
 }
+
+// Sudoku uses ExactCover to solve 9x9 sudoku puzzles
+func Sudoku(grid [9][9]int, stats *Stats,
+	visit func(solution [9][9]int) bool) {
+
+	var (
+		i int // row number
+		j int // column number
+		k int // cell value in (row,column)
+		x int // 3x3 box
+	)
+
+	// Build the [p, r, c, b] option
+	buildOption := func() []string {
+		return []string{
+			"p" + strconv.Itoa(i) + strconv.Itoa(j), // piece
+			"r" + strconv.Itoa(i) + strconv.Itoa(k), // piece in row
+			"c" + strconv.Itoa(j) + strconv.Itoa(k), // piece in column
+			"x" + strconv.Itoa(x) + strconv.Itoa(k), // piece in 3x3 box
+		}
+	}
+
+	// Get the known items (non zero) provided in the grid
+	knownItems := make(map[string]bool)
+	for i = 0; i < 9; i++ {
+		for j = 0; j < 9; j++ {
+			k = grid[i][j]
+			if k > 0 {
+				x = 3*(i/3) + (j / 3)
+				for _, item := range buildOption() {
+					knownItems[item] = true
+				}
+			}
+		}
+	}
+
+	// Build the items and options from the unknown values
+	itemSet := make(map[string]bool)
+	options := make([][]string, 0)
+	for i = 0; i < 9; i++ {
+		for j = 0; j < 9; j++ {
+			x = 3*(i/3) + (j / 3)
+			for k = 1; k < 10; k++ {
+				option := buildOption()
+				if !(knownItems[option[0]] || knownItems[option[1]] ||
+					knownItems[option[2]] || knownItems[option[3]]) {
+					for _, item := range option {
+						itemSet[item] = true
+					}
+					options = append(options, option)
+				}
+			}
+		}
+	}
+
+	items := make([]string, len(itemSet))
+	i = 0
+	for item := range itemSet {
+		items[i] = item
+		i++
+	}
+
+	// Generate solutions
+	ExactCover(items, options, []string{}, stats,
+		func(solution [][]string) bool {
+			// Make a copy of the original grid
+			var x [9][9]int
+			for i := 0; i < 9; i++ {
+				for j := 0; j < 9; j++ {
+					x[i][j] = grid[i][j]
+				}
+			}
+
+			// Fill in the solution values
+			for _, option := range solution {
+				i, _ := strconv.Atoi(string(option[0][1]))
+				j, _ := strconv.Atoi(string(option[0][2]))
+				k, _ := strconv.Atoi(string(option[1][2]))
+
+				x[i][j] = k
+			}
+
+			return visit(x)
+		})
+}
