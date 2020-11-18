@@ -29,14 +29,15 @@ type Stats struct {
 // Arguments:
 // items     -- sorted list of primary items
 // options   -- list of list of options; every option must contain at least one
-// 			 primary item
+// 			    primary item
 // secondary -- sorted list of secondary items
-// stats     -- dictionary to accumulate runtime statistics
-// progress  -- display progress report, every 'progress' number of level
-// 			 entries
+// stats     -- structure to capture runtime statistics and provide feedback on
+//              progress
+// visit     -- function called with each discovered solution, returns true
+//              if the search should resume
 //
 func ExactCover(items []string, options [][]string, secondary []string,
-	stats *Stats, visit func(solution [][]string)) {
+	stats *Stats, visit func(solution [][]string) bool) {
 
 	var (
 		n1    int      // number of primary items
@@ -239,7 +240,7 @@ func ExactCover(items []string, options [][]string, secondary []string,
 		fmt.Println("---")
 	}
 
-	lvisit := func() {
+	lvisit := func() bool {
 		// Iterate over the options
 		options := make([][]string, 0)
 		for i, p := range state[0:level] {
@@ -256,7 +257,7 @@ func ExactCover(items []string, options [][]string, secondary []string,
 			}
 		}
 
-		visit(options)
+		return visit(options)
 	}
 
 	// mrv selects the next item to try using the Minimum Remaining
@@ -369,7 +370,13 @@ X2:
 		if stats != nil {
 			stats.Solutions++
 		}
-		lvisit()
+		resume := lvisit()
+		if !resume {
+			if debug {
+				fmt.Println("X2. Halting the search")
+			}
+			return
+		}
 		goto X8
 	}
 
@@ -453,7 +460,7 @@ X8:
 
 // LangfordPairs uses ExactCover to return solutions for Langford pairs
 // of n values
-func LangfordPairs(n int, stats *Stats, visit func(solution []int)) {
+func LangfordPairs(n int, stats *Stats, visit func(solution []int) bool) {
 
 	// Build the list of items
 	items := make([]string, 3*n)
@@ -490,7 +497,7 @@ func LangfordPairs(n int, stats *Stats, visit func(solution []int)) {
 
 	// Generate solutions
 	ExactCover(items, options, []string{}, stats,
-		func(solution [][]string) {
+		func(solution [][]string) bool {
 			x := make([]int, 2*n)
 			for _, option := range solution {
 				value, _ := strconv.Atoi(option[0])
@@ -499,12 +506,12 @@ func LangfordPairs(n int, stats *Stats, visit func(solution []int)) {
 
 				x[i], x[j] = value, value
 			}
-			visit(x)
+			return visit(x)
 		})
 }
 
 // NQueens uses ExactCover to return solutions for the n-queens problem
-func NQueens(n int, stats *Stats, visit func(solution []string)) {
+func NQueens(n int, stats *Stats, visit func(solution []string) bool) {
 
 	items := make([]string, 2*n)
 	sitems := make([]string, 4*n-2)
@@ -543,7 +550,7 @@ func NQueens(n int, stats *Stats, visit func(solution []string)) {
 
 	// Generate solutions
 	ExactCover(items, options, sitems, stats,
-		func(solution [][]string) {
+		func(solution [][]string) bool {
 			x := make([]string, 2*n)
 			i := 0
 			for _, option := range solution {
@@ -551,6 +558,6 @@ func NQueens(n int, stats *Stats, visit func(solution []string)) {
 				x[i+1] = option[1] // col
 				i += 2
 			}
-			visit(x)
+			return visit(x)
 		})
 }
