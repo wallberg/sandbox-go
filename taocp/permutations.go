@@ -1,6 +1,9 @@
 package taocp
 
-import "sort"
+import (
+	"fmt"
+	"sort"
+)
 
 // Explore Permutations from The Art of Computer Programming, Volume 4A,
 // Combinatorial Algorithms, Part 1, 2011
@@ -34,4 +37,13 @@ func NextPermutation(x sort.Interface) bool {
 		l--
 	}
 	return true
+}
+
+func main() {
+	x := []int{0, 1, 1, 3} // expect 12 permutations
+	fmt.Println(0, x)
+
+	for i := 1; NextPermutation(sort.IntSlice(x)); i++ {
+		fmt.Println(i, x)
+	}
 }
