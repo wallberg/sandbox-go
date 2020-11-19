@@ -337,3 +337,54 @@ func BenchmarkSudoku(b *testing.B) {
 		}
 	})
 }
+
+var (
+	cards1 = [9][3][3]int{
+		{{1, 0, 0}, {0, 2, 0}, {8, 0, 3}},
+		{{2, 0, 0}, {0, 3, 0}, {1, 0, 4}},
+		{{3, 0, 0}, {0, 4, 0}, {1, 0, 5}},
+		{{4, 0, 0}, {0, 5, 0}, {2, 0, 6}},
+		{{5, 0, 0}, {0, 6, 0}, {4, 0, 7}},
+		{{6, 0, 0}, {0, 7, 0}, {4, 0, 8}},
+		{{7, 0, 0}, {0, 8, 0}, {5, 0, 9}},
+		{{8, 0, 0}, {0, 9, 0}, {7, 0, 1}},
+		{{9, 0, 0}, {0, 1, 0}, {7, 0, 2}},
+	}
+
+	cards2 = [9][3][3]int{
+		{{1, 0, 0}, {0, 2, 0}, {9, 0, 3}},
+		{{2, 0, 0}, {0, 3, 0}, {9, 0, 4}},
+		{{3, 0, 0}, {0, 4, 0}, {8, 0, 5}},
+		{{4, 0, 0}, {0, 5, 0}, {1, 0, 6}},
+		{{5, 0, 0}, {0, 6, 0}, {3, 0, 7}},
+		{{6, 0, 0}, {0, 7, 0}, {5, 0, 8}},
+		{{7, 0, 0}, {0, 8, 0}, {2, 0, 9}},
+		{{8, 0, 0}, {0, 9, 0}, {6, 0, 1}},
+		{{9, 0, 0}, {0, 1, 0}, {4, 0, 2}},
+	}
+	cards2Expected = []int{0, 3, 8, 4, 1, 2, 6, 7, 5}
+)
+
+func TestSudokuCards(t *testing.T) {
+
+	count := 0
+
+	SudokuCards(cards2, nil,
+		func(solution []int) bool {
+			if !reflect.DeepEqual(solution, cards2Expected) {
+				t.Errorf("Expected %v; got %v", cards2Expected, solution)
+			}
+			count++
+			return true
+		})
+
+	if count != 1 {
+		t.Errorf("Expected 1 solution; got %d", count)
+	}
+}
+
+func BenchmarkSudokuCards(b *testing.B) {
+	for repeat := 0; repeat < b.N; repeat++ {
+		SudokuCards(cards2, nil, func([]int) bool { return true })
+	}
+}

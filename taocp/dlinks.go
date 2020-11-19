@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -645,4 +646,73 @@ func Sudoku(grid [9][9]int, stats *Stats,
 
 			return visit(x)
 		})
+}
+
+// Exercise 7.2.2.1-66 Construct sudoku puzzles by placing nine given cars in a
+// 3x3 array
+
+// SudokuCards constructs sudoku puzzles with one solution, given nine 3x3
+// cards to order.
+func SudokuCards(cards [9][3][3]int, stats *Stats,
+	visit func(solution []int) bool) {
+
+	// Compare card1 and card2 for less than (-1), equal (0),
+	// or greater than (1)
+	cmp := func(card1 [3][3]int, card2 [3][3]int) int {
+		for i := 0; i < 3; i++ {
+			for j := 0; j < 3; j++ {
+				if card1[i][j] < card2[i][j] {
+					return -1 // less than
+				}
+				if card1[i][j] > card2[i][j] {
+					return 1 // greater than
+				}
+			}
+		}
+		return 0 // equal
+	}
+
+	// Iterate over permutations of the card ordering. Each card ordering has
+	// 3!3! symmetric orderings which produce identical results, so use
+	// ordering constraints to produce only the first ordering
+	perm := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+
+	// ordering constraint: fix card 0 to the position 0
+	permSort := sort.IntSlice(perm[1:])
+
+	for NextPermutation(permSort) {
+
+		// ordering constraint: ensure card at position 4 is less than cards at
+		// positions 5, 7, and 8
+		if !(cmp(cards[perm[4]], cards[perm[5]]) < 0 &&
+			cmp(cards[perm[4]], cards[perm[7]]) < 0 &&
+			cmp(cards[perm[4]], cards[perm[8]]) < 0) {
+			continue
+		}
+
+		// Build the Sudoku grid from the provided card order
+		var grid [9][9]int
+
+		for x, card := range perm {
+			i, j := (x/3)*3, (x%3)*3
+			for iDelta := 0; iDelta < 3; iDelta++ {
+				for jDelta := 0; jDelta < 3; jDelta++ {
+					grid[i+iDelta][j+jDelta] = cards[card][iDelta][jDelta]
+				}
+			}
+		}
+
+		// Count the number of Sudoku solutions for this card ordering
+		count := 0
+
+		Sudoku(grid, stats,
+			func(solution [9][9]int) bool {
+				count++
+				return true
+			})
+
+		if count == 1 {
+			visit(perm)
+		}
+	}
 }
