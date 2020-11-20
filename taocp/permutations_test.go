@@ -2,11 +2,10 @@ package taocp
 
 import (
 	"reflect"
-	"sort"
 	"testing"
 )
 
-func TestNextPermutation(t *testing.T) {
+func TestPermutations(t *testing.T) {
 
 	expected := [][]int{
 		{1, 2, 2, 3},
@@ -26,17 +25,27 @@ func TestNextPermutation(t *testing.T) {
 	x := []int{1, 2, 2, 3}
 
 	solution := make([][]int, 0)
-	cp := make([]int, len(x))
-	copy(cp, x)
-	solution = append(solution, cp)
-
-	for i := 1; NextPermutation(sort.IntSlice(x)); i++ {
-		cp := make([]int, len(x))
-		copy(cp, x)
-		solution = append(solution, cp)
-	}
+	Permutations(x, func() bool {
+		permCopy := make([]int, len(x))
+		copy(permCopy, x)
+		solution = append(solution, permCopy)
+		return true
+	})
 
 	if !reflect.DeepEqual(solution, expected) {
 		t.Errorf("Expected %v; got %v", expected, solution)
 	}
+
+	x = []int{1, 2, 3, 4, 5, 6, 7, 8, 9}
+
+	count := 0
+	Permutations(x, func() bool {
+		count++
+		return true
+	})
+
+	if count != 362880 {
+		t.Errorf("Expected 362880 permutations; got %d", count)
+	}
+
 }

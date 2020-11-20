@@ -2,7 +2,6 @@ package taocp
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 )
 
@@ -678,16 +677,14 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 	perm := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
 
 	// ordering constraint: fix card 0 to the position 0
-	permSort := sort.IntSlice(perm[1:])
-
-	for NextPermutation(permSort) {
+	Permutations(perm[1:], func() bool {
 
 		// ordering constraint: ensure card at position 4 is less than cards at
 		// positions 5, 7, and 8
 		if !(cmp(cards[perm[4]], cards[perm[5]]) < 0 &&
 			cmp(cards[perm[4]], cards[perm[7]]) < 0 &&
 			cmp(cards[perm[4]], cards[perm[8]]) < 0) {
-			continue
+			return true
 		}
 
 		// Build the Sudoku grid from the provided card order
@@ -714,5 +711,7 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 		if count == 1 {
 			visit(perm)
 		}
-	}
+
+		return true
+	})
 }

@@ -1,21 +1,30 @@
 package taocp
 
-import (
-	"fmt"
-	"sort"
-)
+import "sort"
 
 // Explore Permutations from The Art of Computer Programming, Volume 4A,
 // Combinatorial Algorithms, Part 1, 2011
 //
 // §7.2.1.2 Generating All Permutations
 
-// NextPermutation generates the next permutation of the sortable collection x
+// Permutations calls the visit function once for every permutation >= x, until
+// the permutations are exhausted or visit returns false. The contents of x are
+// changed in place.
+func Permutations(x []int, visit func() bool) {
+	xSort := sort.IntSlice(x)
+
+	another := visit()
+	for another && nextPermutation(xSort) {
+		another = visit()
+	}
+}
+
+// nextPermutation generates the next permutation of the sortable collection x
 // in lexical order.  It returns false if the permutations are exhausted.
 // Algorithm L, p. 319
 //
 // Take from https://play.golang.org/p/ljft9xhOEn
-func NextPermutation(x sort.Interface) bool {
+func nextPermutation(x sort.Interface) bool {
 	n := x.Len() - 1
 	if n < 1 {
 		return false
@@ -37,13 +46,4 @@ func NextPermutation(x sort.Interface) bool {
 		l--
 	}
 	return true
-}
-
-func main() {
-	x := []int{0, 1, 1, 3} // expect 12 permutations
-	fmt.Println(0, x)
-
-	for i := 1; NextPermutation(sort.IntSlice(x)); i++ {
-		fmt.Println(i, x)
-	}
 }
