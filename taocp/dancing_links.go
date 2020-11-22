@@ -3,6 +3,7 @@ package taocp
 import (
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Explore Dancing Links from The Art of Computer Programming, Volume 4,
@@ -471,6 +472,555 @@ X8:
 	}
 	level--
 	goto X6
+}
+
+// ExactCoverColors implements Algorithm C, exact covering with colors via
+// dancing links.
+//
+// Arguments:
+// items     -- sorted list of primary items
+// options   -- list of list of options; every option must contain at least one
+// 			    primary item
+// secondary -- sorted list of secondary items; can contain an optional
+//              "color" appended after a colon, eg "sitem:color"
+// stats     -- structure to capture runtime statistics and provide feedback on
+//              progress
+// visit     -- function called with each discovered solution, returns true
+//              if the search should continue
+//
+func ExactCoverColors(items []string, options [][]string, secondary []string,
+	stats *Stats, visit func(solution [][]string) bool) {
+
+	var (
+		n1     int      // number of primary items
+		n2     int      // number of secondary items
+		n      int      // total number of items
+		name   []string // name of the item
+		llink  []int    // right link of the item
+		rlink  []int    // left link of the item
+		top    []int
+		llen   []int
+		ulink  []int
+		dlink  []int
+		color  []int    // color of a particular item in option
+		colors []string // map of color names, key is the index starting at 1
+		level  int
+		state  []int // search state
+		debug  bool  // is debug enabled?
+	)
+
+	dump := func() {
+		fmt.Println("----------------------")
+
+		// Tables
+		fmt.Println("  name", name)
+		fmt.Println("  llink", llink)
+		fmt.Println("  rlink", rlink)
+		fmt.Println("  top", top)
+		fmt.Println("  llen", llen)
+		fmt.Println("  ulink", ulink)
+		fmt.Println("  dlink", dlink)
+		fmt.Println("  color", color)
+		fmt.Print("  colors")
+		for i, colorName := range colors {
+			if i > 0 {
+				fmt.Printf(" %d=%s", i, colorName)
+			}
+		}
+		fmt.Println()
+
+		// Remaining items
+		fmt.Print("  items:")
+		i := 0
+		for rlink[i] != 0 {
+			i = rlink[i]
+			fmt.Print(" ", name[i])
+		}
+		fmt.Println()
+
+		// Selected options
+		for i, p := range state[0:level] {
+			fmt.Printf("  option: i=%d, p=%d (", i, p)
+			// Move back to first element in the option
+			for top[p-1] > 0 {
+				p--
+			}
+			// Iterate over elements in the option
+			q := p
+			for top[q] > 0 {
+				fmt.Print(" ", name[top[q]])
+				q++
+			}
+			fmt.Println(" )")
+		}
+		fmt.Println("----------------------")
+
+	}
+
+	initialize := func() {
+		n1 = len(items)
+		n2 = len(secondary)
+		n = n1 + n2
+
+		if stats != nil {
+			stats.Theta = stats.Delta
+			stats.MaxLevel = -1
+			if stats.Levels == nil {
+				stats.Levels = make([]int, n)
+			} else {
+				for len(stats.Levels) < n {
+					stats.Levels = append(stats.Levels, 0)
+				}
+			}
+			debug = stats.Debug
+		}
+
+		// Fill out the item tables
+		name = make([]string, n+2)
+		llink = make([]int, n+2)
+		rlink = make([]int, n+2)
+
+		for j, item := range append(items, secondary...) {
+			i := j + 1
+			name[i] = item
+			llink[i] = i - 1
+			rlink[i-1] = i
+		}
+
+		// two doubly linked lists, primary and secondary
+		// head of the primary list is at i=0
+		// head of the secondary list is at i=n+1
+		llink[n+1] = n
+		rlink[n] = n + 1
+		llink[n1+1] = n + 1
+		rlink[n+1] = n1 + 1
+		llink[0] = n1
+		rlink[n1] = 0
+
+		// Fill out the option tables
+		nOptions := len(options)
+		nOptionItems := 0
+		for _, option := range options {
+			nOptionItems += len(option)
+		}
+		size := n + 1 + nOptions + 1 + nOptionItems
+
+		top = make([]int, size)
+		llen = top[0 : n+1] // first n+1 elements of top
+		ulink = make([]int, size)
+		dlink = make([]int, size)
+		color = make([]int, size)
+		colors = make([]string, 1)
+
+		// Set empty list for each item
+		for i := 1; i <= n; i++ {
+			llen[i] = 0
+			ulink[i] = i
+			dlink[i] = i
+		}
+
+		// Insert each of the options and their items
+		x := n + 1
+		spacer := 0
+		top[x] = spacer
+		spacerX := x
+
+		// Iterate over each option
+		for _, option := range options {
+			// Iterate over each item in this option
+			for _, item := range option {
+				x++
+
+				// Extract the color
+				itemColor := 0 // 0 if there is no color
+				iColon := strings.Index(item, ":")
+				if iColon > -1 {
+					itemColorName := item[iColon+1:]
+					item = item[:iColon]
+
+					// Insert the color name into color[]
+					for itemColor = 1; itemColor < len(colors); itemColor++ {
+						if itemColorName == colors[itemColor] {
+							break
+						}
+					}
+					if itemColor == len(colors) {
+						// Not found, add new color name entry
+						colors = append(colors, itemColorName)
+					}
+				}
+
+				// Insert the item into name[]
+				i := 0
+				for _, value := range name {
+					if value == item {
+						break
+					}
+					i++
+				}
+				top[x] = i
+				color[x] = itemColor
+
+				// Insert into the option list for this item
+				llen[i]++ // increase the size by one
+				head := i
+				tail := i
+				for dlink[tail] != head {
+					tail = dlink[tail]
+				}
+
+				dlink[tail] = x
+				ulink[x] = tail
+
+				ulink[head] = x
+				dlink[x] = head
+			}
+
+			// Insert spacer at end of each option
+			dlink[spacerX] = x
+			x++
+			ulink[x] = spacerX + 1
+
+			spacer--
+			top[x] = spacer
+			spacerX = x
+		}
+
+		level = 0
+		state = make([]int, nOptions)
+
+		if debug {
+			dump()
+		}
+	}
+
+	showProgress := func() {
+
+		est := 0.0 // estimate of percentage done
+		tcum := 1
+
+		fmt.Printf("Current level %d of max %d\n", level, stats.MaxLevel)
+
+		// Iterate over the options
+		for _, p := range state[0:level] {
+			// Cyclically gather the items in the option, beginning at p
+			fmt.Print("  ")
+			q := p
+			for {
+				fmt.Print(name[top[q]] + " ")
+				q++
+				if top[q] <= 0 {
+					q = ulink[q]
+				}
+				if q == p {
+					break
+				}
+			}
+
+			// Get position stats for this option
+			i := top[p]
+			q = dlink[i]
+			k := 1
+			for q != p && q != i {
+				q = dlink[q]
+				k++
+			}
+
+			if q != i {
+				fmt.Printf(" %d of %d\n", k, llen[i])
+				tcum *= llen[i]
+				est += float64(k-1) / float64(tcum)
+			} else {
+				fmt.Println(" not in this list")
+			}
+		}
+
+		est += 1.0 / float64(2*tcum)
+
+		fmt.Printf("  solutions=%d, nodes=%d, est=%4.4f\n",
+			stats.Solutions, stats.Nodes, est)
+		fmt.Println("---")
+	}
+
+	lvisit := func() bool {
+		// Iterate over the options
+		options := make([][]string, 0)
+		for i, p := range state[0:level] {
+			options = append(options, make([]string, 0))
+			// Move back to first element in the option
+			for top[p-1] > 0 {
+				p--
+			}
+			// Iterate over elements in the option
+			q := p
+			for top[q] > 0 {
+				name := name[top[q]]
+				// if color[q] > 0 {
+				// 	name += ":" + colors[color[q]]
+				// }
+				options[i] = append(options[i], name)
+				q++
+			}
+		}
+
+		return visit(options)
+	}
+
+	// mrv selects the next item to try using the Minimum Remaining
+	// Values heuristic.
+	mrv := func() int {
+
+		i := 0
+		theta := -1
+		p := rlink[0]
+		for p != 0 {
+			lambda := llen[p]
+			if lambda < theta || theta == -1 {
+				theta = lambda
+				i = p
+				if theta == 0 {
+					return i
+				}
+			}
+			p = rlink[p]
+		}
+
+		return i
+	}
+
+	// hide removes an option from further consideration
+	hide := func(p int) {
+		// iterate over the items in this option
+		q := p + 1
+		for q != p {
+			x := top[q]
+			u, d := ulink[q], dlink[q]
+			if x <= 0 {
+				q = u // q was a spacer
+			} else {
+				if color[q] >= 0 {
+					dlink[u], ulink[d] = d, u
+					llen[x]--
+				}
+				q++
+			}
+		}
+	}
+
+	unhide := func(p int) {
+		q := p - 1
+		for q != p {
+			x := top[q]
+			u, d := ulink[q], dlink[q]
+			if x <= 0 {
+				q = d // q was a spacer
+			} else {
+				if color[q] >= 0 {
+					dlink[u], ulink[d] = q, q
+					llen[x]++
+				}
+				q--
+			}
+		}
+	}
+
+	// cover removes i from the list of items needing to be covered removes and
+	// hides all of the item's options
+	cover := func(i int) {
+		// hide all of the item's options
+		p := dlink[i]
+		for p != i {
+			hide(p)
+			p = dlink[p]
+		}
+		// remove the item from the list
+		l, r := llink[i], rlink[i]
+		rlink[l], llink[r] = r, l
+	}
+
+	uncover := func(i int) {
+		l, r := llink[i], rlink[i]
+		rlink[l], llink[r] = i, i
+		p := ulink[i]
+		for p != i {
+			unhide(p)
+			p = ulink[p]
+		}
+	}
+
+	purify := func(p int) {
+		c := color[p]
+		i := top[p]
+		q := dlink[i]
+		for q != i {
+			if color[q] == c {
+				color[q] = -1
+			} else {
+				hide(q)
+			}
+			color[i] = c // save the color to be restored later
+			q = dlink[q]
+		}
+	}
+
+	unpurify := func(p int) {
+		c := color[p]
+		i := top[p]
+		q := ulink[i]
+		for q != i {
+			if color[q] < 0 {
+				color[q] = c
+			} else {
+				unhide(q)
+			}
+			q = ulink[q]
+		}
+	}
+
+	commit := func(p int, j int) {
+		if color[p] == 0 {
+			cover(j)
+		}
+		if color[p] > 0 {
+			purify(p)
+		}
+	}
+
+	uncommit := func(p int, j int) {
+		if color[p] == 0 {
+			uncover(j)
+		}
+		if color[p] > 0 {
+			unpurify(p)
+		}
+	}
+	// C1 [Initialize.]
+	initialize()
+
+	var (
+		i int
+		j int
+		p int
+	)
+
+C2:
+	// C2. [Enter level l.]
+	if debug {
+		fmt.Printf("C2. level=%d, x=%v\n", level, state[0:level])
+	}
+
+	if stats != nil {
+		stats.Levels[level]++
+		stats.Nodes++
+
+		if stats.Progress {
+			if level > stats.MaxLevel {
+				stats.MaxLevel = level
+			}
+			if stats.Nodes >= stats.Theta {
+				showProgress()
+				stats.Theta += stats.Delta
+			}
+		}
+	}
+
+	if rlink[0] == 0 {
+		// visit the solution
+		if debug {
+			fmt.Println("C2. Visit the solution")
+		}
+		if stats != nil {
+			stats.Solutions++
+		}
+		resume := lvisit()
+		if !resume {
+			if debug {
+				fmt.Println("C2. Halting the search")
+			}
+			return
+		}
+		goto C8
+	}
+
+	// C3. [Choose i.]
+	i = mrv()
+
+	if debug {
+		fmt.Printf("C3. Choose i=%d (%s)\n", i, name[i])
+	}
+
+	// C4. [Cover i.]
+	if debug {
+		fmt.Printf("C4. Cover i=%d (%s)\n", i, name[i])
+	}
+	cover(i)
+	state[level] = dlink[i]
+
+C5:
+	// C5. [Try x_l.]
+	if debug {
+		fmt.Printf("C5. Try l=%d, x[l]=%d\n", level, state[level])
+	}
+	if state[level] == i {
+		goto C7
+	}
+	// Commit each of the items in this option
+	p = state[level] + 1
+	for p != state[level] {
+		j := top[p]
+		if j <= 0 {
+			// spacer, go back to the first option
+			p = ulink[p]
+		} else {
+			commit(p, j)
+			p++
+		}
+	}
+	level++
+	goto C2
+
+C6:
+	// C6. [Try again.]
+	if debug {
+		fmt.Println("C6. Try again")
+	}
+
+	if stats != nil {
+		stats.Nodes++
+	}
+
+	// Uncommit each of the items in this option
+	p = state[level] - 1
+	for p != state[level] {
+		j = top[p]
+		if j <= 0 {
+			p = dlink[p]
+		} else {
+			uncommit(p, j)
+			p--
+		}
+	}
+	i = top[state[level]]
+	state[level] = dlink[state[level]]
+	goto C5
+
+C7:
+	// C7. [Backtrack.]
+	if debug {
+		fmt.Println("C7. Backtrack")
+	}
+	uncover(i)
+
+C8:
+	// C8. [Leave level l.]
+	if debug {
+		fmt.Printf("C8. Leaving level %d\n", level)
+	}
+	if level == 0 {
+		return
+	}
+	level--
+	goto C6
 }
 
 // LangfordPairs uses ExactCover to return solutions for Langford pairs

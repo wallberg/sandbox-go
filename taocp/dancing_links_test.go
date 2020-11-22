@@ -6,11 +6,10 @@ import (
 	"testing"
 )
 
-func TestExactCover(t *testing.T) {
+var (
+	xcItems = []string{"a", "b", "c", "d", "e", "f", "g"}
 
-	items := []string{"a", "b", "c", "d", "e", "f", "g"}
-
-	options := [][]string{
+	xcOptions = [][]string{
 		{"c", "e"},
 		{"a", "d", "g"},
 		{"b", "c", "f"},
@@ -19,19 +18,84 @@ func TestExactCover(t *testing.T) {
 		{"d", "e", "g"},
 	}
 
-	expected := [][]string{
+	xcExpected = [][]string{
 		{"a", "d", "f"},
 		{"b", "g"},
 		{"c", "e"},
 	}
 
+	// Toy XCC example 7.2.2.1-49
+	xccItems = []string{"p", "q", "r"}
+
+	xccSItems = []string{"x", "y"}
+
+	xccOptions = [][]string{
+		{"p", "q", "x", "y:A"},
+		{"p", "r", "x:A", "y"},
+		{"p", "x:B"},
+		{"q", "x:A"},
+		{"r", "y:B"},
+	}
+
+	xccExpected = [][]string{
+		{"q", "x"},
+		{"p", "r", "x", "y"},
+	}
+)
+
+func TestExactCover(t *testing.T) {
+
 	count := 0
 	var stats Stats
 
-	ExactCover(items, options, []string{}, &stats,
+	ExactCover(xcItems, xcOptions, []string{}, &stats,
 		func(solution [][]string) bool {
-			if !reflect.DeepEqual(solution, expected) {
-				t.Errorf("Expected %v; got %v", expected, solution)
+			if !reflect.DeepEqual(solution, xcExpected) {
+				t.Errorf("Expected %v; got %v", xcExpected, solution)
+			}
+			count++
+			return true
+		})
+
+	if count != 1 {
+		t.Errorf("Expected 1 solution; got %d", count)
+	}
+
+	if stats.Solutions != 1 {
+		t.Errorf("Expected 1 stats.Solution; got %d", stats.Solutions)
+	}
+}
+
+func TestExactCoverColors(t *testing.T) {
+
+	var count int
+	var stats *Stats
+
+	count = 0
+	stats = new(Stats)
+	ExactCoverColors(xcItems, xcOptions, []string{}, stats,
+		func(solution [][]string) bool {
+			if !reflect.DeepEqual(solution, xcExpected) {
+				t.Errorf("Expected %v; got %v", xcExpected, solution)
+			}
+			count++
+			return true
+		})
+
+	if count != 1 {
+		t.Errorf("Expected 1 solution; got %d", count)
+	}
+
+	if stats.Solutions != 1 {
+		t.Errorf("Expected 1 stats.Solution; got %d", stats.Solutions)
+	}
+
+	count = 0
+	stats = new(Stats)
+	ExactCoverColors(xccItems, xccOptions, xccSItems, stats,
+		func(solution [][]string) bool {
+			if !reflect.DeepEqual(solution, xccExpected) {
+				t.Errorf("Expected %v; got %v", xccExpected, solution)
 			}
 			count++
 			return true
