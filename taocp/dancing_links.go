@@ -18,10 +18,21 @@ type Stats struct {
 	MaxLevel  int   // Maximum level reached
 	Delta     int   // Display progress every Delta number of Nodes
 	Theta     int   // Display progress at next Theta number of Nodes
-	Levels    []int // Count of times each level is intered
+	Levels    []int // Count of times each level is entered
 	Nodes     int   // Count of nodes processed
 	Solutions int   // Count of solutions returned
 	Debug     bool  // Enable debug logging
+}
+
+func (s Stats) String() string {
+	// Find first non-zero level count
+	i := len(s.Levels)
+	for s.Levels[i-1] == 0 && i > 0 {
+		i--
+	}
+
+	return fmt.Sprintf("nodes=%d, solutions=%d, levels=%v", s.Nodes,
+		s.Solutions, s.Levels[:i])
 }
 
 // ExactCover implements Algorithm X, exact cover via dancing links.
@@ -78,9 +89,13 @@ func ExactCover(items []string, options [][]string, secondary []string,
 		if stats != nil {
 			stats.Theta = stats.Delta
 			stats.MaxLevel = -1
-			stats.Levels = make([]int, n)
-			stats.Nodes = 0
-			stats.Solutions = 0
+			if stats.Levels == nil {
+				stats.Levels = make([]int, n)
+			} else {
+				for len(stats.Levels) < n {
+					stats.Levels = append(stats.Levels, 0)
+				}
+			}
 			debug = stats.Debug
 		}
 

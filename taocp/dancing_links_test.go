@@ -27,8 +27,6 @@ func TestExactCover(t *testing.T) {
 
 	count := 0
 	var stats Stats
-	// stats.Progress = true
-	// stats.Debug = true
 
 	ExactCover(items, options, []string{}, &stats,
 		func(solution [][]string) bool {
@@ -41,6 +39,10 @@ func TestExactCover(t *testing.T) {
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
+	}
+
+	if stats.Solutions != 1 {
+		t.Errorf("Expected 1 stats.Solution; got %d", stats.Solutions)
 	}
 }
 
@@ -368,8 +370,8 @@ var (
 func TestSudokuCards(t *testing.T) {
 
 	count := 0
-
-	SudokuCards(cards2, nil,
+	var stats Stats
+	SudokuCards(cards2, &stats,
 		func(solution []int) bool {
 			if !reflect.DeepEqual(solution, cards2Expected) {
 				t.Errorf("Expected %v; got %v", cards2Expected, solution)
