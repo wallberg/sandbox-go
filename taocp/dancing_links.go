@@ -1294,6 +1294,38 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 	})
 }
 
+// Mathematicians lists 27 people (without special characters) who were authors
+// of early papers in Acta Mathematica and subsequently cited in TAOCP
+var Mathematicians = []string{
+	"ABEL",
+	"BERTRAND",
+	"BOREL",
+	"CANTOR",
+	"CATALAN",
+	"FROBENIUS",
+	"GLAISHER",
+	"GRAM",
+	"HADAMARD",
+	"HENSEL",
+	"HERMITE",
+	"HILBERT",
+	"HURWITZ",
+	"JENSEN",
+	"KIRCHHOFF",
+	"KNOPP",
+	"LANDAU",
+	"MARKOFF",
+	"MELLIN",
+	"MINKOWSKI",
+	"NETTO",
+	"PERRON",
+	"RUNGE",
+	"STERN",
+	"STIELTJES",
+	"SYLVESTER",
+	"WEIERSTRASS",
+}
+
 // WordSearch uses ExactCoverColoring to build a m x n word search, given the
 // provided words
 func WordSearch(m int, n int, words []string, stats *Stats,
