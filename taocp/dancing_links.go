@@ -853,6 +853,7 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 	purify := func(p int) {
 		c := color[p]
 		i := top[p]
+		color[i] = c
 		q := dlink[i]
 		for q != i {
 			if color[q] == c {
@@ -860,7 +861,6 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 			} else {
 				hide(q)
 			}
-			color[i] = c // save the color to be restored later
 			q = dlink[q]
 		}
 	}
