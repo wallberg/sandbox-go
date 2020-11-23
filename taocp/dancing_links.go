@@ -492,21 +492,22 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 	stats *Stats, visit func(solution [][]string) bool) {
 
 	var (
-		n1     int      // number of primary items
-		n2     int      // number of secondary items
-		n      int      // total number of items
-		name   []string // name of the item
-		llink  []int    // right link of the item
-		rlink  []int    // left link of the item
-		top    []int
-		llen   []int
-		ulink  []int
-		dlink  []int
-		color  []int    // color of a particular item in option
-		colors []string // map of color names, key is the index starting at 1
-		level  int
-		state  []int // search state
-		debug  bool  // is debug enabled?
+		n1       int      // number of primary items
+		n2       int      // number of secondary items
+		n        int      // total number of items
+		name     []string // name of the item
+		llink    []int    // right link of the item
+		rlink    []int    // left link of the item
+		top      []int
+		llen     []int
+		ulink    []int
+		dlink    []int
+		color    []int    // color of a particular item in option
+		colors   []string // map of color names, key is the index starting at 1
+		level    int
+		state    []int // search state
+		debug    bool  // is debug enabled?
+		progress bool  // is progress enabled?
 	)
 
 	dump := func() {
@@ -573,6 +574,7 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 				}
 			}
 			debug = stats.Debug
+			progress = stats.Progress
 		}
 
 		// Fill out the item tables
@@ -894,6 +896,7 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 			unpurify(p)
 		}
 	}
+
 	// C1 [Initialize.]
 	initialize()
 
@@ -902,6 +905,10 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 		j int
 		p int
 	)
+
+	if progress {
+		showProgress()
+	}
 
 C2:
 	// C2. [Enter level l.]
@@ -913,7 +920,7 @@ C2:
 		stats.Levels[level]++
 		stats.Nodes++
 
-		if stats.Progress {
+		if progress {
 			if level > stats.MaxLevel {
 				stats.MaxLevel = level
 			}
@@ -936,6 +943,9 @@ C2:
 		if !resume {
 			if debug {
 				fmt.Println("C2. Halting the search")
+			}
+			if progress {
+				showProgress()
 			}
 			return
 		}
@@ -1017,6 +1027,9 @@ C8:
 		fmt.Printf("C8. Leaving level %d\n", level)
 	}
 	if level == 0 {
+		if progress {
+			showProgress()
+		}
 		return
 	}
 	level--
@@ -1279,4 +1292,92 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 
 		return true
 	})
+}
+
+// WordSearch uses ExactCoverColoring to build a m x n word search, given the
+// provided words
+func WordSearch(m int, n int, words []string, stats *Stats,
+	visit func([][]string) bool) {
+
+	coord := func(i int, j int) string {
+		return fmt.Sprintf("%02d%02d", i, j)
+	}
+
+	// secondary items
+	secondary := make([]string, m*n)
+	for i := 0; i < m; i++ {
+		for j := 0; j < n; j++ {
+			secondary[i*n+j] = coord(i, j)
+		}
+	}
+
+	// options
+	options := make([][]string, 0)
+	for x, word := range words {
+
+		for i := 0; i < m; i++ {
+			for j := 0; j < n; j++ {
+				// Eight directions for each starting position (i,j)
+				var wordDs [8][]string // word directions
+				for d := 0; d < 8; d++ {
+					wordDs[d] = []string{word}
+				}
+
+				for k := 0; k < len(word); k++ {
+					// right
+					if j+k < n {
+						wordDs[0] = append(wordDs[0], coord(i, j+k)+":"+word[k:k+1])
+					}
+					// right-down
+					if i+k < m && j+k < n {
+						wordDs[1] = append(wordDs[1], coord(i+k, j+k)+":"+word[k:k+1])
+					}
+
+					// To avoid symmetric positions, only allow 2 (of 8) directions
+					// for the first word
+					if x == 0 {
+						continue
+					}
+
+					// down
+					if i+k < m {
+						wordDs[2] = append(wordDs[2], coord(i+k, j)+":"+word[k:k+1])
+					}
+					// left-down
+					if i+k < m && j-k >= 0 {
+						wordDs[3] = append(wordDs[3], coord(i+k, j-k)+":"+word[k:k+1])
+					}
+					// left
+					if j-k >= 0 {
+						wordDs[4] = append(wordDs[4], coord(i, j-k)+":"+word[k:k+1])
+					}
+					// left-up
+					if i-k >= 0 && j-k >= 0 {
+						wordDs[5] = append(wordDs[5], coord(i-k, j-k)+":"+word[k:k+1])
+					}
+					// up
+					if i-k >= 0 {
+						wordDs[6] = append(wordDs[6], coord(i-k, j)+":"+word[k:k+1])
+					}
+					// right-up
+					if i-k >= 0 && j+k < n {
+						wordDs[7] = append(wordDs[7], coord(i-k, j+k)+":"+word[k:k+1])
+					}
+
+				}
+
+				for _, wordD := range wordDs {
+					if len(wordD) == len(word)+1 {
+						options = append(options, wordD)
+						// fmt.Println(wordD)
+					}
+				}
+			}
+		}
+	}
+
+	ExactCoverColors(words, options, secondary, stats,
+		func(solution [][]string) bool {
+			return visit(solution)
+		})
 }
