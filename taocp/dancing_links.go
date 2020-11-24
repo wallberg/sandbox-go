@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -1249,69 +1250,149 @@ func Sudoku(grid [9][9]int, stats *Stats,
 // 3x3 array
 
 // SudokuCards constructs sudoku puzzles with one solution, given nine 3x3
-// cards to order.
+// cards to order. Returns both the card ordering and the matching SuDoku grid.
 func SudokuCards(cards [9][3][3]int, stats *Stats,
-	visit func(solution []int) bool) {
+	visit func(cards [9]int, grid [9][9]int) bool) {
 
-	// Compare card1 and card2 for less than (-1), equal (0),
-	// or greater than (1)
-	cmp := func(card1 [3][3]int, card2 [3][3]int) int {
-		for i := 0; i < 3; i++ {
-			for j := 0; j < 3; j++ {
-				if card1[i][j] < card2[i][j] {
-					return -1 // less than
-				}
-				if card1[i][j] > card2[i][j] {
-					return 1 // greater than
-				}
-			}
+	// // Compare card1 and card2 for less than (-1), equal (0),
+	// // or greater than (1)
+	// cmp := func(card1 [3][3]int, card2 [3][3]int) int {
+	// 	for i := 0; i < 3; i++ {
+	// 		for j := 0; j < 3; j++ {
+	// 			if card1[i][j] < card2[i][j] {
+	// 				return -1 // less than
+	// 			}
+	// 			if card1[i][j] > card2[i][j] {
+	// 				return 1 // greater than
+	// 			}
+	// 		}
+	// 	}
+	// 	return 0 // equal
+	// }
+
+	var (
+		i int // row number (0-8)
+		j int // column number (0-8)
+		k int // cell value in (row,column)
+		x int // 3x3 box (0-8), aka card slot
+		c int // card number (1-9)
+	)
+
+	// Build the [p, r, c, b] options
+	buildOption := func() []string {
+		return []string{
+			fmt.Sprintf("p%d%d", i, j),      // piece
+			fmt.Sprintf("r%d%d", i, k),      // piece in row
+			fmt.Sprintf("c%d%d", j, k),      // piece in column
+			fmt.Sprintf("x%d%d", x, k),      // piece in 3x3 box
+			fmt.Sprintf("%d%d:%d", i, j, k), // (row, column) with color k
 		}
-		return 0 // equal
 	}
 
-	// Iterate over permutations of the card ordering. Each card ordering has
-	// 3!3! symmetric orderings which produce identical results, so use
-	// ordering constraints to produce only the first ordering
-	perm := []int{0, 1, 2, 3, 4, 5, 6, 7, 8}
+	// Build the items, secondary items, and options
+	itemSet := make(map[string]bool) // set of primary items
+	sitems := make([]string, 9*9+1)  // secondary items (row, column)
+	options := make([][]string, 0)
 
-	// ordering constraint: fix card 0 to the position 0
-	Permutations(perm[1:], func() bool {
-
-		// ordering constraint: ensure card at position 4 is less than cards at
-		// positions 5, 7, and 8
-		if !(cmp(cards[perm[4]], cards[perm[5]]) < 0 &&
-			cmp(cards[perm[4]], cards[perm[7]]) < 0 &&
-			cmp(cards[perm[4]], cards[perm[8]]) < 0) {
-			return true
-		}
-
-		// Build the Sudoku grid from the provided card order
-		var grid [9][9]int
-
-		for x, card := range perm {
-			i, j := (x/3)*3, (x%3)*3
-			for iDelta := 0; iDelta < 3; iDelta++ {
-				for jDelta := 0; jDelta < 3; jDelta++ {
-					grid[i+iDelta][j+jDelta] = cards[card][iDelta][jDelta]
+	// Placements within the grid
+	for i = 0; i < 9; i++ {
+		for j = 0; j < 9; j++ {
+			sitems[i*9+j] = fmt.Sprintf("%d%d", i, j)
+			x = 3*(i/3) + (j / 3)
+			for k = 1; k < 10; k++ {
+				option := buildOption()
+				for _, item := range option[:4] {
+					itemSet[item] = true
 				}
+				options = append(options, option)
 			}
 		}
+	}
 
-		// Count the number of Sudoku solutions for this card ordering
-		count := 0
+	// each card is an item
+	for c = 1; c <= 9; c++ {
+		itemSet[strconv.Itoa(c)] = true
+	}
 
-		Sudoku(grid, stats,
-			func(solution [9][9]int) bool {
-				count++
-				return true
-			})
+	// each slot is an item
+	for x = 0; x < 9; x++ {
+		itemSet[fmt.Sprintf("s%d", x)] = true
+	}
 
-		if count == 1 {
-			visit(perm)
+	// // ordering constraint: card in slot 4 is less than cards in slots 5,
+	// // 7, and 8
+	// if !(cmp(cards[perm[4]-1], cards[perm[5]-1]) < 0 &&
+	// 	cmp(cards[perm[4]-1], cards[perm[7]-1]) < 0 &&
+	// 	cmp(cards[perm[4]-1], cards[perm[8]-1]) < 0) {
+	// 	return true
+	// }
+
+	// Create one option for of 9 cards in each of 9 slots. Each card ordering
+	// has 3!3! symmetric orderings which produce identical results, so use
+	// ordering constraints to produce only the first ordering:
+	// - Put card 1 in slot 0
+	// - Ensure the card in slot 4 is less than the cards in slots 5, 7, and 8
+	for c = 1; c <= 9; c++ {
+		for x = 0; x < 9 && !(c == 1 && x > 0); x++ {
+			option := []string{strconv.Itoa(c), fmt.Sprintf("s%d", x)}
+			// Iterate over values in this card
+			for iCard := 0; iCard < 3; iCard++ {
+				for jCard := 0; jCard < 3; jCard++ {
+					k = cards[c-1][iCard][jCard]
+					if k > 0 {
+						i, j := (x/3)*3, (x%3)*3
+						option = append(option, fmt.Sprintf("%d%d:%d", i+iCard, j+jCard, k))
+					}
+				}
+			}
+			// option = append(option, fmt.Sprintf("perm:%d", permColor))
+			options = append(options, option)
 		}
+	}
 
-		return true
-	})
+	// Convert itemSet to a items list
+	items := make([]string, len(itemSet))
+	i = 0
+	for item := range itemSet {
+		items[i] = item
+		i++
+	}
+	sort.Strings(items)
+
+	fmt.Println("items", items)
+	fmt.Println("sitems", sitems)
+	for _, option := range options {
+		fmt.Println(option)
+	}
+
+	ExactCoverColors(items, options, sitems, stats,
+		func(solution [][]string) bool {
+			var (
+				cards [9]int
+				grid  [9][9]int
+			)
+
+			for _, option := range solution {
+				if option[0][0:1] == "p" {
+					// SuDoku square
+					i, _ := strconv.Atoi(option[4][0:1])
+					j, _ := strconv.Atoi(option[4][1:2])
+					k, _ := strconv.Atoi(option[4][3:4])
+					grid[i][j] = k
+				} else {
+					// Card
+					c, _ := strconv.Atoi(option[0])
+					s, _ := strconv.Atoi(option[1][1:2])
+					cards[s] = c
+				}
+			}
+
+			// fmt.Println("solution")
+			fmt.Println(cards)
+			// fmt.Println(grid)
+
+			return visit(cards, grid)
+		})
 }
 
 // Mathematicians lists 27 people (without special characters) who were authors
