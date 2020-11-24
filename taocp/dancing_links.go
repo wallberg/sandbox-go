@@ -23,6 +23,7 @@ type Stats struct {
 	Nodes     int   // Count of nodes processed
 	Solutions int   // Count of solutions returned
 	Debug     bool  // Enable debug logging
+	Verbosity int   // Debug verbosity level (0 or 1)
 }
 
 func (s Stats) String() string {
@@ -745,6 +746,11 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 	}
 
 	lvisit := func() bool {
+
+		if debug && stats.Verbosity > 0 {
+			dump()
+		}
+
 		// Iterate over the options
 		options := make([][]string, 0)
 		for i, p := range state[0:level] {
