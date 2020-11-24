@@ -751,6 +751,11 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 			dump()
 		}
 
+		// Only one of the secondary items will have it's color value, the
+		// others will have -1. Save the color and add it to all the matching
+		// secondary items at the end.
+		sitemColor := make(map[string]string)
+
 		// Iterate over the options
 		options := make([][]string, 0)
 		for i, p := range state[0:level] {
@@ -763,11 +768,20 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 			q := p
 			for top[q] > 0 {
 				name := name[top[q]]
-				// if color[q] > 0 {
-				// 	name += ":" + colors[color[q]]
-				// }
+				if color[q] > 0 {
+					sitemColor[name] = colors[color[q]]
+				}
 				options[i] = append(options[i], name)
 				q++
+			}
+		}
+
+		// Add the secondary item colors
+		for i, option := range options {
+			for j, item := range option {
+				if color, ok := sitemColor[item]; ok {
+					options[i][j] += ":" + color
+				}
 			}
 		}
 

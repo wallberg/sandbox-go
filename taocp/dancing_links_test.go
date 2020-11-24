@@ -38,8 +38,8 @@ var (
 	}
 
 	xccExpected = [][]string{
-		{"q", "x"},
-		{"p", "r", "x", "y"},
+		{"q", "x:A"},
+		{"p", "r", "x:A", "y"},
 	}
 )
 
