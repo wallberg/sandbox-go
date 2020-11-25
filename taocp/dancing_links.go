@@ -1254,22 +1254,6 @@ func Sudoku(grid [9][9]int, stats *Stats,
 func SudokuCards(cards [9][3][3]int, stats *Stats,
 	visit func(cards [9]int, grid [9][9]int) bool) {
 
-	// // Compare card1 and card2 for less than (-1), equal (0),
-	// // or greater than (1)
-	// cmp := func(card1 [3][3]int, card2 [3][3]int) int {
-	// 	for i := 0; i < 3; i++ {
-	// 		for j := 0; j < 3; j++ {
-	// 			if card1[i][j] < card2[i][j] {
-	// 				return -1 // less than
-	// 			}
-	// 			if card1[i][j] > card2[i][j] {
-	// 				return 1 // greater than
-	// 			}
-	// 		}
-	// 	}
-	// 	return 0 // equal
-	// }
-
 	var (
 		i int // row number (0-8)
 		j int // column number (0-8)
@@ -1278,7 +1262,7 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 		c int // card number (1-9)
 	)
 
-	// Build the [p, r, c, b] options
+	// Build one [p, r, c, b] option
 	buildOption := func() []string {
 		return []string{
 			fmt.Sprintf("p%d%d", i, j),      // piece
@@ -1290,14 +1274,14 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 	}
 
 	// Build the items, secondary items, and options
-	itemSet := make(map[string]bool) // set of primary items
-	sitems := make([]string, 9*9+1)  // secondary items (row, column)
+	itemSet := make(map[string]bool)  // set of primary items
+	sitemSet := make(map[string]bool) // secondary items (row, column)
 	options := make([][]string, 0)
 
 	// Placements within the grid
 	for i = 0; i < 9; i++ {
 		for j = 0; j < 9; j++ {
-			sitems[i*9+j] = fmt.Sprintf("%d%d", i, j)
+			sitemSet[fmt.Sprintf("%d%d", i, j)] = true
 			x = 3*(i/3) + (j / 3)
 			for k = 1; k < 10; k++ {
 				option := buildOption()
@@ -1319,19 +1303,12 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 		itemSet[fmt.Sprintf("s%d", x)] = true
 	}
 
-	// // ordering constraint: card in slot 4 is less than cards in slots 5,
-	// // 7, and 8
-	// if !(cmp(cards[perm[4]-1], cards[perm[5]-1]) < 0 &&
-	// 	cmp(cards[perm[4]-1], cards[perm[7]-1]) < 0 &&
-	// 	cmp(cards[perm[4]-1], cards[perm[8]-1]) < 0) {
-	// 	return true
-	// }
-
 	// Create one option for of 9 cards in each of 9 slots. Each card ordering
 	// has 3!3! symmetric orderings which produce identical results, so use
 	// ordering constraints to produce only the first ordering:
 	// - Put card 1 in slot 0
 	// - Ensure the card in slot 4 is less than the cards in slots 5, 7, and 8
+
 	for c = 1; c <= 9; c++ {
 		for x = 0; x < 9 && !(c == 1 && x > 0); x++ {
 			option := []string{strconv.Itoa(c), fmt.Sprintf("s%d", x)}
@@ -1341,11 +1318,25 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 					k = cards[c-1][iCard][jCard]
 					if k > 0 {
 						i, j := (x/3)*3, (x%3)*3
-						option = append(option, fmt.Sprintf("%d%d:%d", i+iCard, j+jCard, k))
+						option = append(option, fmt.Sprintf("%d%d:%d",
+							i+iCard, j+jCard, k))
 					}
 				}
 			}
-			// option = append(option, fmt.Sprintf("perm:%d", permColor))
+
+			// secondary items which control ordering for 4 < 5,7,8
+			if x == 4 {
+				for o := 2; o < c; o++ {
+					ord := fmt.Sprintf("o%d", o)
+					sitemSet[ord] = true
+					option = append(option, ord)
+				}
+			} else if x == 5 || x == 7 || x == 8 {
+				ord := fmt.Sprintf("o%d", c)
+				sitemSet[ord] = true
+				option = append(option, ord)
+			}
+
 			options = append(options, option)
 		}
 	}
@@ -1359,12 +1350,19 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 	}
 	sort.Strings(items)
 
-	fmt.Println("items", items)
-	fmt.Println("sitems", sitems)
-	for _, option := range options {
-		fmt.Println(option)
+	// Convert sitemSet to a sitems list
+	sitems := make([]string, len(itemSet))
+	i = 0
+	for sitem := range sitemSet {
+		sitems[i] = sitem
+		i++
 	}
+	sort.Strings(sitems)
 
+	// Save the accumulated solutions, key=card, value = slice of SuDoku grids
+	solutions := make(map[[9]int][][9][9]int)
+
+	// Solve using XCC
 	ExactCoverColors(items, options, sitems, stats,
 		func(solution [][]string) bool {
 			var (
@@ -1387,12 +1385,24 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 				}
 			}
 
-			// fmt.Println("solution")
-			fmt.Println(cards)
-			// fmt.Println(grid)
+			// Add grid to the list for this card ordering
+			if grids, ok := solutions[cards]; ok {
+				solutions[cards] = append(grids, grid)
+			} else {
+				solutions[cards] = [][9][9]int{grid}
+			}
 
-			return visit(cards, grid)
+			return true
 		})
+
+	// Return all the card orderings which have one SuDoku grid
+	for cards, grids := range solutions {
+		if len(grids) == 1 {
+			if !visit(cards, grids[0]) {
+				break
+			}
+		}
+	}
 }
 
 // Mathematicians lists 27 people (without special characters) who were authors
