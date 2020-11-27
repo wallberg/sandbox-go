@@ -1326,15 +1326,24 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 
 			// secondary items which control ordering for 4 < 5,7,8
 			if x == 4 {
-				for o := 2; o < c; o++ {
-					ord := fmt.Sprintf("o%d", o)
+				t := (c - 1)
+				for t > 0 {
+					for _, orderX := range []int{5, 7, 8} {
+						ord := fmt.Sprintf("o%d%d", orderX, t)
+						sitemSet[ord] = true
+						option = append(option, ord)
+					}
+					t = t & (t - 1)
+				}
+
+			} else if x == 5 || x == 7 || x == 8 {
+				t := -1 - (c - 1)
+				for t > -9 {
+					ord := fmt.Sprintf("o%d%d", x, -t)
 					sitemSet[ord] = true
 					option = append(option, ord)
+					t = t & (t - 1)
 				}
-			} else if x == 5 || x == 7 || x == 8 {
-				ord := fmt.Sprintf("o%d", c)
-				sitemSet[ord] = true
-				option = append(option, ord)
 			}
 
 			options = append(options, option)
