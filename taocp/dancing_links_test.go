@@ -492,7 +492,20 @@ func TestSudokuCards(t *testing.T) {
 }
 
 func BenchmarkSudokuCards(b *testing.B) {
-	for repeat := 0; repeat < b.N; repeat++ {
-		SudokuCards(cards2, nil, func([9]int, [9][9]int) bool { return true })
+	cases := []struct {
+		name  string
+		cards [9][3][3]int
+	}{
+		{"cards1", cards1},
+		{"cards2", cards2},
+	}
+
+	for _, c := range cases {
+
+		b.Run(c.name, func(b *testing.B) {
+			for repeat := 0; repeat < b.N; repeat++ {
+				SudokuCards(cards2, nil, func([9]int, [9][9]int) bool { return true })
+			}
+		})
 	}
 }
