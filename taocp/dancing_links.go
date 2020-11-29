@@ -1360,7 +1360,7 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 	sort.Strings(items)
 
 	// Convert sitemSet to a sitems list
-	sitems := make([]string, len(itemSet))
+	sitems := make([]string, len(sitemSet))
 	i = 0
 	for sitem := range sitemSet {
 		sitems[i] = sitem
