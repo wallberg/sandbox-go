@@ -38,6 +38,14 @@ func (s Stats) String() string {
 		s.Solutions, s.Levels[:i])
 }
 
+// Ordering provides an enumeration of ordering tricks for exact cover problems
+type Ordering int
+
+const (
+	Plain Ordering = iota
+	Log
+)
+
 // ExactCover implements Algorithm X, exact cover via dancing links.
 //
 // Arguments:
@@ -1412,6 +1420,111 @@ func SudokuCards(cards [9][3][3]int, stats *Stats,
 			}
 		}
 	}
+}
+
+// OrderingTrial generates a list of integers [0,n) and sorts them
+// using exact cover with the provided ordering technique. This is a
+// benchmarking tool.
+func OrderingTrial(n int, o Ordering) {
+
+	// // Generate the unsorted list
+	// a := make([]int, n)
+	// for i, v := range rand.Perm(n) {
+	// 	a[i] = v
+	// }
+	// fmt.Println("a",a)
+
+	// Build the items, secondary items, and options
+	itemSet := make(map[string]bool)  // primary items
+	sitemSet := make(map[string]bool) // secondary items
+	options := make([][]string, 0)
+
+	// Iterate over each pairwise order
+	for s := 0; s < n; s++ {
+		sItem := fmt.Sprintf("s%d", s)
+		itemSet[sItem] = true
+
+		for i := 0; i < n; i++ {
+			jItem := fmt.Sprintf("%d", i)
+			itemSet[jItem] = true
+
+			option := []string{jItem, sItem}
+			for x := 0; x < i; x++ {
+				o := fmt.Sprintf("i%d", x)
+				sitemSet[o] = true
+				option = append(option, o)
+			}
+
+			o := fmt.Sprintf("o%d", i)
+			sitemSet[o] = true
+			option = append(option, o)
+			options = append(options, option)
+		}
+	}
+	// // Create an option for each slot
+	// for x := 0; x < n; x++ {
+	// 	optionSlot := make([]string, len(option))
+	// 	copy(optionSlot, option)
+	// 	s := fmt.Sprintf("s%d", x)
+	// 	itemSet[s] = true
+	// 	optionSlot[1] = s
+	// 	options = append(options, optionSlot)
+	// }
+
+	// // secondary items which control ordering for 4 < 5,7,8
+	// if x == 4 {
+	// 	t := (c - 1)
+	// 	for t > 0 {
+	// 		for _, orderX := range []int{5, 7, 8} {
+	// 			ord := fmt.Sprintf("o%d%d", orderX, t)
+	// 			sitemSet[ord] = true
+	// 			option = append(option, ord)
+	// 		}
+	// 		t = t & (t - 1)
+	// 	}
+
+	// } else if x == 5 || x == 7 || x == 8 {
+	// 	t := -1 - (c - 1)
+	// 	for t > -9 {
+	// 		ord := fmt.Sprintf("o%d%d", x, -t)
+	// 		sitemSet[ord] = true
+	// 		option = append(option, ord)
+	// 		t = t & (t - 1)
+	// 	}
+	// }
+
+	// Convert itemSet to items list
+	items := make([]string, len(itemSet))
+	i := 0
+	for item := range itemSet {
+		items[i] = item
+		i++
+	}
+	sort.Strings(items)
+
+	// Convert sitemSet to sitems list
+	sitems := make([]string, len(sitemSet))
+	i = 0
+	for sitem := range sitemSet {
+		sitems[i] = sitem
+		i++
+	}
+
+	fmt.Println("items", items)
+	fmt.Println("sitems", sitems)
+	for _, option := range options {
+		fmt.Println("-- ", option)
+	}
+
+	// Solve using XCC
+	ExactCoverColors(items, options, sitems, nil,
+		func(solution [][]string) bool {
+			fmt.Println("---")
+			for _, option := range solution {
+				fmt.Println(option)
+			}
+			return true
+		})
 }
 
 // Mathematicians lists 27 people (without special characters) who were authors
