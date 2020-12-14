@@ -1,6 +1,7 @@
 package taocp
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -47,6 +48,49 @@ func TestParsePlacementPairs(t *testing.T) {
 
 		if !reflect.DeepEqual(c.pairs, pairs) {
 			t.Errorf("pairs = %v; want %v", pairs, c.pairs)
+		}
+	}
+}
+
+func TestBasePlacements(t *testing.T) {
+
+	cases := []struct {
+		first      []int
+		placements [][]int
+	}{
+		{
+			[]int{65536},
+			[][]int{{0}},
+		},
+		{
+			[]int{1, 2, 3},
+			[][]int{
+				{0, 1, 2},
+				{0, 65536, 131072},
+			},
+		},
+		{
+			[]int{0, 1, 2, 65536},
+			[][]int{
+				{0, 1, 2, 65536},
+				{0, 1, 2, 65538},
+				{0, 1, 65536, 131072},
+				{0, 1, 65537, 131073},
+				{0, 65536, 65537, 65538},
+				{0, 65536, 131072, 131073},
+				{1, 65537, 131072, 131073},
+				{2, 65536, 65537, 65538},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		placements := BasePlacements(c.first)
+
+		if !reflect.DeepEqual(placements, c.placements) {
+			fmt.Println(placements)
+			fmt.Println(c.placements)
+			t.Errorf("placements = %v; want %v", placements, c.placements)
 		}
 	}
 }

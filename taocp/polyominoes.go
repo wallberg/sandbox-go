@@ -3,6 +3,7 @@ package taocp
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strings"
 
 	"github.com/wallberg/sandbox/sortx"
@@ -23,6 +24,12 @@ var (
 
 	rePair = regexp.MustCompile(`[0-9a-zA-Z]|\[[0-9a-zA-Z-]+?\]`)
 )
+
+// pack stores a placement pair in an int
+func pack(x int, y int) int { return (x << 16) + y }
+
+// unpack pulls a placement pair out of an int
+func unpack(pair int) (int, int) { return pair >> 16, pair & 65535 }
 
 // ParsePlacementPairs parses a single placement pair specification string
 // format.
@@ -74,8 +81,7 @@ func ParsePlacementPairs(s string) ([]int, error) {
 
 			for _, x := range xValues {
 				for _, y := range yValues {
-					value := (x << 16) + y
-					sortx.InsertInt(&pairs, value)
+					sortx.InsertInt(&pairs, pack(x, y))
 				}
 			}
 		} else {
@@ -84,4 +90,101 @@ func ParsePlacementPairs(s string) ([]int, error) {
 	}
 
 	return pairs, nil
+}
+
+// BasePlacements takes one placement pair as input, shifted to minimum
+// coordinates, and generates every possible transformation using rotate and
+// reflect.
+func BasePlacements(first []int) [][]int {
+
+	// minmax finds minimum and maximum (x, y) values
+	minmax := func(placement []int) (int, int, int) {
+		// Get xMin, yMin, xMax
+		xMin, yMin, xMax := -1, -1, -1
+		for _, pair := range placement {
+			x, y := unpack(pair)
+			if xMin == -1 || x < xMin {
+				xMin = x
+			}
+			if yMin == -1 || y < yMin {
+				yMin = y
+			}
+			if xMax == -1 || x > xMax {
+				xMax = x
+			}
+		}
+		return xMin, yMin, xMax
+	}
+
+	xMin, yMin, _ := minmax(first)
+
+	// Shift, if necessary
+	if xMin > 0 || yMin > 0 {
+		firstNew := make([]int, len(first))
+		for i, pair := range first {
+			x, y := unpack(pair)
+			firstNew[i] = pack(x-xMin, y-yMin)
+		}
+		first = firstNew
+	}
+
+	n := len(first)
+
+	// Generate placements
+	placements := make([][]int, 1)
+	placements[0] = first
+
+	for i := 0; i < len(placements); i++ {
+		// Generate the rotation and reflection
+		rotate := make([]int, len(placements[i]))
+		reflect := make([]int, len(placements[i]))
+
+		_, _, xMax := minmax(placements[i])
+		for j, pair := range placements[i] {
+			x, y := unpack(pair)
+			rotate[j] = pack(y, xMax-x)
+			reflect[j] = pack(y, x)
+		}
+		sort.Ints(rotate)
+		sort.Ints(reflect)
+
+		// Add each to the list of placements, if not already there
+		for _, placement := range [][]int{rotate, reflect} {
+			// See if this placement already exists
+			exists := false
+			// Iterate over each existing placement
+			for j := range placements {
+				same := true
+				for k := 0; k < n; k++ {
+					if placement[k] != placements[j][k] {
+						same = false
+						break
+					}
+				}
+				if same {
+					exists = true
+					break
+				}
+			}
+
+			if !exists {
+				placements = append(placements, placement)
+			}
+		}
+
+	}
+
+	// Sort the list of placements
+	sort.Slice(placements, func(i, j int) bool {
+		for k := 0; k < n; k++ {
+			if placements[i][k] < placements[j][k] {
+				return true
+			} else if placements[i][k] > placements[j][k] {
+				return false
+			}
+		}
+		return false
+	})
+
+	return placements
 }
