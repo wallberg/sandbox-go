@@ -94,3 +94,35 @@ func TestBasePlacements(t *testing.T) {
 		}
 	}
 }
+
+func TestLoadPolyominoes(t *testing.T) {
+
+	sets, err := LoadPolyominoes()
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	cases := []struct {
+		name  string // name of the set
+		count int    // number of shapes in the set
+	}{
+		{"1", 1},
+		{"2", 1},
+		{"3", 2},
+		{"4", 5},
+		{"5", 12},
+	}
+
+	for _, c := range cases {
+		if set, ok := sets[c.name]; !ok {
+			t.Errorf("Did not find set name='%s'", c.name)
+		} else {
+			fmt.Println(set)
+			if len(set.shapes) != c.count {
+				t.Errorf("Set '%s' has %d shapes; want %d",
+					set.name, len(set.shapes), c.count)
+			}
+		}
+	}
+}

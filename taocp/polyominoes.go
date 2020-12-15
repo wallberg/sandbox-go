@@ -1,11 +1,14 @@
 package taocp
 
 import (
+	"errors"
 	"fmt"
+	"log"
 	"regexp"
 	"sort"
 	"strings"
 
+	"github.com/gobuffalo/packr"
 	"github.com/wallberg/sandbox/sortx"
 )
 
@@ -15,6 +18,19 @@ import (
 //
 // §7.2.2.1 Dancing Links - Polyominoes
 
+// Polyomino represents a single polyomino shape
+type Polyomino struct {
+	name       string  // name of the shape
+	shape      string  // string specification of the shape
+	placements [][]int // base placements of the shape (rotation, reflection)
+}
+
+// PolyominoSet represents a set of polyomino shapes
+type PolyominoSet struct {
+	name   string      // name of the set
+	shapes []Polyomino // list of Polyomino shapes
+}
+
 var (
 	valueMap = []byte{'0', '1', '2', '3', '4', '5',
 		'6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
@@ -23,7 +39,60 @@ var (
 		'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 
 	rePair = regexp.MustCompile(`[0-9a-zA-Z]|\[[0-9a-zA-Z-]+?\]`)
+
+	// PolyominoSets contains sets of common shapes
+	PolyominoSets, _ = LoadPolyominoes()
 )
+
+// LoadPolyominoes loads the standard sets of shapes
+func LoadPolyominoes() (map[string]PolyominoSet, error) {
+	// Load in ./assets/polyominoes.txt
+	box := packr.NewBox("./assets")
+
+	data, err := box.FindString("polyominoes.txt")
+	if err != nil {
+		s := fmt.Sprintf("Error reading assets/polyominoes.txt: %s\n", err)
+		log.Print(s)
+		return nil, errors.New(s)
+	}
+
+	// Read the sets
+	sets := make(map[string]PolyominoSet)
+	var set *PolyominoSet // current set being read
+
+	lines := strings.Split(data, "\n")
+	for i, line := range lines {
+		if len(line) == 0 || line[0] == '#' {
+			// skip
+			continue
+		} else if line[0:2] == "= " {
+			if set != nil {
+				// Add the set to the sets map
+				sets[set.name] = *set
+			}
+			// Start new set
+			set = &PolyominoSet{name: line[2:]}
+		} else {
+			// Add a shape to the set
+			s := strings.Split(line, ": ")
+			shape := &Polyomino{name: s[0]}
+			pairs, err := ParsePlacementPairs(s[1])
+			if err != nil {
+				s := fmt.Sprintf("Error reading line %d of assets/polyominoes.txt: %s\n", i, err)
+				log.Print(s)
+				return nil, errors.New(s)
+			}
+			shape.placements = BasePlacements(pairs)
+			set.shapes = append(set.shapes, *shape)
+		}
+	}
+	if set != nil {
+		// Add the set to the sets map
+		sets[set.name] = *set
+	}
+
+	return sets, nil
+}
 
 // pack stores a placement pair in an int
 func pack(x int, y int) int { return (x << 16) + y }
