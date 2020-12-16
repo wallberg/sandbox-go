@@ -1,7 +1,6 @@
 package taocp
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/gobuffalo/packr"
 	"github.com/wallberg/sandbox/sortx"
+	"gopkg.in/yaml.v2"
 )
 
 // Explore Dancing Links from The Art of Computer Programming, Volume 4,
@@ -41,57 +41,49 @@ var (
 	rePair = regexp.MustCompile(`[0-9a-zA-Z]|\[[0-9a-zA-Z-]+?\]`)
 
 	// PolyominoSets contains sets of common shapes
-	PolyominoSets, _ = LoadPolyominoes()
+	PolyominoSets = LoadPolyominoes()
 )
 
 // LoadPolyominoes loads the standard sets of shapes
-func LoadPolyominoes() (map[string]PolyominoSet, error) {
-	// Load in ./assets/polyominoes.txt
+func LoadPolyominoes() map[string]PolyominoSet {
+	// Load in ./assets/polyominoes.yaml
 	box := packr.NewBox("./assets")
 
-	data, err := box.FindString("polyominoes.txt")
+	data, err := box.FindString("polyominoes.yaml")
 	if err != nil {
-		s := fmt.Sprintf("Error reading assets/polyominoes.txt: %s\n", err)
-		log.Print(s)
-		return nil, errors.New(s)
+		log.Fatalf("Error reading assets/polyominoes.yaml: %v\n", err)
+	}
+
+	// Read the yaml file into map
+	yamlSets := make(map[interface{}]interface{})
+	err = yaml.Unmarshal([]byte(data), &yamlSets)
+	if err != nil {
+		log.Fatalf("error: %v", err)
 	}
 
 	// Read the sets
 	sets := make(map[string]PolyominoSet)
-	var set *PolyominoSet // current set being read
 
-	lines := strings.Split(data, "\n")
-	for i, line := range lines {
-		if len(line) == 0 || line[0] == '#' {
-			// skip
-			continue
-		} else if line[0:2] == "= " {
-			if set != nil {
-				// Add the set to the sets map
-				sets[set.name] = *set
-			}
-			// Start new set
-			set = &PolyominoSet{name: line[2:]}
-		} else {
+	for yamlSetName, yamlSet := range yamlSets {
+
+		set := PolyominoSet{name: yamlSetName.(string)}
+
+		// Iterate over the shapes
+		for yamlShapeName, yamlShape := range yamlSet.(map[interface{}]interface{}) {
 			// Add a shape to the set
-			s := strings.Split(line, ": ")
-			shape := &Polyomino{name: s[0]}
-			pairs, err := ParsePlacementPairs(s[1])
+			shape := Polyomino{name: yamlShapeName.(string)}
+			pairs, err := ParsePlacementPairs(yamlShape.(string))
 			if err != nil {
-				s := fmt.Sprintf("Error reading line %d of assets/polyominoes.txt: %s\n", i, err)
-				log.Print(s)
-				return nil, errors.New(s)
+				log.Fatalf("error: %v", err)
 			}
 			shape.placements = BasePlacements(pairs)
-			set.shapes = append(set.shapes, *shape)
+			set.shapes = append(set.shapes, shape)
 		}
-	}
-	if set != nil {
-		// Add the set to the sets map
-		sets[set.name] = *set
+
+		sets[set.name] = set
 	}
 
-	return sets, nil
+	return sets
 }
 
 // pack stores a placement pair in an int
@@ -161,15 +153,9 @@ func ParsePlacementPairs(s string) ([]int, error) {
 	return pairs, nil
 }
 
-// BasePlacements takes one placement pair as input, shifted to minimum
-// coordinates, and generates every possible transformation using rotate and
-// reflect.
-func BasePlacements(first []int) [][]int {
-
 	// minmax finds minimum and maximum (x, y) values
-	minmax := func(placement []int) (int, int, int) {
-		// Get xMin, yMin, xMax
-		xMin, yMin, xMax := -1, -1, -1
+func minmax(placement []int) (int, int, int, int) {
+	xMin, yMin, xMax, yMax := -1, -1, -1, -1
 		for _, pair := range placement {
 			x, y := unpack(pair)
 			if xMin == -1 || x < xMin {
@@ -181,11 +167,19 @@ func BasePlacements(first []int) [][]int {
 			if xMax == -1 || x > xMax {
 				xMax = x
 			}
+		if yMax == -1 || y > yMax {
+			yMax = y
 		}
-		return xMin, yMin, xMax
+	}
+	return xMin, yMin, xMax, yMax
 	}
 
-	xMin, yMin, _ := minmax(first)
+// BasePlacements takes one placement pair as input, shifted to minimum
+// coordinates, and generates every possible transformation using rotate and
+// reflect.
+func BasePlacements(first []int) [][]int {
+
+	xMin, yMin, _, _ := minmax(first)
 
 	// Shift, if necessary
 	if xMin > 0 || yMin > 0 {
@@ -208,7 +202,7 @@ func BasePlacements(first []int) [][]int {
 		rotate := make([]int, len(placements[i]))
 		reflect := make([]int, len(placements[i]))
 
-		_, _, xMax := minmax(placements[i])
+		_, _, xMax, _ := minmax(placements[i])
 		for j, pair := range placements[i] {
 			x, y := unpack(pair)
 			rotate[j] = pack(y, xMax-x)

@@ -97,11 +97,7 @@ func TestBasePlacements(t *testing.T) {
 
 func TestLoadPolyominoes(t *testing.T) {
 
-	sets, err := LoadPolyominoes()
-	if err != nil {
-		t.Error(err)
-		return
-	}
+	sets := LoadPolyominoes()
 
 	cases := []struct {
 		name  string // name of the set
