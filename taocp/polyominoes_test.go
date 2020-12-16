@@ -57,10 +57,12 @@ func TestBasePlacements(t *testing.T) {
 	cases := []struct {
 		first      []int
 		placements [][]int
+		transform  bool
 	}{
 		{
 			[]int{65536},
 			[][]int{{0}},
+			true,
 		},
 		{
 			[]int{1, 2, 3},
@@ -68,6 +70,14 @@ func TestBasePlacements(t *testing.T) {
 				{0, 1, 2},
 				{0, 65536, 131072},
 			},
+			true,
+		},
+		{
+			[]int{1, 2, 3},
+			[][]int{
+				{0, 1, 2},
+			},
+			false,
 		},
 		{
 			[]int{0, 1, 2, 65536},
@@ -81,11 +91,12 @@ func TestBasePlacements(t *testing.T) {
 				{1, 65537, 131072, 131073},
 				{2, 65536, 65537, 65538},
 			},
+			true,
 		},
 	}
 
 	for _, c := range cases {
-		placements := BasePlacements(c.first)
+		placements := BasePlacements(c.first, c.transform)
 
 		if !reflect.DeepEqual(placements, c.placements) {
 			fmt.Println(placements)
@@ -119,6 +130,33 @@ func TestLoadPolyominoes(t *testing.T) {
 				t.Errorf("Set '%s' has %d shapes; want %d",
 					set.name, len(set.shapes), c.count)
 			}
+		}
+	}
+}
+
+func TestPolyominoes(t *testing.T) {
+	cases := []struct {
+		shapes []string // names of the piece shapes
+		board  string   // name of the board shape
+		count  int      // number of expected results
+	}{
+		{[]string{"5"}, "3x20", 8},
+	}
+
+	for _, c := range cases {
+		items, options, sitems := Polyominoes(c.shapes, c.board)
+
+		// Generate solutions
+		count := 0
+		stats := &Stats{Debug: false, Delta: 0}
+		ExactCover(items, options, sitems, stats,
+			func(solution [][]string) bool {
+				count++
+				return true
+			})
+
+		if c.count != count {
+			t.Errorf("Found %d solutions; want %d", c.count, count)
 		}
 	}
 }

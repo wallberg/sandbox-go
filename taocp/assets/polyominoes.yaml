@@ -1,5 +1,6 @@
 --- # Polyomino Shape Sets
 
+# Piece Shapes
 "1":
   "A": "00"
 
@@ -30,3 +31,8 @@
   "X": "1[012] [012]1"
   "Y": "0[0-3] 12"
   "Z": "00 [012]1 22"
+
+# Board Shapes
+"Boards":
+  "3x20": "[0-2][0-j]"
+

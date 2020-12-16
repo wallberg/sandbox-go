@@ -76,7 +76,7 @@ func LoadPolyominoes() map[string]PolyominoSet {
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			shape.placements = BasePlacements(pairs)
+			shape.placements = BasePlacements(pairs, set.name != "Boards")
 			set.shapes = append(set.shapes, shape)
 		}
 
@@ -153,31 +153,31 @@ func ParsePlacementPairs(s string) ([]int, error) {
 	return pairs, nil
 }
 
-	// minmax finds minimum and maximum (x, y) values
+// minmax finds minimum and maximum (x, y) values
 func minmax(placement []int) (int, int, int, int) {
 	xMin, yMin, xMax, yMax := -1, -1, -1, -1
-		for _, pair := range placement {
-			x, y := unpack(pair)
-			if xMin == -1 || x < xMin {
-				xMin = x
-			}
-			if yMin == -1 || y < yMin {
-				yMin = y
-			}
-			if xMax == -1 || x > xMax {
-				xMax = x
-			}
+	for _, pair := range placement {
+		x, y := unpack(pair)
+		if xMin == -1 || x < xMin {
+			xMin = x
+		}
+		if yMin == -1 || y < yMin {
+			yMin = y
+		}
+		if xMax == -1 || x > xMax {
+			xMax = x
+		}
 		if yMax == -1 || y > yMax {
 			yMax = y
 		}
 	}
 	return xMin, yMin, xMax, yMax
-	}
+}
 
-// BasePlacements takes one placement pair as input, shifted to minimum
-// coordinates, and generates every possible transformation using rotate and
-// reflect.
-func BasePlacements(first []int) [][]int {
+// BasePlacements takes one placement pair as input and shifts it to minimum
+// coordinates, and optionally generates every possible transformation using
+// rotate and reflect.
+func BasePlacements(first []int, transform bool) [][]int {
 
 	xMin, yMin, _, _ := minmax(first)
 
@@ -197,44 +197,46 @@ func BasePlacements(first []int) [][]int {
 	placements := make([][]int, 1)
 	placements[0] = first
 
-	for i := 0; i < len(placements); i++ {
-		// Generate the rotation and reflection
-		rotate := make([]int, len(placements[i]))
-		reflect := make([]int, len(placements[i]))
+	if transform {
+		for i := 0; i < len(placements); i++ {
+			// Generate the rotation and reflection
+			rotate := make([]int, len(placements[i]))
+			reflect := make([]int, len(placements[i]))
 
-		_, _, xMax, _ := minmax(placements[i])
-		for j, pair := range placements[i] {
-			x, y := unpack(pair)
-			rotate[j] = pack(y, xMax-x)
-			reflect[j] = pack(y, x)
-		}
-		sort.Ints(rotate)
-		sort.Ints(reflect)
+			_, _, xMax, _ := minmax(placements[i])
+			for j, pair := range placements[i] {
+				x, y := unpack(pair)
+				rotate[j] = pack(y, xMax-x)
+				reflect[j] = pack(y, x)
+			}
+			sort.Ints(rotate)
+			sort.Ints(reflect)
 
-		// Add each to the list of placements, if not already there
-		for _, placement := range [][]int{rotate, reflect} {
-			// See if this placement already exists
-			exists := false
-			// Iterate over each existing placement
-			for j := range placements {
-				same := true
-				for k := 0; k < n; k++ {
-					if placement[k] != placements[j][k] {
-						same = false
+			// Add each to the list of placements, if not already there
+			for _, placement := range [][]int{rotate, reflect} {
+				// See if this placement already exists
+				exists := false
+				// Iterate over each existing placement
+				for j := range placements {
+					same := true
+					for k := 0; k < n; k++ {
+						if placement[k] != placements[j][k] {
+							same = false
+							break
+						}
+					}
+					if same {
+						exists = true
 						break
 					}
 				}
-				if same {
-					exists = true
-					break
+
+				if !exists {
+					placements = append(placements, placement)
 				}
 			}
 
-			if !exists {
-				placements = append(placements, placement)
-			}
 		}
-
 	}
 
 	// Sort the list of placements
@@ -250,4 +252,71 @@ func BasePlacements(first []int) [][]int {
 	})
 
 	return placements
+}
+
+// Polyominoes uses the list of piece shape names and the board shape name
+// found in PolyominoSets to generate items, options, and secondary items
+// to find solutions using ExactCover().
+func Polyominoes(shapeNames []string, boardName string) ([]string, [][]string, []string) {
+
+	// Get the board shape
+	var board *Polyomino
+	for _, x := range PolyominoSets["Boards"].shapes {
+		if x.name == boardName {
+			board = &x
+			break
+		}
+	}
+	if board == nil {
+		log.Fatalf("Can't find board shape named '%s'", boardName)
+	}
+	_, _, xMaxBoard, yMaxBoard := minmax(board.placements[0])
+
+	// Build the list of items
+	items := make([]string, 0)
+	for _, shape := range PolyominoSets["5"].shapes {
+		items = append(items, shape.name)
+	}
+	for x := 0; x <= xMaxBoard; x++ {
+		for y := 0; y <= yMaxBoard; y++ {
+			cell := fmt.Sprintf("%c%c", valueMap[x], valueMap[y])
+			items = append(items, cell)
+		}
+	}
+
+	// Build the list of options
+	options := make([][]string, 0)
+
+	// Iterate over each shape
+	for _, shapeName := range shapeNames {
+		for _, shape := range PolyominoSets[shapeName].shapes {
+
+			// Iterate over each shape base placement
+			for _, placement := range shape.placements {
+
+				// Get the bounds of this placement
+				_, _, xMax, yMax := minmax(placement)
+
+				// Iterate over delta placements
+				for xDelta := 0; xDelta+xMax <= xMaxBoard; xDelta++ {
+					for yDelta := 0; yDelta+yMax <= yMaxBoard; yDelta++ {
+
+						// Add the option
+						option := make([]string, len(placement)+1)
+						option[0] = shape.name
+						for i, pair := range placement {
+							x, y := unpack(pair)
+							cell := fmt.Sprintf("%c%c",
+								valueMap[x+xDelta], valueMap[y+yDelta])
+							option[i+1] = cell
+						}
+						options = append(options, option)
+					}
+				}
+			}
+		}
+	}
+
+	return items, options, []string{}
+
 }
