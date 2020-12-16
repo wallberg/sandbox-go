@@ -1,6 +1,6 @@
 --- # Polyomino Shape Sets
 
-# Piece Shapes
+# Piece Shape Sets - each piece name should be globally unique
 "1":
   "A": "00"
 
@@ -35,4 +35,13 @@
 # Board Shapes
 "Boards":
   "3x20": "[0-2][0-j]"
-
+  "5x18-1": "0[1-h] [1-4][0-h]" # Family Blokus Storage Box
+  "5x6-1": "0[1-5] [1-4][0-5]" # Family Blokus Storage Box w/o pentominoes
+  "1x1": "00"
+  "2x2": "[01][01]"
+  "2x2-1": "01 10 11"
+  "2x3": "[01][012]"
+  "2x3-1": "0[12] 1[012]"
+  "3x3": "[012][012]"
+  "3x3-1": "0[12] [12][012]"
+  "8x8": "[0-7][0-7]"

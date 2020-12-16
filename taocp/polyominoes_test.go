@@ -125,7 +125,6 @@ func TestLoadPolyominoes(t *testing.T) {
 		if set, ok := sets[c.name]; !ok {
 			t.Errorf("Did not find set name='%s'", c.name)
 		} else {
-			fmt.Println(set)
 			if len(set.shapes) != c.count {
 				t.Errorf("Set '%s' has %d shapes; want %d",
 					set.name, len(set.shapes), c.count)
@@ -141,22 +140,41 @@ func TestPolyominoes(t *testing.T) {
 		count  int      // number of expected results
 	}{
 		{[]string{"5"}, "3x20", 8},
+		{[]string{"1"}, "1x1", 1},
+		{[]string{"2"}, "1x1", 0},
+		{[]string{"1", "2"}, "2x2", 0},
+		{[]string{"1", "2"}, "2x2-1", 2},
+		{[]string{"2", "3"}, "2x3", 0},
+		{[]string{"1", "2", "3"}, "3x3", 48},
+		{[]string{"2", "3"}, "3x3-1", 4},
+		{[]string{"1", "2", "3", "4"}, "5x6-1", 100593}, // tautology
+		// {[]string{"4", "5"}, "8x8", 0},                   // too slow
+		// {[]string{"1", "2", "3", "4", "5"}, "5x18-1", 0}, // too slow
 	}
 
 	for _, c := range cases {
 		items, options, sitems := Polyominoes(c.shapes, c.board)
 
+		if c.board == "8x8" {
+			fmt.Println(items)
+			for _, option := range options {
+				fmt.Println(option)
+			}
+		}
+
 		// Generate solutions
 		count := 0
-		stats := &Stats{Debug: false, Delta: 0}
-		ExactCover(items, options, sitems, stats,
-			func(solution [][]string) bool {
-				count++
-				return true
-			})
+		if len(options) > 0 {
+			stats := &Stats{Debug: false, Progress: true, Delta: 10000000}
+			ExactCover(items, options, sitems, stats,
+				func(solution [][]string) bool {
+					count++
+					return true
+				})
+		}
 
-		if c.count != count {
-			t.Errorf("Found %d solutions; want %d", c.count, count)
+		if count != c.count {
+			t.Errorf("Found %d solutions for shape sets=%v, board=%s; want %d", count, c.shapes, c.board, c.count)
 		}
 	}
 }

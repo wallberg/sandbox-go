@@ -254,10 +254,10 @@ func BasePlacements(first []int, transform bool) [][]int {
 	return placements
 }
 
-// Polyominoes uses the list of piece shape names and the board shape name
+// Polyominoes uses the list of piece shape set names and the board shape name
 // found in PolyominoSets to generate items, options, and secondary items
 // to find solutions using ExactCover().
-func Polyominoes(shapeNames []string, boardName string) ([]string, [][]string, []string) {
+func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string, []string) {
 
 	// Get the board shape
 	var board *Polyomino
@@ -272,24 +272,29 @@ func Polyominoes(shapeNames []string, boardName string) ([]string, [][]string, [
 	}
 	_, _, xMaxBoard, yMaxBoard := minmax(board.placements[0])
 
-	// Build the list of items
+	// Build the list of items and map of available cells
 	items := make([]string, 0)
-	for _, shape := range PolyominoSets["5"].shapes {
-		items = append(items, shape.name)
-	}
-	for x := 0; x <= xMaxBoard; x++ {
-		for y := 0; y <= yMaxBoard; y++ {
-			cell := fmt.Sprintf("%c%c", valueMap[x], valueMap[y])
-			items = append(items, cell)
+	cells := make(map[int]bool)
+
+	for _, shapeSetName := range shapeSetNames {
+		for _, shape := range PolyominoSets[shapeSetName].shapes {
+			items = append(items, shape.name)
 		}
+	}
+
+	for _, cell := range board.placements[0] {
+		x, y := unpack(cell)
+		cellItem := fmt.Sprintf("%c%c", valueMap[x], valueMap[y])
+		items = append(items, cellItem)
+		cells[cell] = true
 	}
 
 	// Build the list of options
 	options := make([][]string, 0)
 
 	// Iterate over each shape
-	for _, shapeName := range shapeNames {
-		for _, shape := range PolyominoSets[shapeName].shapes {
+	for _, shapeSetName := range shapeSetNames {
+		for _, shape := range PolyominoSets[shapeSetName].shapes {
 
 			// Iterate over each shape base placement
 			for _, placement := range shape.placements {
@@ -301,16 +306,25 @@ func Polyominoes(shapeNames []string, boardName string) ([]string, [][]string, [
 				for xDelta := 0; xDelta+xMax <= xMaxBoard; xDelta++ {
 					for yDelta := 0; yDelta+yMax <= yMaxBoard; yDelta++ {
 
-						// Add the option
+						// Add the option, if all cells are in the board
 						option := make([]string, len(placement)+1)
 						option[0] = shape.name
-						for i, pair := range placement {
-							x, y := unpack(pair)
-							cell := fmt.Sprintf("%c%c",
-								valueMap[x+xDelta], valueMap[y+yDelta])
-							option[i+1] = cell
+						addOption := true
+						for i, cell := range placement {
+							x, y := unpack(cell)
+							x += xDelta
+							y += yDelta
+							if !cells[pack(x, y)] {
+								addOption = false
+								break
+							}
+							cellItem := fmt.Sprintf("%c%c",
+								valueMap[x], valueMap[y])
+							option[i+1] = cellItem
 						}
-						options = append(options, option)
+						if addOption {
+							options = append(options, option)
+						}
 					}
 				}
 			}
