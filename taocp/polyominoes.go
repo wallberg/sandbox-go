@@ -20,15 +20,15 @@ import (
 
 // Polyomino represents a single polyomino shape
 type Polyomino struct {
-	name       string  // name of the shape
-	shape      string  // string specification of the shape
-	placements [][]int // base placements of the shape (rotation, reflection)
+	Name       string  // name of the shape
+	Shape      string  // string specification of the shape
+	Placements [][]int // base placements of the shape (rotation, reflection)
 }
 
 // PolyominoSet represents a set of polyomino shapes
 type PolyominoSet struct {
-	name   string      // name of the set
-	shapes []Polyomino // list of Polyomino shapes
+	Name   string      // name of the set
+	Shapes []Polyomino // list of Polyomino shapes
 }
 
 var (
@@ -66,21 +66,21 @@ func LoadPolyominoes() map[string]PolyominoSet {
 
 	for yamlSetName, yamlSet := range yamlSets {
 
-		set := PolyominoSet{name: yamlSetName.(string)}
+		set := PolyominoSet{Name: yamlSetName.(string)}
 
 		// Iterate over the shapes
 		for yamlShapeName, yamlShape := range yamlSet.(map[interface{}]interface{}) {
 			// Add a shape to the set
-			shape := Polyomino{name: yamlShapeName.(string)}
+			shape := Polyomino{Name: yamlShapeName.(string)}
 			pairs, err := ParsePlacementPairs(yamlShape.(string))
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			shape.placements = BasePlacements(pairs, set.name != "Boards")
-			set.shapes = append(set.shapes, shape)
+			shape.Placements = BasePlacements(pairs, set.Name != "Boards")
+			set.Shapes = append(set.Shapes, shape)
 		}
 
-		sets[set.name] = set
+		sets[set.Name] = set
 	}
 
 	return sets
@@ -261,8 +261,8 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 
 	// Get the board shape
 	var board *Polyomino
-	for _, x := range PolyominoSets["Boards"].shapes {
-		if x.name == boardName {
+	for _, x := range PolyominoSets["Boards"].Shapes {
+		if x.Name == boardName {
 			board = &x
 			break
 		}
@@ -270,19 +270,19 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 	if board == nil {
 		log.Fatalf("Can't find board shape named '%s'", boardName)
 	}
-	_, _, xMaxBoard, yMaxBoard := minmax(board.placements[0])
+	_, _, xMaxBoard, yMaxBoard := minmax(board.Placements[0])
 
 	// Build the list of items and map of available cells
 	items := make([]string, 0)
 	cells := make(map[int]bool)
 
 	for _, shapeSetName := range shapeSetNames {
-		for _, shape := range PolyominoSets[shapeSetName].shapes {
-			items = append(items, shape.name)
+		for _, shape := range PolyominoSets[shapeSetName].Shapes {
+			items = append(items, shape.Name)
 		}
 	}
 
-	for _, cell := range board.placements[0] {
+	for _, cell := range board.Placements[0] {
 		x, y := unpack(cell)
 		cellItem := fmt.Sprintf("%c%c", valueMap[x], valueMap[y])
 		items = append(items, cellItem)
@@ -294,10 +294,10 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 
 	// Iterate over each shape
 	for _, shapeSetName := range shapeSetNames {
-		for _, shape := range PolyominoSets[shapeSetName].shapes {
+		for _, shape := range PolyominoSets[shapeSetName].Shapes {
 
 			// Iterate over each shape base placement
-			for _, placement := range shape.placements {
+			for _, placement := range shape.Placements {
 
 				// Get the bounds of this placement
 				_, _, xMax, yMax := minmax(placement)
@@ -308,7 +308,7 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 
 						// Add the option, if all cells are in the board
 						option := make([]string, len(placement)+1)
-						option[0] = shape.name
+						option[0] = shape.Name
 						addOption := true
 						for i, cell := range placement {
 							x, y := unpack(cell)

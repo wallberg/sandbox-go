@@ -7,10 +7,10 @@ import (
 	"github.com/wallberg/sandbox/taocp"
 )
 
-var command wrCommand
-
 // initialize this command by adding it to the parser
 func init() {
+	var command wrCommand
+
 	_, err := parser.AddCommand("wr",
 		"Word Rectangles",
 		"Generate m x n Word Rectangles",
