@@ -38,6 +38,25 @@ func (s Stats) String() string {
 		s.Solutions, s.Levels[:i])
 }
 
+// ExactCoverYaml provides YAML (de-)serialization for Exact Cover input
+type ExactCoverYaml struct {
+	Items   []string `yaml:""` // Primary Items
+	SItems  []string `yaml:""` // Secondary Items
+	Options []string `yaml:""` // Options
+}
+
+// NewExactCoverYaml creates a new instance of ExactCoverYaml
+func NewExactCoverYaml(items []string, sitems []string, options [][]string) *ExactCoverYaml {
+	xcYaml := ExactCoverYaml{Items: items, SItems: sitems}
+	xcYaml.Options = make([]string, 0)
+	for _, option := range options {
+		xcYaml.Options = append(xcYaml.Options,
+			strings.Join(option, " "))
+	}
+
+	return &xcYaml
+}
+
 // ExactCover implements Algorithm X, exact cover via dancing links.
 //
 // Arguments:

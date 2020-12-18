@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -42,6 +44,31 @@ var (
 		{"p", "r", "x:A", "y"},
 	}
 )
+
+func TestExactCoverYaml(t *testing.T) {
+
+	// Build YAML struct
+	xcYaml := NewExactCoverYaml(xccItems, xccSItems, xccOptions)
+
+	// Serialize to YAML
+	data, err := yaml.Marshal(xcYaml)
+	if err != nil {
+		t.Errorf("Error serializing ExactCoverYaml: %v", err)
+		return
+	}
+
+	// Deserialize from YAML
+	var xcYaml2 ExactCoverYaml
+	err = yaml.Unmarshal([]byte(data), &xcYaml2)
+	if err != nil {
+		t.Errorf("Error deserializing ExactCoverYaml: %v", err)
+	}
+
+	// Test the round trip
+	if !reflect.DeepEqual(*xcYaml, xcYaml2) {
+		t.Errorf("Got back %v; want %v", xcYaml2, *xcYaml)
+	}
+}
 
 func TestExactCover(t *testing.T) {
 
