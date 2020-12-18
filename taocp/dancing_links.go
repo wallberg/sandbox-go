@@ -16,15 +16,18 @@ import (
 // Stats is a struct for tracking ExactCover statistics and reporting
 // runtime progress
 type Stats struct {
-	Progress  bool  // Display runtime progress
+	// Input parameters
+	Progress  bool // Display runtime progress
+	Debug     bool // Enable debug logging
+	Verbosity int  // Debug verbosity level (0 or 1)
+	Delta     int  // Display progress every Delta number of Nodes
+
+	// Statistics collectors
 	MaxLevel  int   // Maximum level reached
-	Delta     int   // Display progress every Delta number of Nodes
 	Theta     int   // Display progress at next Theta number of Nodes
 	Levels    []int // Count of times each level is entered
 	Nodes     int   // Count of nodes processed
 	Solutions int   // Count of solutions returned
-	Debug     bool  // Enable debug logging
-	Verbosity int   // Debug verbosity level (0 or 1)
 }
 
 func (s Stats) String() string {
