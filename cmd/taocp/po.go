@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 
 	"github.com/wallberg/sandbox/taocp"
 	"gopkg.in/yaml.v2"
@@ -24,9 +25,9 @@ func init() {
 }
 
 type poCommand struct {
-	List   bool     `short:"l" long:"list" description:"list available piece sets and board shapes"`
-	Pieces []string `short:"p" long:"pieces" description:"comma separated list of piece sets" default:"5"`
-	Board  string   `short:"b" long:"board" description:"board name"`
+	List   bool   `short:"l" long:"list" description:"list available piece sets and board shapes"`
+	Pieces string `short:"p" long:"pieces" description:"comma separated list of piece sets" default:"5"`
+	Board  string `short:"b" long:"board" description:"board name"`
 }
 
 func (command poCommand) Execute(args []string) error {
@@ -76,9 +77,10 @@ func (command poCommand) Execute(args []string) error {
 		if command.Board == "" {
 			return fmt.Errorf("the required flag `-b, --board' was not specified")
 		}
+		pieces := strings.Split(command.Pieces, ",")
 
 		// Generate XCC input
-		items, options, sitems := taocp.Polyominoes(command.Pieces, command.Board)
+		items, options, sitems := taocp.Polyominoes(pieces, command.Board)
 
 		// Build YAML struct
 		xcYaml := taocp.NewExactCoverYaml(items, sitems, options)
