@@ -125,9 +125,9 @@ func TestLoadPolyominoes(t *testing.T) {
 		if set, ok := sets[c.name]; !ok {
 			t.Errorf("Did not find set name='%s'", c.name)
 		} else {
-			if len(set.shapes) != c.count {
+			if len(set.Shapes) != c.count {
 				t.Errorf("Set '%s' has %d shapes; want %d",
-					set.name, len(set.shapes), c.count)
+					set.Name, len(set.Shapes), c.count)
 			}
 		}
 	}
