@@ -516,7 +516,7 @@ X8:
 //              if the search should continue
 //
 func ExactCoverColors(items []string, options [][]string, secondary []string,
-	stats *Stats, visit func(solution [][]string) bool) {
+	stats *Stats, visit func(solution [][]string) bool) error {
 
 	var (
 		n1       int      // number of primary items
@@ -584,7 +584,46 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 		log.Print(b.String())
 	}
 
+	validate := func() error {
+		// Items
+		if len(items) == 0 {
+			return fmt.Errorf("items may not be empty")
+		}
+		mItems := make(map[string]bool)
+		for _, item := range items {
+			if mItems[item] {
+				return fmt.Errorf("Item '%s' is not unique", item)
+			}
+			mItems[item] = true
+		}
+
+		// Secondary Items
+		mSItems := make(map[string]bool)
+		for _, sitem := range secondary {
+			if mItems[sitem] || mSItems[sitem] {
+				return fmt.Errorf("Secondary item '%s' is not unique", sitem)
+			}
+			mSItems[sitem] = true
+		}
+
+		// Options
+		for _, option := range options {
+			for _, item := range option {
+				i := strings.Index(item, ":")
+				if i > -1 {
+					item = item[:i]
+				}
+				if !mItems[item] && !mSItems[item] {
+					return fmt.Errorf("Option '%v' contains '%s' which is not an item or secondary item", option, item)
+				}
+			}
+		}
+
+		return nil
+	}
+
 	initialize := func() {
+
 		n1 = len(items)
 		n2 = len(secondary)
 		n = n1 + n2
@@ -945,6 +984,9 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 	}
 
 	// C1 [Initialize.]
+	if err := validate(); err != nil {
+		return err
+	}
 	initialize()
 
 	var (
@@ -994,7 +1036,7 @@ C2:
 			if progress {
 				showProgress()
 			}
-			return
+			return nil
 		}
 		goto C8
 	}
@@ -1077,7 +1119,7 @@ C8:
 		if progress {
 			showProgress()
 		}
-		return
+		return nil
 	}
 	level--
 	goto C6

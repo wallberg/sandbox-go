@@ -83,7 +83,7 @@ func (command xcCommand) Execute(args []string) error {
 		Delta:     command.Delta,
 	}
 	output.WriteString("solutions:\n")
-	taocp.ExactCoverColors(xcYaml.Items, options, xcYaml.SItems, stats,
+	err = taocp.ExactCoverColors(xcYaml.Items, options, xcYaml.SItems, stats,
 		func(solution [][]string) bool {
 			output.WriteString("  -\n")
 			for _, option := range solution {
@@ -93,6 +93,9 @@ func (command xcCommand) Execute(args []string) error {
 			}
 			return true
 		})
+	if err != nil {
+		return err
+	}
 
 	log.Println("Stats:", *stats)
 
