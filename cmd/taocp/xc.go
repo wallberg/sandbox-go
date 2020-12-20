@@ -82,12 +82,14 @@ func (command xcCommand) Execute(args []string) error {
 		Verbosity: command.Verbosity - 2,
 		Delta:     command.Delta,
 	}
+	output.WriteString("solutions:\n")
 	taocp.ExactCoverColors(xcYaml.Items, options, xcYaml.SItems, stats,
 		func(solution [][]string) bool {
-			output.WriteString("---\n")
+			output.WriteString("  -\n")
 			for _, option := range solution {
+				output.WriteString("    - \"")
 				output.WriteString(strings.Join(option, " "))
-				output.WriteString("\n")
+				output.WriteString("\"\n")
 			}
 			return true
 		})
