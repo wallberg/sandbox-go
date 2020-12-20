@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"fmt"
+	"log"
 	"sort"
 	"strconv"
 	"strings"
@@ -95,15 +96,15 @@ func ExactCover(items []string, options [][]string, secondary []string,
 		i := 0
 		for rlink[i] != 0 {
 			i = rlink[i]
-			fmt.Print("  ", name[i])
+			log.Print("  ", name[i])
 			x := i
 			for dlink[x] != i {
 				x = dlink[x]
-				fmt.Print(" ", name[top[x]])
+				log.Print(" ", name[top[x]])
 			}
-			fmt.Println()
+			log.Println()
 		}
-		fmt.Println("---")
+		log.Println("---")
 	}
 
 	initialize := func() {
@@ -147,9 +148,9 @@ func ExactCover(items []string, options [][]string, secondary []string,
 		rlink[n1] = 0
 
 		if debug {
-			fmt.Println("name", name)
-			fmt.Println("llink", llink)
-			fmt.Println("rlink", rlink)
+			log.Println("name", name)
+			log.Println("llink", llink)
+			log.Println("rlink", rlink)
 		}
 
 		// Fill out the option tables
@@ -218,10 +219,10 @@ func ExactCover(items []string, options [][]string, secondary []string,
 		}
 
 		if debug {
-			fmt.Println("top", top)
-			fmt.Println("llen", llen)
-			fmt.Println("ulink", ulink)
-			fmt.Println("dlink", dlink)
+			log.Println("top", top)
+			log.Println("llen", llen)
+			log.Println("ulink", ulink)
+			log.Println("dlink", dlink)
 		}
 
 		level = 0
@@ -237,15 +238,16 @@ func ExactCover(items []string, options [][]string, secondary []string,
 		est := 0.0 // estimate of percentage done
 		tcum := 1
 
-		fmt.Printf("Current level %d of max %d\n", level, stats.MaxLevel)
+		log.Printf("Current level %d of max %d\n", level, stats.MaxLevel)
 
 		// Iterate over the options
 		for _, p := range state[0:level] {
 			// Cyclically gather the items in the option, beginning at p
-			fmt.Print("  ")
+			var b strings.Builder
+			b.WriteString("  ")
 			q := p
 			for {
-				fmt.Print(name[top[q]] + " ")
+				b.WriteString(name[top[q]] + " ")
 				q++
 				if top[q] <= 0 {
 					q = ulink[q]
@@ -265,19 +267,20 @@ func ExactCover(items []string, options [][]string, secondary []string,
 			}
 
 			if q != i {
-				fmt.Printf(" %d of %d\n", k, llen[i])
+				b.WriteString(fmt.Sprintf(" %d of %d\n", k, llen[i]))
 				tcum *= llen[i]
 				est += float64(k-1) / float64(tcum)
 			} else {
-				fmt.Println(" not in this list")
+				b.WriteString(" not in this list")
 			}
+			log.Print(b.String())
 		}
 
 		est += 1.0 / float64(2*tcum)
 
-		fmt.Printf("  solutions=%d, nodes=%d, est=%4.4f\n",
+		log.Printf("  solutions=%d, nodes=%d, est=%4.4f\n",
 			stats.Solutions, stats.Nodes, est)
-		fmt.Println("---")
+		log.Println("---")
 	}
 
 	lvisit := func() bool {
@@ -384,7 +387,7 @@ func ExactCover(items []string, options [][]string, secondary []string,
 X2:
 	// X2. [Enter level l.]
 	if debug {
-		fmt.Printf("X2. level=%d, x=%v\n", level, state[0:level])
+		log.Printf("X2. level=%d, x=%v\n", level, state[0:level])
 	}
 
 	if stats != nil {
@@ -405,7 +408,7 @@ X2:
 	if rlink[0] == 0 {
 		// visit the solution
 		if debug {
-			fmt.Println("X2. Visit the solution")
+			log.Println("X2. Visit the solution")
 		}
 		if stats != nil {
 			stats.Solutions++
@@ -413,7 +416,7 @@ X2:
 		resume := lvisit()
 		if !resume {
 			if debug {
-				fmt.Println("X2. Halting the search")
+				log.Println("X2. Halting the search")
 			}
 			return
 		}
@@ -424,12 +427,12 @@ X2:
 	i = mrv()
 
 	if debug {
-		fmt.Printf("X3. Choose i=%d (%s)\n", i, name[i])
+		log.Printf("X3. Choose i=%d (%s)\n", i, name[i])
 	}
 
 	// X4. [Cover i.]
 	if debug {
-		fmt.Printf("X4. Cover i=%d (%s)\n", i, name[i])
+		log.Printf("X4. Cover i=%d (%s)\n", i, name[i])
 	}
 	cover(i)
 	state[level] = dlink[i]
@@ -437,7 +440,7 @@ X2:
 X5:
 	// X5. [Try x_l.]
 	if debug {
-		fmt.Printf("X5. Try l=%d, x[l]=%d\n", level, state[level])
+		log.Printf("X5. Try l=%d, x[l]=%d\n", level, state[level])
 	}
 	if state[level] == i {
 		goto X7
@@ -458,7 +461,7 @@ X5:
 X6:
 	// X6. [Try again.]
 	if debug {
-		fmt.Println("X6. Try again")
+		log.Println("X6. Try again")
 	}
 
 	if stats != nil {
@@ -482,14 +485,14 @@ X6:
 X7:
 	// X7. [Backtrack.]
 	if debug {
-		fmt.Println("X7. Backtrack")
+		log.Println("X7. Backtrack")
 	}
 	uncover(i)
 
 X8:
 	// X8. [Leave level l.]
 	if debug {
-		fmt.Printf("X8. Leaving level %d\n", level)
+		log.Printf("X8. Leaving level %d\n", level)
 	}
 	if level == 0 {
 		return
@@ -535,37 +538,37 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 	)
 
 	dump := func() {
-		fmt.Println("----------------------")
+		var b strings.Builder
+		b.WriteString("\n")
 
 		// Tables
-		fmt.Println("  name", name)
-		fmt.Println("  llink", llink)
-		fmt.Println("  rlink", rlink)
-		fmt.Println("  top", top)
-		fmt.Println("  llen", llen)
-		fmt.Println("  ulink", ulink)
-		fmt.Println("  dlink", dlink)
-		fmt.Println("  color", color)
-		fmt.Print("  colors")
+		b.WriteString(fmt.Sprintf("name :  %v\n", name))
+		b.WriteString(fmt.Sprintf("llink:  %v\n", llink))
+		b.WriteString(fmt.Sprintf("rlink:  %v\n", rlink))
+		b.WriteString(fmt.Sprintf("top  :  %v\n", top))
+		b.WriteString(fmt.Sprintf("llen :  %v\n", llen))
+		b.WriteString(fmt.Sprintf("ulink:  %v\n", ulink))
+		b.WriteString(fmt.Sprintf("dlink:  %v\n", dlink))
+		b.WriteString(fmt.Sprintf("color:  %v\n", color))
+		b.WriteString("colors: ")
 		for i, colorName := range colors {
 			if i > 0 {
-				fmt.Printf(" %d=%s", i, colorName)
+				b.WriteString(fmt.Sprintf(" %d=%s", i, colorName))
 			}
 		}
-		fmt.Println()
 
 		// Remaining items
-		fmt.Print("  items:")
+		b.WriteString("items:  ")
 		i := 0
 		for rlink[i] != 0 {
 			i = rlink[i]
-			fmt.Print(" ", name[i])
+			b.WriteString(" " + name[i])
 		}
-		fmt.Println()
+		b.WriteString("\n")
 
 		// Selected options
 		for i, p := range state[0:level] {
-			fmt.Printf("  option: i=%d, p=%d (", i, p)
+			b.WriteString(fmt.Sprintf("  option: i=%d, p=%d (", i, p))
 			// Move back to first element in the option
 			for top[p-1] > 0 {
 				p--
@@ -573,13 +576,12 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 			// Iterate over elements in the option
 			q := p
 			for top[q] > 0 {
-				fmt.Print(" ", name[top[q]])
+				b.WriteString(fmt.Sprintf(" %v", name[top[q]]))
 				q++
 			}
-			fmt.Println(" )")
+			b.WriteString(" )\n")
 		}
-		fmt.Println("----------------------")
-
+		log.Print(b.String())
 	}
 
 	initialize := func() {
@@ -725,15 +727,17 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 		est := 0.0 // estimate of percentage done
 		tcum := 1
 
-		fmt.Printf("Current level %d of max %d\n", level, stats.MaxLevel)
+		var b strings.Builder
+		b.WriteString("\n")
+		b.WriteString(fmt.Sprintf("Current level %d of max %d\n", level, stats.MaxLevel))
 
 		// Iterate over the options
 		for _, p := range state[0:level] {
 			// Cyclically gather the items in the option, beginning at p
-			fmt.Print("  ")
 			q := p
+			b.WriteString(" ")
 			for {
-				fmt.Print(name[top[q]] + " ")
+				b.WriteString(fmt.Sprintf(" %v", name[top[q]]))
 				q++
 				if top[q] <= 0 {
 					q = ulink[q]
@@ -753,19 +757,19 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 			}
 
 			if q != i {
-				fmt.Printf(" %d of %d\n", k, llen[i])
+				b.WriteString(fmt.Sprintf(" %d of %d\n", k, llen[i]))
 				tcum *= llen[i]
 				est += float64(k-1) / float64(tcum)
 			} else {
-				fmt.Println(" not in this list")
+				b.WriteString(" not in this list\n")
 			}
 		}
 
 		est += 1.0 / float64(2*tcum)
 
-		fmt.Printf("  solutions=%d, nodes=%d, est=%4.4f\n",
-			stats.Solutions, stats.Nodes, est)
-		fmt.Println("---")
+		b.WriteString(fmt.Sprintf("solutions=%d, nodes=%d, est=%4.4f\n",
+			stats.Solutions, stats.Nodes, est))
+		log.Print(b.String())
 	}
 
 	lvisit := func() bool {
@@ -956,7 +960,7 @@ func ExactCoverColors(items []string, options [][]string, secondary []string,
 C2:
 	// C2. [Enter level l.]
 	if debug {
-		fmt.Printf("C2. level=%d, x=%v\n", level, state[0:level])
+		log.Printf("C2. level=%d, x=%v\n", level, state[0:level])
 	}
 
 	if stats != nil {
@@ -977,7 +981,7 @@ C2:
 	if rlink[0] == 0 {
 		// visit the solution
 		if debug {
-			fmt.Println("C2. Visit the solution")
+			log.Println("C2. Visit the solution")
 		}
 		if stats != nil {
 			stats.Solutions++
@@ -985,7 +989,7 @@ C2:
 		resume := lvisit()
 		if !resume {
 			if debug {
-				fmt.Println("C2. Halting the search")
+				log.Println("C2. Halting the search")
 			}
 			if progress {
 				showProgress()
@@ -999,12 +1003,12 @@ C2:
 	i = mrv()
 
 	if debug {
-		fmt.Printf("C3. Choose i=%d (%s)\n", i, name[i])
+		log.Printf("C3. Choose i=%d (%s)\n", i, name[i])
 	}
 
 	// C4. [Cover i.]
 	if debug {
-		fmt.Printf("C4. Cover i=%d (%s)\n", i, name[i])
+		log.Printf("C4. Cover i=%d (%s)\n", i, name[i])
 	}
 	cover(i)
 	state[level] = dlink[i]
@@ -1012,7 +1016,7 @@ C2:
 C5:
 	// C5. [Try x_l.]
 	if debug {
-		fmt.Printf("C5. Try l=%d, x[l]=%d\n", level, state[level])
+		log.Printf("C5. Try l=%d, x[l]=%d\n", level, state[level])
 	}
 	if state[level] == i {
 		goto C7
@@ -1035,7 +1039,7 @@ C5:
 C6:
 	// C6. [Try again.]
 	if debug {
-		fmt.Println("C6. Try again")
+		log.Println("C6. Try again")
 	}
 
 	if stats != nil {
@@ -1060,14 +1064,14 @@ C6:
 C7:
 	// C7. [Backtrack.]
 	if debug {
-		fmt.Println("C7. Backtrack")
+		log.Println("C7. Backtrack")
 	}
 	uncover(i)
 
 C8:
 	// C8. [Leave level l.]
 	if debug {
-		fmt.Printf("C8. Leaving level %d\n", level)
+		log.Printf("C8. Leaving level %d\n", level)
 	}
 	if level == 0 {
 		if progress {
@@ -1543,7 +1547,7 @@ func WordSearch(m int, n int, words []string, stats *Stats,
 				for _, wordD := range wordDs {
 					if len(wordD) == len(word)+1 {
 						options = append(options, wordD)
-						// fmt.Println(wordD)
+						// log.Println(wordD)
 					}
 				}
 			}
