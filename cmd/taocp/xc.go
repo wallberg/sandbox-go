@@ -16,7 +16,7 @@ func init() {
 	var command xcCommand
 
 	_, err := parser.AddCommand("xc",
-		"Exact Cover w/ Colors",
+		"Exact Cover w/ Colors (XCC)",
 		`Solve Exact Cover w/ Colors (XCC) problems using taocp.ExactCoverColors
 Uses YAML for input and output`,
 		&command,

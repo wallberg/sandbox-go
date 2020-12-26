@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/jessevdk/go-flags"
+	flags "github.com/jessevdk/go-flags"
 )
 
 var options Options
