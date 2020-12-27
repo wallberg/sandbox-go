@@ -10,3 +10,5 @@ test.sh
 TODO.txt
 problems.html
 *.code-workspace
+test/*
+cmd/taocp/taocp
