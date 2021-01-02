@@ -136,3 +136,86 @@ func TestGeneratePolyominoShapes(t *testing.T) {
 		}
 	}
 }
+
+func TestBounds(t *testing.T) {
+
+	cases := []struct {
+		po   Polyomino2
+		xMin int
+		yMin int
+		xMax int
+		yMax int
+	}{
+		{
+			Polyomino2{{0, 0}},
+			0,
+			0,
+			0,
+			0,
+		},
+		{
+			Polyomino2{},
+			-1,
+			-1,
+			-1,
+			-1,
+		},
+		{
+			Polyomino2{{0, 1}, {1, 1}, {1, 2}},
+			0,
+			1,
+			1,
+			2,
+		},
+	}
+
+	for _, c := range cases {
+		xMin, yMin, xMax, yMax := c.po.Bounds()
+
+		if xMin != c.xMin {
+			t.Errorf("for po=%v, got xMin=%d; want %d", c.po, xMin, c.xMin)
+		}
+		if yMin != c.yMin {
+			t.Errorf("for po=%v, got yMin=%d; want %d", c.po, yMin, c.yMin)
+		}
+		if xMax != c.xMax {
+			t.Errorf("for po=%v, got xMax=%d; want %d", c.po, xMax, c.xMax)
+		}
+		if yMax != c.yMax {
+			t.Errorf("for po=%v, got yMax=%d; want %d", c.po, yMax, c.yMax)
+		}
+	}
+}
+
+func TestIsConvex(t *testing.T) {
+
+	cases := []struct {
+		po       Polyomino2
+		isConvex bool
+	}{
+		{
+			Polyomino2{},
+			true,
+		},
+		{
+			Polyomino2{{0, 1}, {1, 1}, {1, 2}, {2, 2}},
+			true,
+		},
+		{
+			Polyomino2{{0, 1}, {1, 1}, {1, 2}, {2, 2}, {3, 2}, {3, 1}},
+			false,
+		},
+		{
+			Polyomino2{{0, 0}, {1, 0}, {1, 1}, {1, 2}, {0, 2}},
+			false,
+		},
+	}
+
+	for _, c := range cases {
+		isConvex := c.po.IsConvex()
+
+		if isConvex != c.isConvex {
+			t.Errorf("for po=%v, got isConvex=%t; want %t", c.po, isConvex, c.isConvex)
+		}
+	}
+}

@@ -27,6 +27,87 @@ func (p Point) String() string {
 	return fmt.Sprintf("%c%c", valueMap[p.x], valueMap[p.y])
 }
 
+// Bounds returns the bounding box of (x, y) coordinates of a Polyomino2 piece
+func (po Polyomino2) Bounds() (int, int, int, int) {
+	xMin, yMin, xMax, yMax := -1, -1, -1, -1
+	for _, point := range po {
+		if xMin == -1 || point.x < xMin {
+			xMin = point.x
+		}
+		if yMin == -1 || point.y < yMin {
+			yMin = point.y
+		}
+		if xMax == -1 || point.x > xMax {
+			xMax = point.x
+		}
+		if yMax == -1 || point.y > yMax {
+			yMax = point.y
+		}
+	}
+	return xMin, yMin, xMax, yMax
+}
+
+// IsConvex tests whether a shape is convex, ie if it contains all of the
+// squares between any two of its squares that lie in the same row of the same
+// column.
+func (po Polyomino2) IsConvex() bool {
+	pset := po.toPointset()
+	xMin, yMin, xMax, yMax := po.Bounds()
+
+	// Check each row
+	for x := xMin; x <= xMax; x++ {
+		changes := 0     // Record changes from in the shape to out
+		inShape := false // Track whether we are currently in the shape or not
+		for y := yMin; y <= yMax; y++ {
+			p := Point{x, y}
+			if pset[p] {
+				if !inShape {
+					inShape = true
+					changes++
+				}
+			} else {
+				if inShape {
+					inShape = false
+					changes++
+				}
+			}
+			if changes == 3 {
+				// We changed from out to in, in to out, and back to in
+				// So not convex
+				return false
+			}
+		}
+	}
+
+	// Check each column
+	for y := yMin; y <= yMax; y++ {
+		changes := 0     // Record changes from in the shape to out
+		inShape := false // Track whether we are currently in the shape or not
+		for x := xMin; x <= xMax; x++ {
+			p := Point{x, y}
+			if pset[p] {
+				if !inShape {
+					inShape = true
+					changes++
+				}
+			} else {
+				if inShape {
+					inShape = false
+					changes++
+				}
+			}
+			if changes == 3 {
+				// We changed from out to in, in to out, and back to in
+				// So not convex
+				return false
+			}
+		}
+	}
+
+	// Shape is convex
+	return true
+}
+
 // All four points in Von Neumann neighborhood
 func (p Point) contiguous() Polyomino2 {
 	return Polyomino2{Point{p.x - 1, p.y}, Point{p.x + 1, p.y},

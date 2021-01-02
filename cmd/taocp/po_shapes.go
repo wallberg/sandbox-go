@@ -30,8 +30,11 @@ func init() {
 }
 
 type poShapesCommand struct {
-	N      int    `short:"n" long:"n" description:"generate pieces of size n <= 62" default:"5"`
+	N      int    `short:"n" long:"n" description:"Generate pieces of size n <= 62" default:"5"`
 	Output string `short:"o" long:"output" description:"Output YAML file" default:"-"`
+	Convex bool   `short:"c" long:"convex" description:"Limit to convex shapes (default: false)"`
+	X      int    `short:"x" long:"x" description:"Limit to shape size on one axis" default:"62"`
+	Y      int    `short:"y" long:"y" description:"Limit to shape size on other axis" default:"62"`
 }
 
 func (command poShapesCommand) Execute(args []string) error {
@@ -59,6 +62,22 @@ func (command poShapesCommand) Execute(args []string) error {
 
 	// Generate the shapes
 	for i, shape := range taocp.GeneratePolyominoShapes(command.N) {
+		// Skip if the shape must be convex and it
+		if command.Convex && !shape.IsConvex() {
+			continue
+		}
+
+		// Skip if the shape does not fit in the required bounding box
+		if command.X < 62 || command.Y < 62 {
+			xMin, yMin, xMax, yMax := shape.Bounds()
+			xSize, ySize := xMax-xMin+1, yMax-yMin+1
+
+			// Try both orientations of the bounding box
+			if !(xSize <= command.X && ySize <= command.Y) && !(ySize <= command.X && xSize <= command.Y) {
+				continue
+			}
+		}
+
 		// Add the piece to the YAML output strucuture
 		pieceName := fmt.Sprintf("%d", i)
 		var shapeString strings.Builder
