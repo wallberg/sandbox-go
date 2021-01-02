@@ -73,7 +73,7 @@ func TestExactCoverYaml(t *testing.T) {
 func TestExactCover(t *testing.T) {
 
 	count := 0
-	var stats Stats
+	var stats ExactCoverStats
 
 	ExactCover(xcItems, xcOptions, []string{}, &stats,
 		func(solution [][]string) bool {
@@ -96,10 +96,10 @@ func TestExactCover(t *testing.T) {
 func TestExactCoverColors(t *testing.T) {
 
 	var count int
-	var stats *Stats
+	var stats *ExactCoverStats
 
 	count = 0
-	stats = new(Stats)
+	stats = new(ExactCoverStats)
 	ExactCoverColors(xcItems, xcOptions, []string{}, stats,
 		func(solution [][]string) bool {
 			if !reflect.DeepEqual(solution, xcExpected) {
@@ -118,7 +118,7 @@ func TestExactCoverColors(t *testing.T) {
 	}
 
 	count = 0
-	stats = new(Stats)
+	stats = new(ExactCoverStats)
 	ExactCoverColors(xccItems, xccOptions, xccSItems, stats,
 		func(solution [][]string) bool {
 			if !reflect.DeepEqual(solution, xccExpected) {
@@ -498,7 +498,7 @@ func TestSudokuCards(t *testing.T) {
 
 	for _, c := range cases {
 		count := 0
-		stats := new(Stats)
+		stats := new(ExactCoverStats)
 
 		SudokuCards(c.cards, stats,
 			func(solution [9]int, grid [9][9]int) bool {

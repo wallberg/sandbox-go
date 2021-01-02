@@ -76,7 +76,7 @@ func (command xcCommand) Execute(args []string) error {
 	defer output.Close()
 
 	// Solve
-	stats := &taocp.Stats{
+	stats := &taocp.ExactCoverStats{
 		Debug:     command.Verbosity > 1,
 		Progress:  command.Verbosity > 0,
 		Verbosity: command.Verbosity - 2,

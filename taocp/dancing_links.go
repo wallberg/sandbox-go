@@ -14,9 +14,9 @@ import (
 //
 // §7.2.2.1 Dancing Links
 
-// Stats is a struct for tracking ExactCover statistics and reporting
+// ExactCoverStats is a struct for tracking ExactCover statistics and reporting
 // runtime progress
-type Stats struct {
+type ExactCoverStats struct {
 	// Input parameters
 	Progress  bool // Display runtime progress
 	Debug     bool // Enable debug logging
@@ -31,7 +31,7 @@ type Stats struct {
 	Solutions int   // Count of solutions returned
 }
 
-func (s Stats) String() string {
+func (s ExactCoverStats) String() string {
 	// Find first non-zero level count
 	i := len(s.Levels)
 	for s.Levels[i-1] == 0 && i > 0 {
@@ -74,7 +74,7 @@ func NewExactCoverYaml(items []string, sitems []string, options [][]string) *Exa
 //              if the search should resume
 //
 func ExactCover(items []string, options [][]string, secondary []string,
-	stats *Stats, visit func(solution [][]string) bool) {
+	stats *ExactCoverStats, visit func(solution [][]string) bool) {
 
 	var (
 		n1    int      // number of primary items
@@ -516,7 +516,7 @@ X8:
 //              if the search should continue
 //
 func ExactCoverColors(items []string, options [][]string, secondary []string,
-	stats *Stats, visit func(solution [][]string) bool) error {
+	stats *ExactCoverStats, visit func(solution [][]string) bool) error {
 
 	var (
 		n1       int      // number of primary items
@@ -1127,7 +1127,7 @@ C8:
 
 // LangfordPairs uses ExactCover to return solutions for Langford pairs
 // of n values
-func LangfordPairs(n int, stats *Stats, visit func(solution []int) bool) {
+func LangfordPairs(n int, stats *ExactCoverStats, visit func(solution []int) bool) {
 
 	// Build the list of items
 	items := make([]string, 3*n)
@@ -1178,7 +1178,7 @@ func LangfordPairs(n int, stats *Stats, visit func(solution []int) bool) {
 }
 
 // NQueens uses ExactCover to return solutions for the n-queens problem
-func NQueens(n int, stats *Stats, visit func(solution []string) bool) {
+func NQueens(n int, stats *ExactCoverStats, visit func(solution []string) bool) {
 
 	items := make([]string, 2*n)
 	sitems := make([]string, 4*n-2)
@@ -1230,7 +1230,7 @@ func NQueens(n int, stats *Stats, visit func(solution []string) bool) {
 }
 
 // Sudoku uses ExactCover to solve 9x9 sudoku puzzles
-func Sudoku(grid [9][9]int, stats *Stats,
+func Sudoku(grid [9][9]int, stats *ExactCoverStats,
 	visit func(solution [9][9]int) bool) {
 
 	var (
@@ -1319,7 +1319,7 @@ func Sudoku(grid [9][9]int, stats *Stats,
 
 // SudokuCards constructs sudoku puzzles with one solution, given nine 3x3
 // cards to order. Returns both the card ordering and the matching SuDoku grid.
-func SudokuCards(cards [9][3][3]int, stats *Stats,
+func SudokuCards(cards [9][3][3]int, stats *ExactCoverStats,
 	visit func(cards [9]int, grid [9][9]int) bool) {
 
 	var (
@@ -1516,7 +1516,7 @@ var Mathematicians = []string{
 
 // WordSearch uses ExactCoverColoring to build a m x n word search, given the
 // provided words
-func WordSearch(m int, n int, words []string, stats *Stats,
+func WordSearch(m int, n int, words []string, stats *ExactCoverStats,
 	visit func([][]string) bool) {
 
 	coord := func(i int, j int) string {
