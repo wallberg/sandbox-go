@@ -58,7 +58,7 @@ func (command poShapesCommand) Execute(args []string) error {
 	// Setup the YAML output structure
 	shapes := taocp.NewPolyominoShapes()
 	setName := fmt.Sprintf("%d", command.N)
-	shapes.PieceSets[setName] = make(map[string]string)
+	shapes.PieceSets[setName] = make(map[string]*taocp.PolyominoShape)
 
 	// Generate the shapes
 	for i, shape := range taocp.GeneratePolyominoShapes(command.N) {
@@ -87,7 +87,8 @@ func (command poShapesCommand) Execute(args []string) error {
 			}
 			shapeString.WriteString(point.String())
 		}
-		shapes.PieceSets[setName][pieceName] = shapeString.String()
+		shape := taocp.PolyominoShape{Shape: shapeString.String()}
+		shapes.PieceSets[setName][pieceName] = &shape
 	}
 
 	// Generate the YAML

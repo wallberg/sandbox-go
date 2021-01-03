@@ -44,32 +44,32 @@ func (command poXcCommand) Execute(args []string) error {
 
 		// Get sorted list of piece set names
 		setNames := make([]string, 0)
-		for setName := range taocp.PolyominoSets {
+		for setName := range taocp.PolyominoSets.PieceSets {
 			setNames = append(setNames, setName)
 		}
 		sort.Strings(setNames)
 
 		// Display piece sets
 		for _, setName := range setNames {
-			set := taocp.PolyominoSets[setName]
-			if setName != "Boards" {
-				fmt.Printf("  %s (", setName)
-				for i, shape := range set.Shapes {
-					if i > 0 {
-						fmt.Print(", ")
-					}
-					fmt.Print(shape.Name)
+			set := taocp.PolyominoSets.PieceSets[setName]
+			fmt.Printf("  %s (", setName)
+			i := 0
+			for shapeName := range set {
+				if i > 0 {
+					fmt.Print(", ")
 				}
-				fmt.Println(")")
+				fmt.Print(shapeName)
+				i++
 			}
+			fmt.Println(")")
 		}
 
 		fmt.Println("\nBoards")
 
 		// Get sorted list of board names
 		boardNames := make([]string, 0)
-		for _, board := range taocp.PolyominoSets["Boards"].Shapes {
-			boardNames = append(boardNames, board.Name)
+		for boardName := range taocp.PolyominoSets.Boards {
+			boardNames = append(boardNames, boardName)
 		}
 		sort.Strings(boardNames)
 

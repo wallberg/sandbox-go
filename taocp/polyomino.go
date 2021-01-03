@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"log"
 	"regexp"
-	"sort"
 	"strings"
 
 	"github.com/gobuffalo/packr"
-	"github.com/wallberg/sandbox/sortx"
 	"gopkg.in/yaml.v2"
 )
 
@@ -18,26 +16,7 @@ import (
 //
 // §7.2.2.1 Dancing Links - Polyominoes
 
-// Polyomino represents a single polyomino shape
-type Polyomino struct {
-	Name       string  // name of the shape
-	Shape      string  // string specification of the shape
-	Placements [][]int // base placements of the shape (rotation, reflection)
-}
-
-// PolyominoSet represents a set of polyomino shapes
-type PolyominoSet struct {
-	Name   string      // name of the set
-	Shapes []Polyomino // list of Polyomino shapes
-}
-
 var (
-	valueMap = []byte{'0', '1', '2', '3', '4', '5',
-		'6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
-		'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
-		'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
-		'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
-
 	rePair = regexp.MustCompile(`[0-9a-zA-Z]|\[[0-9a-zA-Z-]+?\]`)
 
 	// PolyominoSets contains sets of common shapes
@@ -45,7 +24,7 @@ var (
 )
 
 // LoadPolyominoes loads the standard sets of shapes
-func LoadPolyominoes() map[string]PolyominoSet {
+func LoadPolyominoes() *PolyominoShapes {
 	// Load in ./assets/polyominoes.yaml
 	box := packr.NewBox("./assets")
 
@@ -54,47 +33,45 @@ func LoadPolyominoes() map[string]PolyominoSet {
 		log.Fatalf("Error reading assets/polyominoes.yaml: %v\n", err)
 	}
 
-	// Read the yaml file into map
-	yamlSets := make(map[interface{}]interface{})
-	err = yaml.Unmarshal([]byte(data), &yamlSets)
+	// Read the yaml file
+	shapes := NewPolyominoShapes()
+	err = yaml.Unmarshal([]byte(data), &shapes)
 	if err != nil {
 		log.Fatalf("error: %v", err)
 	}
 
-	// Read the sets
-	sets := make(map[string]PolyominoSet)
+	// Enrich the pieces
+	for _, pieceset := range shapes.PieceSets {
+		for _, shape := range pieceset {
 
-	for yamlSetName, yamlSet := range yamlSets {
-
-		set := PolyominoSet{Name: yamlSetName.(string)}
-
-		// Iterate over the shapes
-		for yamlShapeName, yamlShape := range yamlSet.(map[interface{}]interface{}) {
-			// Add a shape to the set
-			shape := Polyomino{Name: yamlShapeName.(string)}
-			pairs, err := ParsePlacementPairs(yamlShape.(string))
+			points, err := ParsePlacementPairs(shape.Shape)
 			if err != nil {
 				log.Fatalf("error: %v", err)
 			}
-			shape.Placements = BasePlacements(pairs, set.Name != "Boards")
-			set.Shapes = append(set.Shapes, shape)
+			shape.Placements = BasePlacements(points, true)
+			shape.Points = shape.Placements[0]
 		}
 
-		sets[set.Name] = set
 	}
 
-	return sets
+	// Enrich the boards
+	for _, shape := range shapes.Boards {
+
+		points, err := ParsePlacementPairs(shape.Shape)
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+		shape.Placements = BasePlacements(points, false)
+		shape.Points = shape.Placements[0]
+
+	}
+
+	return shapes
 }
-
-// pack stores a placement pair in an int
-func pack(x int, y int) int { return (x << 16) + y }
-
-// unpack pulls a placement pair out of an int
-func unpack(pair int) (int, int) { return pair >> 16, pair & 65535 }
 
 // ParsePlacementPairs parses a single placement pair specification string
 // format.
-func ParsePlacementPairs(s string) ([]int, error) {
+func ParsePlacementPairs(s string) (Polyomino, error) {
 
 	// find gets the index of value in valueMap
 	find := func(value byte) int {
@@ -129,7 +106,8 @@ func ParsePlacementPairs(s string) ([]int, error) {
 		return values
 	}
 
-	pairs := make([]int, 0)
+	var po Polyomino
+	pset := make(pointset)
 
 	// Split on single space
 	for _, pairString := range strings.Split(s, " ") {
@@ -142,7 +120,11 @@ func ParsePlacementPairs(s string) ([]int, error) {
 
 			for _, x := range xValues {
 				for _, y := range yValues {
-					sortx.InsertInt(&pairs, pack(x, y))
+					point := Point{x: x, y: y}
+					if !pset[point] {
+						po = append(po, point)
+						pset[point] = true
+					}
 				}
 			}
 		} else {
@@ -150,43 +132,24 @@ func ParsePlacementPairs(s string) ([]int, error) {
 		}
 	}
 
-	return pairs, nil
-}
+	// Sort the points
+	sortPoints(po)
 
-// minmax finds minimum and maximum (x, y) values
-func minmax(placement []int) (int, int, int, int) {
-	xMin, yMin, xMax, yMax := -1, -1, -1, -1
-	for _, pair := range placement {
-		x, y := unpack(pair)
-		if xMin == -1 || x < xMin {
-			xMin = x
-		}
-		if yMin == -1 || y < yMin {
-			yMin = y
-		}
-		if xMax == -1 || x > xMax {
-			xMax = x
-		}
-		if yMax == -1 || y > yMax {
-			yMax = y
-		}
-	}
-	return xMin, yMin, xMax, yMax
+	return po, nil
 }
 
 // BasePlacements takes one placement pair as input and shifts it to minimum
 // coordinates, and optionally generates every possible transformation using
 // rotate and reflect.
-func BasePlacements(first []int, transform bool) [][]int {
+func BasePlacements(first Polyomino, transform bool) []Polyomino {
 
 	xMin, yMin, _, _ := minmax(first)
 
 	// Shift, if necessary
 	if xMin > 0 || yMin > 0 {
-		firstNew := make([]int, len(first))
-		for i, pair := range first {
-			x, y := unpack(pair)
-			firstNew[i] = pack(x-xMin, y-yMin)
+		firstNew := make(Polyomino, len(first))
+		for i, point := range first {
+			firstNew[i] = Point{x: point.x - xMin, y: point.y - yMin}
 		}
 		first = firstNew
 	}
@@ -194,26 +157,25 @@ func BasePlacements(first []int, transform bool) [][]int {
 	n := len(first)
 
 	// Generate placements
-	placements := make([][]int, 1)
+	placements := make([]Polyomino, 1)
 	placements[0] = first
 
 	if transform {
 		for i := 0; i < len(placements); i++ {
 			// Generate the rotation and reflection
-			rotate := make([]int, len(placements[i]))
-			reflect := make([]int, len(placements[i]))
+			rotate := make(Polyomino, len(placements[i]))
+			reflect := make(Polyomino, len(placements[i]))
 
 			_, _, xMax, _ := minmax(placements[i])
-			for j, pair := range placements[i] {
-				x, y := unpack(pair)
-				rotate[j] = pack(y, xMax-x)
-				reflect[j] = pack(y, x)
+			for j, po := range placements[i] {
+				rotate[j] = Point{x: po.y, y: xMax - po.x}
+				reflect[j] = Point{x: po.y, y: po.x}
 			}
-			sort.Ints(rotate)
-			sort.Ints(reflect)
+			sortPoints(rotate)
+			sortPoints(reflect)
 
 			// Add each to the list of placements, if not already there
-			for _, placement := range [][]int{rotate, reflect} {
+			for _, placement := range []Polyomino{rotate, reflect} {
 				// See if this placement already exists
 				exists := false
 				// Iterate over each existing placement
@@ -240,16 +202,7 @@ func BasePlacements(first []int, transform bool) [][]int {
 	}
 
 	// Sort the list of placements
-	sort.Slice(placements, func(i, j int) bool {
-		for k := 0; k < n; k++ {
-			if placements[i][k] < placements[j][k] {
-				return true
-			} else if placements[i][k] > placements[j][k] {
-				return false
-			}
-		}
-		return false
-	})
+	sortPolyominoes(placements)
 
 	return placements
 }
@@ -259,42 +212,39 @@ func BasePlacements(first []int, transform bool) [][]int {
 // to find solutions using ExactCover().
 func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string, []string) {
 
-	// Get the board shape
-	var board *Polyomino
-	for _, x := range PolyominoSets["Boards"].Shapes {
-		if x.Name == boardName {
-			board = &x
-			break
+	// Build the list of items
+	items := make([]string, 0)
+	cells := make(map[Point]bool)
+
+	// Add the piece items
+	for _, piecesetName := range shapeSetNames {
+		pieceset := PolyominoSets.PieceSets[piecesetName]
+		for shapeName := range pieceset {
+			name := fmt.Sprintf("s%sp%s", piecesetName, shapeName)
+			items = append(items, name)
 		}
 	}
+
+	// Add the board items
+	board := PolyominoSets.Boards[boardName]
 	if board == nil {
 		log.Fatalf("Can't find board shape named '%s'", boardName)
 	}
 	_, _, xMaxBoard, yMaxBoard := minmax(board.Placements[0])
 
-	// Build the list of items and map of available cells
-	items := make([]string, 0)
-	cells := make(map[int]bool)
-
-	for _, shapeSetName := range shapeSetNames {
-		for _, shape := range PolyominoSets[shapeSetName].Shapes {
-			items = append(items, shape.Name)
-		}
-	}
-
-	for _, cell := range board.Placements[0] {
-		x, y := unpack(cell)
-		cellItem := fmt.Sprintf("%c%c", valueMap[x], valueMap[y])
+	for _, point := range board.Placements[0] {
+		cellItem := fmt.Sprintf("%c%c", valueMap[point.x], valueMap[point.y])
 		items = append(items, cellItem)
-		cells[cell] = true
+		cells[point] = true
 	}
 
 	// Build the list of options
 	options := make([][]string, 0)
 
 	// Iterate over each shape
-	for _, shapeSetName := range shapeSetNames {
-		for _, shape := range PolyominoSets[shapeSetName].Shapes {
+	for _, piecesetName := range shapeSetNames {
+		pieceset := PolyominoSets.PieceSets[piecesetName]
+		for shapeName, shape := range pieceset {
 
 			// Iterate over each shape base placement
 			for _, placement := range shape.Placements {
@@ -308,13 +258,14 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 
 						// Add the option, if all cells are in the board
 						option := make([]string, len(placement)+1)
-						option[0] = shape.Name
+						name := fmt.Sprintf("s%sp%s", piecesetName, shapeName)
+						option[0] = name
 						addOption := true
-						for i, cell := range placement {
-							x, y := unpack(cell)
+						for i, point := range placement {
+							x, y := point.x, point.y
 							x += xDelta
 							y += yDelta
-							if !cells[pack(x, y)] {
+							if !cells[Point{x: x, y: y}] {
 								addOption = false
 								break
 							}

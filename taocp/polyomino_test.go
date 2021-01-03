@@ -9,21 +9,25 @@ import (
 func TestParsePlacementPairs(t *testing.T) {
 
 	cases := []struct {
-		s     string // string to parse
-		pairs []int  // sorted pairs
-		err   bool   // true if error is expected
+		s     string    // string to parse
+		pairs Polyomino // sorted pairs
+		err   bool      // true if error is expected
 	}{
 		{
 			"[14-7]2 5[0-3]",
-			[]int{65538, 262146, 327680, 327681, 327682, 327683, 393218,
-				458754},
+			Polyomino{
+				Point{x: 1, y: 2}, Point{x: 4, y: 2}, Point{x: 5, y: 0},
+				Point{x: 5, y: 1}, Point{x: 5, y: 2}, Point{x: 5, y: 3},
+				Point{x: 6, y: 2}, Point{x: 7, y: 2},
+			},
 			false,
 		},
 		{
 			"[0-2][a-c]",
-			[]int{10, 11, 12,
-				65546, 65547, 65548,
-				131082, 131083, 131084,
+			Polyomino{
+				Point{x: 0, y: 10}, Point{x: 0, y: 11}, Point{x: 0, y: 12},
+				Point{x: 1, y: 10}, Point{x: 1, y: 11}, Point{x: 1, y: 12},
+				Point{x: 2, y: 10}, Point{x: 2, y: 11}, Point{x: 2, y: 12},
 			},
 			false,
 		},
@@ -55,41 +59,41 @@ func TestParsePlacementPairs(t *testing.T) {
 func TestBasePlacements(t *testing.T) {
 
 	cases := []struct {
-		first      []int
-		placements [][]int
+		first      Polyomino
+		placements []Polyomino
 		transform  bool
 	}{
 		{
-			[]int{65536},
-			[][]int{{0}},
+			Polyomino{Point{x: 1, y: 0}},
+			[]Polyomino{{Point{x: 0, y: 0}}},
 			true,
 		},
 		{
-			[]int{1, 2, 3},
-			[][]int{
-				{0, 1, 2},
-				{0, 65536, 131072},
+			Polyomino{Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 0, y: 3}},
+			[]Polyomino{
+				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}},
+				{Point{x: 0, y: 0}, Point{x: 1, y: 0}, Point{x: 2, y: 0}},
 			},
 			true,
 		},
 		{
-			[]int{1, 2, 3},
-			[][]int{
-				{0, 1, 2},
+			Polyomino{Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 0, y: 3}},
+			[]Polyomino{
+				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}},
 			},
 			false,
 		},
 		{
-			[]int{0, 1, 2, 65536},
-			[][]int{
-				{0, 1, 2, 65536},
-				{0, 1, 2, 65538},
-				{0, 1, 65536, 131072},
-				{0, 1, 65537, 131073},
-				{0, 65536, 65537, 65538},
-				{0, 65536, 131072, 131073},
-				{1, 65537, 131072, 131073},
-				{2, 65536, 65537, 65538},
+			Polyomino{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 1, y: 0}},
+			[]Polyomino{
+				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 1, y: 0}},
+				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 1, y: 2}},
+				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 1, y: 0}, Point{x: 2, y: 0}},
+				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 1, y: 1}, Point{x: 2, y: 1}},
+				{Point{x: 0, y: 0}, Point{x: 1, y: 0}, Point{x: 1, y: 1}, Point{x: 1, y: 2}},
+				{Point{x: 0, y: 0}, Point{x: 1, y: 0}, Point{x: 2, y: 0}, Point{x: 2, y: 1}},
+				{Point{x: 0, y: 1}, Point{x: 1, y: 1}, Point{x: 2, y: 0}, Point{x: 2, y: 1}},
+				{Point{x: 0, y: 2}, Point{x: 1, y: 0}, Point{x: 1, y: 1}, Point{x: 1, y: 2}},
 			},
 			true,
 		},
@@ -122,12 +126,12 @@ func TestLoadPolyominoes(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		if set, ok := sets[c.name]; !ok {
+		if set, ok := sets.PieceSets[c.name]; !ok {
 			t.Errorf("Did not find set name='%s'", c.name)
 		} else {
-			if len(set.Shapes) != c.count {
+			if len(set) != c.count {
 				t.Errorf("Set '%s' has %d shapes; want %d",
-					set.Name, len(set.Shapes), c.count)
+					c.name, len(set), c.count)
 			}
 		}
 	}
@@ -155,12 +159,12 @@ func TestPolyominoes(t *testing.T) {
 	for _, c := range cases {
 		items, options, sitems := Polyominoes(c.shapes, c.board)
 
-		if c.board == "8x8" {
-			fmt.Println(items)
-			for _, option := range options {
-				fmt.Println(option)
-			}
-		}
+		// if true /*c.board == "8x8"*/ {
+		// 	fmt.Println(items)
+		// 	for _, option := range options {
+		// 		fmt.Println(option)
+		// 	}
+		// }
 
 		// Generate solutions
 		count := 0

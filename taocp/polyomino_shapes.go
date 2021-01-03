@@ -13,10 +13,23 @@ import (
 // Point represents a single square in a polyomino
 type Point struct{ x, y int }
 
-// Polyomino2 represents a single polyomino of multiple points
-type Polyomino2 []Point
+// Polyomino represents a single polyomino of multiple points
+type Polyomino []Point
 
 type pointset map[Point]bool
+
+// PolyominoShape holds a single shape
+type PolyominoShape struct {
+	Shape      string      `yaml:""`
+	Points     Polyomino   `yaml:"-"`
+	Placements []Polyomino `yaml:"-"`
+}
+
+// PolyominoShapes holds PolyominoShape piece sets and boards
+type PolyominoShapes struct {
+	PieceSets map[string]map[string]*PolyominoShape `yaml:""` // Piece Sets
+	Boards    map[string]*PolyominoShape            `yaml:""` // Boards
+}
 
 func (p Point) rotate90() Point  { return Point{p.y, -p.x} }
 func (p Point) rotate180() Point { return Point{-p.x, -p.y} }
@@ -28,7 +41,7 @@ func (p Point) String() string {
 }
 
 // Bounds returns the bounding box of (x, y) coordinates of a Polyomino2 piece
-func (po Polyomino2) Bounds() (int, int, int, int) {
+func (po Polyomino) Bounds() (int, int, int, int) {
 	xMin, yMin, xMax, yMax := -1, -1, -1, -1
 	for _, point := range po {
 		if xMin == -1 || point.x < xMin {
@@ -50,7 +63,7 @@ func (po Polyomino2) Bounds() (int, int, int, int) {
 // IsConvex tests whether a shape is convex, ie if it contains all of the
 // squares between any two of its squares that lie in the same row of the same
 // column.
-func (po Polyomino2) IsConvex() bool {
+func (po Polyomino) IsConvex() bool {
 	pset := po.toPointset()
 	xMin, yMin, xMax, yMax := po.Bounds()
 
@@ -109,13 +122,13 @@ func (po Polyomino2) IsConvex() bool {
 }
 
 // All four points in Von Neumann neighborhood
-func (p Point) contiguous() Polyomino2 {
-	return Polyomino2{Point{p.x - 1, p.y}, Point{p.x + 1, p.y},
+func (p Point) contiguous() Polyomino {
+	return Polyomino{Point{p.x - 1, p.y}, Point{p.x + 1, p.y},
 		Point{p.x, p.y - 1}, Point{p.x, p.y + 1}}
 }
 
 // Finds the min x and y coordinates of a Polyomino.
-func (po Polyomino2) minima() (int, int) {
+func (po Polyomino) minima() (int, int) {
 	minx := po[0].x
 	miny := po[0].y
 	for i := 1; i < len(po); i++ {
@@ -129,9 +142,9 @@ func (po Polyomino2) minima() (int, int) {
 	return minx, miny
 }
 
-func (po Polyomino2) translateToOrigin() Polyomino2 {
+func (po Polyomino) translateToOrigin() Polyomino {
 	minx, miny := po.minima()
-	res := make(Polyomino2, len(po))
+	res := make(Polyomino, len(po))
 	for i, p := range po {
 		res[i] = Point{p.x - minx, p.y - miny}
 	}
@@ -142,10 +155,10 @@ func (po Polyomino2) translateToOrigin() Polyomino2 {
 }
 
 // All the plane symmetries of a rectangular region.
-func (po Polyomino2) rotationsAndReflections() []Polyomino2 {
-	rr := make([]Polyomino2, 8)
+func (po Polyomino) rotationsAndReflections() []Polyomino {
+	rr := make([]Polyomino, 8)
 	for i := 0; i < 8; i++ {
-		rr[i] = make(Polyomino2, len(po))
+		rr[i] = make(Polyomino, len(po))
 	}
 	copy(rr[0], po)
 	for j := 0; j < len(po); j++ {
@@ -160,7 +173,7 @@ func (po Polyomino2) rotationsAndReflections() []Polyomino2 {
 	return rr
 }
 
-func (po Polyomino2) canonical() Polyomino2 {
+func (po Polyomino) canonical() Polyomino {
 	rr := po.rotationsAndReflections()
 	minr := rr[0].translateToOrigin()
 	mins := minr.String()
@@ -175,11 +188,11 @@ func (po Polyomino2) canonical() Polyomino2 {
 	return minr
 }
 
-func (po Polyomino2) String() string {
+func (po Polyomino) String() string {
 	return fmt.Sprintf("%v", []Point(po))
 }
 
-func (po Polyomino2) toPointset() pointset {
+func (po Polyomino) toPointset() pointset {
 	pset := make(pointset, len(po))
 	for _, p := range po {
 		pset[p] = true
@@ -188,7 +201,7 @@ func (po Polyomino2) toPointset() pointset {
 }
 
 // Finds all distinct points that can be added to a Polyomino.
-func (po Polyomino2) newPoints() Polyomino2 {
+func (po Polyomino) newPoints() Polyomino {
 	pset := po.toPointset()
 	m := make(pointset)
 	for _, p := range po {
@@ -199,18 +212,18 @@ func (po Polyomino2) newPoints() Polyomino2 {
 			}
 		}
 	}
-	poly := make(Polyomino2, 0, len(m))
+	poly := make(Polyomino, 0, len(m))
 	for k := range m {
 		poly = append(poly, k)
 	}
 	return poly
 }
 
-func (po Polyomino2) newPolys() []Polyomino2 {
+func (po Polyomino) newPolys() []Polyomino {
 	pts := po.newPoints()
-	res := make([]Polyomino2, len(pts))
+	res := make([]Polyomino, len(pts))
 	for i, pt := range pts {
-		poly := make(Polyomino2, len(po))
+		poly := make(Polyomino, len(po))
 		copy(poly, po)
 		poly = append(poly, pt)
 		res[i] = poly.canonical()
@@ -218,22 +231,64 @@ func (po Polyomino2) newPolys() []Polyomino2 {
 	return res
 }
 
-var monomino = Polyomino2{Point{0, 0}}
-var monominoes = []Polyomino2{monomino}
+// minmax finds minimum and maximum (x, y) values
+func minmax(po Polyomino) (int, int, int, int) {
+	xMin, yMin, xMax, yMax := -1, -1, -1, -1
+	for _, point := range po {
+		x, y := point.x, point.y
+		if xMin == -1 || x < xMin {
+			xMin = x
+		}
+		if yMin == -1 || y < yMin {
+			yMin = y
+		}
+		if xMax == -1 || x > xMax {
+			xMax = x
+		}
+		if yMax == -1 || y > yMax {
+			yMax = y
+		}
+	}
+	return xMin, yMin, xMax, yMax
+}
+
+var monomino = Polyomino{Point{0, 0}}
+var monominoes = []Polyomino{monomino}
+
+var valueMap = []byte{'0', '1', '2', '3', '4', '5',
+	'6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j',
+	'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x',
+	'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+	'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
+
+// sortPoints sorts the points of a polyomino
+func sortPoints(po Polyomino) {
+	sort.Slice(po, func(i, j int) bool {
+		return po[i].x < po[j].x || (po[i].x == po[j].x && po[i].y < po[j].y)
+	})
+}
+
+// sortPolyominoes sorts a slice of polyominoes; assumes each polyomino
+// already has sorted points
+func sortPolyominoes(polys []Polyomino) {
+	sort.Slice(polys, func(i, j int) bool {
+		return polys[i].String() < polys[j].String()
+	})
+}
 
 // Generates polyominoes of rank n recursively.
-func rank(n int) []Polyomino2 {
+func rank(n int) []Polyomino {
 	switch {
 	case n < 0:
 		panic("n cannot be negative. Program terminated.")
 	case n == 0:
-		return []Polyomino2{}
+		return []Polyomino{}
 	case n == 1:
 		return monominoes
 	default:
 		r := rank(n - 1)
 		m := make(map[string]bool)
-		var polys []Polyomino2
+		var polys []Polyomino
 		for _, po := range r {
 			for _, po2 := range po.newPolys() {
 				if s := po2.String(); !m[s] {
@@ -242,30 +297,22 @@ func rank(n int) []Polyomino2 {
 				}
 			}
 		}
-		sort.Slice(polys, func(i, j int) bool {
-			return polys[i].String() < polys[j].String()
-		})
+		sortPolyominoes(polys)
 		return polys
 	}
-}
-
-// PolyominoShapes provides YAML (de-)serialization for Exact Cover input
-type PolyominoShapes struct {
-	PieceSets map[string]map[string]string `yaml:""` // Piece Sets
-	Boards    map[string]string            `yaml:""` // Boards
 }
 
 // NewPolyominoShapes creates a new instance of PolyominoShapes
 func NewPolyominoShapes() *PolyominoShapes {
 	shapes := &PolyominoShapes{
-		PieceSets: map[string]map[string]string{},
-		Boards:    map[string]string{},
+		PieceSets: make(map[string]map[string]*PolyominoShape),
+		Boards:    make(map[string]*PolyominoShape),
 	}
 
 	return shapes
 }
 
 // GeneratePolyominoShapes generates shapes of size n
-func GeneratePolyominoShapes(n int) []Polyomino2 {
+func GeneratePolyominoShapes(n int) []Polyomino {
 	return rank(n)
 }
