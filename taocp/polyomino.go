@@ -120,7 +120,7 @@ func ParsePlacementPairs(s string) (Polyomino, error) {
 
 			for _, x := range xValues {
 				for _, y := range yValues {
-					point := Point{x: x, y: y}
+					point := Point{X: x, Y: y}
 					if !pset[point] {
 						po = append(po, point)
 						pset[point] = true
@@ -149,7 +149,7 @@ func BasePlacements(first Polyomino, transform bool) []Polyomino {
 	if xMin > 0 || yMin > 0 {
 		firstNew := make(Polyomino, len(first))
 		for i, point := range first {
-			firstNew[i] = Point{x: point.x - xMin, y: point.y - yMin}
+			firstNew[i] = Point{X: point.X - xMin, Y: point.Y - yMin}
 		}
 		first = firstNew
 	}
@@ -168,8 +168,8 @@ func BasePlacements(first Polyomino, transform bool) []Polyomino {
 
 			_, _, xMax, _ := minmax(placements[i])
 			for j, po := range placements[i] {
-				rotate[j] = Point{x: po.y, y: xMax - po.x}
-				reflect[j] = Point{x: po.y, y: po.x}
+				rotate[j] = Point{X: po.Y, Y: xMax - po.X}
+				reflect[j] = Point{X: po.Y, Y: po.X}
 			}
 			sortPoints(rotate)
 			sortPoints(reflect)
@@ -233,7 +233,7 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 	_, _, xMaxBoard, yMaxBoard := minmax(board.Placements[0])
 
 	for _, point := range board.Placements[0] {
-		cellItem := fmt.Sprintf("%c%c", valueMap[point.x], valueMap[point.y])
+		cellItem := fmt.Sprintf("%c%c", valueMap[point.X], valueMap[point.Y])
 		items = append(items, cellItem)
 		cells[point] = true
 	}
@@ -262,10 +262,10 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 						option[0] = name
 						addOption := true
 						for i, point := range placement {
-							x, y := point.x, point.y
+							x, y := point.X, point.Y
 							x += xDelta
 							y += yDelta
-							if !cells[Point{x: x, y: y}] {
+							if !cells[Point{X: x, Y: y}] {
 								addOption = false
 								break
 							}

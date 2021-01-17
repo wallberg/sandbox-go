@@ -9,13 +9,20 @@ import (
 
 func TestPolyominoShapes(t *testing.T) {
 
+	var shape *PolyominoShape
+
 	// Build YAML struct
 	shapes := NewPolyominoShapes()
 	shapes.PieceSets["1"] = make(map[string]*PolyominoShape)
 	shapes.PieceSets["1"]["A"] = &PolyominoShape{Shape: "00"}
 
 	shapes.PieceSets["3"] = make(map[string]*PolyominoShape)
-	shapes.PieceSets["3"]["C"] = &PolyominoShape{Shape: "0[012]"}
+
+	shape = &PolyominoShape{Shape: "0[012]"}
+	shape.Points = []Point{{0, 0}, {0, 1}, {0, 2}}
+	shape.Placements = BasePlacements(shape.Points, true)
+	shapes.PieceSets["3"]["C"] = shape
+
 	shapes.PieceSets["3"]["D"] = &PolyominoShape{Shape: "00 01 11"}
 
 	shapes.Boards["3x20"] = &PolyominoShape{Shape: "[0-2][0-j]"}
@@ -28,9 +35,12 @@ func TestPolyominoShapes(t *testing.T) {
 		return
 	}
 
+	// fmt.Print(string(data))
+	// t.Error("foo")
+
 	// Deserialize from YAML
 	var shapes2 PolyominoShapes
-	err = yaml.Unmarshal([]byte(data), &shapes2)
+	err = yaml.Unmarshal(data, &shapes2)
 	if err != nil {
 		t.Errorf("Error deserializing PolyominoShapes: %v", err)
 	}

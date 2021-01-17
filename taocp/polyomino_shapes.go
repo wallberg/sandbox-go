@@ -11,7 +11,7 @@ import (
 // https://rosettacode.org/wiki/Free_polyominoes_enumeration#Go
 
 // Point represents a single square in a polyomino
-type Point struct{ x, y int }
+type Point struct{ X, Y int }
 
 // Polyomino represents a single polyomino of multiple points
 type Polyomino []Point
@@ -20,9 +20,9 @@ type pointset map[Point]bool
 
 // PolyominoShape holds a single shape
 type PolyominoShape struct {
-	Shape      string      `yaml:""`
-	Points     Polyomino   `yaml:"-"`
-	Placements []Polyomino `yaml:"-"`
+	Shape      string      `yaml:",omitempty"`
+	Points     Polyomino   `yaml:",omitempty"`
+	Placements []Polyomino `yaml:",omitempty"`
 }
 
 // PolyominoShapes holds PolyominoShape piece sets and boards
@@ -31,30 +31,30 @@ type PolyominoShapes struct {
 	Boards    map[string]*PolyominoShape            `yaml:""` // Boards
 }
 
-func (p Point) rotate90() Point  { return Point{p.y, -p.x} }
-func (p Point) rotate180() Point { return Point{-p.x, -p.y} }
-func (p Point) rotate270() Point { return Point{-p.y, p.x} }
-func (p Point) reflect() Point   { return Point{-p.x, p.y} }
+func (p Point) rotate90() Point  { return Point{p.Y, -p.X} }
+func (p Point) rotate180() Point { return Point{-p.X, -p.Y} }
+func (p Point) rotate270() Point { return Point{-p.Y, p.X} }
+func (p Point) reflect() Point   { return Point{-p.X, p.Y} }
 
 func (p Point) String() string {
-	return fmt.Sprintf("%c%c", valueMap[p.x], valueMap[p.y])
+	return fmt.Sprintf("%c%c", valueMap[p.X], valueMap[p.Y])
 }
 
 // Bounds returns the bounding box of (x, y) coordinates of a Polyomino2 piece
 func (po Polyomino) Bounds() (int, int, int, int) {
 	xMin, yMin, xMax, yMax := -1, -1, -1, -1
 	for _, point := range po {
-		if xMin == -1 || point.x < xMin {
-			xMin = point.x
+		if xMin == -1 || point.X < xMin {
+			xMin = point.X
 		}
-		if yMin == -1 || point.y < yMin {
-			yMin = point.y
+		if yMin == -1 || point.Y < yMin {
+			yMin = point.Y
 		}
-		if xMax == -1 || point.x > xMax {
-			xMax = point.x
+		if xMax == -1 || point.X > xMax {
+			xMax = point.X
 		}
-		if yMax == -1 || point.y > yMax {
-			yMax = point.y
+		if yMax == -1 || point.Y > yMax {
+			yMax = point.Y
 		}
 	}
 	return xMin, yMin, xMax, yMax
@@ -123,20 +123,20 @@ func (po Polyomino) IsConvex() bool {
 
 // All four points in Von Neumann neighborhood
 func (p Point) contiguous() Polyomino {
-	return Polyomino{Point{p.x - 1, p.y}, Point{p.x + 1, p.y},
-		Point{p.x, p.y - 1}, Point{p.x, p.y + 1}}
+	return Polyomino{Point{p.X - 1, p.Y}, Point{p.X + 1, p.Y},
+		Point{p.X, p.Y - 1}, Point{p.X, p.Y + 1}}
 }
 
 // Finds the min x and y coordinates of a Polyomino.
 func (po Polyomino) minima() (int, int) {
-	minx := po[0].x
-	miny := po[0].y
+	minx := po[0].X
+	miny := po[0].Y
 	for i := 1; i < len(po); i++ {
-		if po[i].x < minx {
-			minx = po[i].x
+		if po[i].X < minx {
+			minx = po[i].X
 		}
-		if po[i].y < miny {
-			miny = po[i].y
+		if po[i].Y < miny {
+			miny = po[i].Y
 		}
 	}
 	return minx, miny
@@ -146,10 +146,10 @@ func (po Polyomino) translateToOrigin() Polyomino {
 	minx, miny := po.minima()
 	res := make(Polyomino, len(po))
 	for i, p := range po {
-		res[i] = Point{p.x - minx, p.y - miny}
+		res[i] = Point{p.X - minx, p.Y - miny}
 	}
 	sort.Slice(res, func(i, j int) bool {
-		return res[i].x < res[j].x || (res[i].x == res[j].x && res[i].y < res[j].y)
+		return res[i].X < res[j].X || (res[i].X == res[j].X && res[i].Y < res[j].Y)
 	})
 	return res
 }
@@ -235,7 +235,7 @@ func (po Polyomino) newPolys() []Polyomino {
 func minmax(po Polyomino) (int, int, int, int) {
 	xMin, yMin, xMax, yMax := -1, -1, -1, -1
 	for _, point := range po {
-		x, y := point.x, point.y
+		x, y := point.X, point.Y
 		if xMin == -1 || x < xMin {
 			xMin = x
 		}
@@ -264,7 +264,7 @@ var valueMap = []byte{'0', '1', '2', '3', '4', '5',
 // sortPoints sorts the points of a polyomino
 func sortPoints(po Polyomino) {
 	sort.Slice(po, func(i, j int) bool {
-		return po[i].x < po[j].x || (po[i].x == po[j].x && po[i].y < po[j].y)
+		return po[i].X < po[j].X || (po[i].X == po[j].X && po[i].Y < po[j].Y)
 	})
 }
 

@@ -16,18 +16,18 @@ func TestParsePlacementPairs(t *testing.T) {
 		{
 			"[14-7]2 5[0-3]",
 			Polyomino{
-				Point{x: 1, y: 2}, Point{x: 4, y: 2}, Point{x: 5, y: 0},
-				Point{x: 5, y: 1}, Point{x: 5, y: 2}, Point{x: 5, y: 3},
-				Point{x: 6, y: 2}, Point{x: 7, y: 2},
+				Point{X: 1, Y: 2}, Point{X: 4, Y: 2}, Point{X: 5, Y: 0},
+				Point{X: 5, Y: 1}, Point{X: 5, Y: 2}, Point{X: 5, Y: 3},
+				Point{X: 6, Y: 2}, Point{X: 7, Y: 2},
 			},
 			false,
 		},
 		{
 			"[0-2][a-c]",
 			Polyomino{
-				Point{x: 0, y: 10}, Point{x: 0, y: 11}, Point{x: 0, y: 12},
-				Point{x: 1, y: 10}, Point{x: 1, y: 11}, Point{x: 1, y: 12},
-				Point{x: 2, y: 10}, Point{x: 2, y: 11}, Point{x: 2, y: 12},
+				Point{X: 0, Y: 10}, Point{X: 0, Y: 11}, Point{X: 0, Y: 12},
+				Point{X: 1, Y: 10}, Point{X: 1, Y: 11}, Point{X: 1, Y: 12},
+				Point{X: 2, Y: 10}, Point{X: 2, Y: 11}, Point{X: 2, Y: 12},
 			},
 			false,
 		},
@@ -64,36 +64,36 @@ func TestBasePlacements(t *testing.T) {
 		transform  bool
 	}{
 		{
-			Polyomino{Point{x: 1, y: 0}},
-			[]Polyomino{{Point{x: 0, y: 0}}},
+			Polyomino{Point{X: 1, Y: 0}},
+			[]Polyomino{{Point{X: 0, Y: 0}}},
 			true,
 		},
 		{
-			Polyomino{Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 0, y: 3}},
+			Polyomino{Point{X: 0, Y: 1}, Point{X: 0, Y: 2}, Point{X: 0, Y: 3}},
 			[]Polyomino{
-				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}},
-				{Point{x: 0, y: 0}, Point{x: 1, y: 0}, Point{x: 2, y: 0}},
+				{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 0, Y: 2}},
+				{Point{X: 0, Y: 0}, Point{X: 1, Y: 0}, Point{X: 2, Y: 0}},
 			},
 			true,
 		},
 		{
-			Polyomino{Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 0, y: 3}},
+			Polyomino{Point{X: 0, Y: 1}, Point{X: 0, Y: 2}, Point{X: 0, Y: 3}},
 			[]Polyomino{
-				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}},
+				{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 0, Y: 2}},
 			},
 			false,
 		},
 		{
-			Polyomino{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 1, y: 0}},
+			Polyomino{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 0, Y: 2}, Point{X: 1, Y: 0}},
 			[]Polyomino{
-				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 1, y: 0}},
-				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 0, y: 2}, Point{x: 1, y: 2}},
-				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 1, y: 0}, Point{x: 2, y: 0}},
-				{Point{x: 0, y: 0}, Point{x: 0, y: 1}, Point{x: 1, y: 1}, Point{x: 2, y: 1}},
-				{Point{x: 0, y: 0}, Point{x: 1, y: 0}, Point{x: 1, y: 1}, Point{x: 1, y: 2}},
-				{Point{x: 0, y: 0}, Point{x: 1, y: 0}, Point{x: 2, y: 0}, Point{x: 2, y: 1}},
-				{Point{x: 0, y: 1}, Point{x: 1, y: 1}, Point{x: 2, y: 0}, Point{x: 2, y: 1}},
-				{Point{x: 0, y: 2}, Point{x: 1, y: 0}, Point{x: 1, y: 1}, Point{x: 1, y: 2}},
+				{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 0, Y: 2}, Point{X: 1, Y: 0}},
+				{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 0, Y: 2}, Point{X: 1, Y: 2}},
+				{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 1, Y: 0}, Point{X: 2, Y: 0}},
+				{Point{X: 0, Y: 0}, Point{X: 0, Y: 1}, Point{X: 1, Y: 1}, Point{X: 2, Y: 1}},
+				{Point{X: 0, Y: 0}, Point{X: 1, Y: 0}, Point{X: 1, Y: 1}, Point{X: 1, Y: 2}},
+				{Point{X: 0, Y: 0}, Point{X: 1, Y: 0}, Point{X: 2, Y: 0}, Point{X: 2, Y: 1}},
+				{Point{X: 0, Y: 1}, Point{X: 1, Y: 1}, Point{X: 2, Y: 0}, Point{X: 2, Y: 1}},
+				{Point{X: 0, Y: 2}, Point{X: 1, Y: 0}, Point{X: 1, Y: 1}, Point{X: 1, Y: 2}},
 			},
 			true,
 		},
