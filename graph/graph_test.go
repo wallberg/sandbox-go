@@ -109,42 +109,95 @@ func TestArcs(t *testing.T) {
 
 func TestConnectedSubsetsVertex(t *testing.T) {
 
-	want := [][]int{
-		{0, 1, 3, 2, 4},
-		{0, 1, 3, 2, 6},
-		{0, 1, 3, 2, 5},
-		{0, 1, 3, 4, 6},
-		{0, 1, 3, 4, 5},
-		{0, 1, 3, 4, 7},
-		{0, 1, 3, 6, 7},
-		{0, 1, 2, 4, 5},
-		{0, 1, 2, 4, 7},
-		{0, 1, 2, 5, 8},
-		{0, 1, 4, 5, 7},
-		{0, 1, 4, 5, 8},
-		{0, 1, 4, 7, 6},
-		{0, 1, 4, 7, 8},
-		{0, 3, 4, 6, 5},
-		{0, 3, 4, 6, 7},
-		{0, 3, 4, 5, 7},
-		{0, 3, 4, 5, 2},
-		{0, 3, 4, 5, 8},
-		{0, 3, 4, 7, 8},
-		{0, 3, 6, 7, 8},
+	cases := []struct {
+		g    *graph.Mutable // input graph
+		n    int            // input size of subsets
+		v    int            // included vertex
+		want [][]int        // expected solutions
+	}{
+		{
+			CartesianProduct(Path(3), Path(3)),
+			5,
+			0,
+			[][]int{
+				{0, 1, 3, 2, 4},
+				{0, 1, 3, 2, 6},
+				{0, 1, 3, 2, 5},
+				{0, 1, 3, 4, 6},
+				{0, 1, 3, 4, 5},
+				{0, 1, 3, 4, 7},
+				{0, 1, 3, 6, 7},
+				{0, 1, 2, 4, 5},
+				{0, 1, 2, 4, 7},
+				{0, 1, 2, 5, 8},
+				{0, 1, 4, 5, 7},
+				{0, 1, 4, 5, 8},
+				{0, 1, 4, 7, 6},
+				{0, 1, 4, 7, 8},
+				{0, 3, 4, 6, 5},
+				{0, 3, 4, 6, 7},
+				{0, 3, 4, 5, 7},
+				{0, 3, 4, 5, 2},
+				{0, 3, 4, 5, 8},
+				{0, 3, 4, 7, 8},
+				{0, 3, 6, 7, 8},
+			},
+		},
+		{
+			Path(1),
+			1,
+			0,
+			[][]int{
+				{0},
+			},
+		},
 	}
 
-	var got [][]int
+	for _, c := range cases {
+		var got [][]int
 
-	g := CartesianProduct(Path(3), Path(3))
+		ConnectedSubsetsVertex(c.g, c.n, c.v, func(solution []int) bool {
+			cp := make([]int, c.n)
+			copy(cp, solution)
+			got = append(got, cp)
+			return false
+		})
 
-	ConnectedSubsetsVertex(g, 5, 0, func(solution []int) bool {
-		c := make([]int, 5)
-		copy(c, solution)
-		got = append(got, c)
-		return false
-	})
+		if !reflect.DeepEqual(got, c.want) {
+			t.Errorf("Got %v; want %v", got, c.want)
+		}
+	}
+}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("Got %v; want %v", got, want)
+func TestConnectedSubsets(t *testing.T) {
+
+	cases := []struct {
+		n     int
+		count int // number of connected subsets
+	}{
+		{1, 1},
+		{2, 4},
+		{3, 22},
+		{4, 113},
+		{5, 571},
+		{6, 2816},
+		{7, 13616},
+		{8, 64678},
+		{9, 302574},
+	}
+
+	for _, c := range cases {
+
+		g := CartesianProduct(Path(c.n), Path(c.n))
+		count := 0
+
+		ConnectedSubsets(g, c.n, func(solution []int) bool {
+			count++
+			return false
+		})
+
+		if !reflect.DeepEqual(count, c.count) {
+			t.Errorf("Got %v; want %v", count, c.count)
+		}
 	}
 }
