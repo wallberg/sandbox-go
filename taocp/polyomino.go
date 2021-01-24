@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/packr"
+	"github.com/wallberg/sandbox/graph"
 	"gopkg.in/yaml.v2"
 )
 
@@ -284,4 +285,35 @@ func Polyominoes(shapeSetNames []string, boardName string) ([]string, [][]string
 
 	return items, options, []string{}
 
+}
+
+// PolyominoPacking generates polyominoes of size n which fit into an x by y
+// bounding box. Optionally exclude straight pieces and non-convex pieces.
+// Returns a list of polyomino shapes.
+func PolyominoPacking(x int, y int, n int, includeStraight bool,
+	includeNonConvex bool) (pos []Polyomino) {
+
+	// Generate the bounding grid
+	g := graph.CartesianProduct(graph.Path(x), graph.Path(y))
+
+	// Generate shapes which fit into the grid
+	graph.ConnectedSubsets(g, n, func(solution []int) bool {
+
+		// Translate the subgraph into a polyomino shape
+		var po Polyomino
+		for _, v := range solution {
+			po = append(po, Point{v % y, v / y})
+		}
+
+		// Determine if this shape should be included
+		if includeStraight || !po.IsStraight() {
+			if includeNonConvex || po.IsConvex() {
+				pos = append(pos, po)
+			}
+		}
+
+		return false
+	})
+
+	return pos
 }

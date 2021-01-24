@@ -182,3 +182,35 @@ func TestPolyominoes(t *testing.T) {
 		}
 	}
 }
+
+func TestPolyominoPacking(t *testing.T) {
+	cases := []struct {
+		x                int
+		y                int
+		n                int
+		includeStraight  bool
+		includeNonConvex bool
+		count            int
+	}{
+		{2, 3, 2, true, true, 7},
+		{2, 3, 2, false, true, 0},
+		{3, 3, 5, true, false, 41},
+		{3, 3, 3, false, true, 16},
+		{4, 4, 4, false, true, 105},
+		{5, 5, 5, false, true, 561},
+		{6, 6, 6, false, true, 2804},
+		{7, 7, 7, false, true, 13602},
+	}
+
+	for _, c := range cases {
+		pos := PolyominoPacking(c.x, c.y, c.n, c.includeStraight,
+			c.includeNonConvex)
+
+		count := len(pos)
+		if count != c.count {
+			t.Errorf("Got %d shapes for PolyominoPacking(%d,%d,%d,%t,%t); want %d",
+				count, c.x, c.y, c.n, c.includeStraight, c.includeNonConvex,
+				c.count)
+		}
+	}
+}

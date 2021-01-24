@@ -121,6 +121,13 @@ func (po Polyomino) IsConvex() bool {
 	return true
 }
 
+// IsStraight tests whether a shape is straight.
+func (po Polyomino) IsStraight() bool {
+	xMin, yMin, xMax, yMax := po.Bounds()
+
+	return xMin == xMax || yMin == yMax
+}
+
 // All four points in Von Neumann neighborhood
 func (p Point) contiguous() Polyomino {
 	return Polyomino{Point{p.X - 1, p.Y}, Point{p.X + 1, p.Y},
