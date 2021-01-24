@@ -267,7 +267,6 @@ R6:
 	}
 
 	i = is[l]
-	v = vs[i]
 
 	// untag all neighbors of v_k, for l >= k > i
 	for k := i + 1; k <= l; k++ {
@@ -342,23 +341,122 @@ func ConnectedSubsets(g graph.Iterator, n int,
 		}
 	}
 
-	for k := 0; k < g.Order(); k++ {
-		// R0. Try vertex k
-		v = k
+	// R1. [Initialize.]
+	v = 0
+	vs = make([]int, n)
+	is = make([]int, n)
+	as = make([]*Arc, n)
+
+	tag = make([]int, g.Order())
+
+	vs[0] = v
+	i = 0
+	a = Arcs(g, v)
+	as[0] = a
+	tag[v] = 1
+	l = 1
+
+	if debug {
+		log.Printf("R1. Initialized at level %d", l)
+		dump()
+	}
+
+	goto R4
+
+R2:
+	// R2. [Enter level l.]
+
+	if debug {
+		log.Printf("R2. Enter level %d", l)
+		dump()
+	}
+
+	if l == n {
+		visit(vs)
+		l = n - 1
+	}
+
+R3:
+	// R3. [Advance a.]
+	if debug {
+		if a.next != nil {
+			log.Printf("R3. Advance a from %v to %v", a, a.next)
+			dump()
+		}
+	}
+
+	a = a.next
+
+R4:
+	// R4. [Done with level?]
+	if a != nil {
+		goto R5
+	}
+
+	if i == l-1 {
+		goto R6
+	}
+
+	i++
+	v = vs[i]
+	a = Arcs(g, v)
+
+	if debug {
+		log.Printf("R4. Advance i=%d, v=%d, a=%v", i, v, a)
+		dump()
+	}
+
+R5:
+	// R5. [Try a.]
+	u = a.v
+	tag[u]++
+
+	if debug {
+		log.Printf("R5. Try a=%v", a)
+		dump()
+	}
+
+	if tag[u] > 1 {
 		if debug {
-			log.Printf("R0. v=k=%d", k)
+			log.Printf("R5. tag[%d]=%d > 1", u, tag[u])
+		}
+		goto R3
+	}
+
+	is[l] = i
+	as[l] = a
+	vs[l] = u
+	l++
+
+	goto R2
+
+R6:
+	// R6. [Backtrack.]
+	if debug {
+		log.Printf("R6. Backtrack")
+		dump()
+	}
+
+	l--
+	if l == 0 {
+		if debug {
+			log.Printf("| STOP v=%d", v)
 		}
 
-		// R1. [Initialize.]
-		vs = make([]int, n)
-		is = make([]int, n)
-		as = make([]*Arc, n)
+		if v == g.Order()-1 {
+			return
+		}
 
-		tag = make([]int, g.Order())
+		// Untag the neighbors of v, thus leaving v tagged. Tricky.
+		g.Visit(v, func(w int, c int64) bool {
+			tag[w]--
+			return false
+		})
 
-		// Exclude all previous values of k
-		for kPrev := 0; kPrev < k; kPrev++ {
-			tag[kPrev] = 1
+		v++
+
+		if debug {
+			log.Printf("R6. Initialize v=%d", v)
 		}
 
 		vs[0] = v
@@ -369,118 +467,39 @@ func ConnectedSubsets(g graph.Iterator, n int,
 		l = 1
 
 		if debug {
-			log.Printf("R1. Initialized at level %d", l)
 			dump()
 		}
 
 		goto R4
-
-	R2:
-		// R2. [Enter level l.]
-
-		if debug {
-			log.Printf("R2. Enter level %d", l)
-			dump()
-		}
-
-		if l == n {
-			visit(vs)
-			l = n - 1
-		}
-
-	R3:
-		// R3. [Advance a.]
-		if debug {
-			if a.next != nil {
-				log.Printf("R3. Advance a from %v to %v", a, a.next)
-				dump()
-			}
-		}
-
-		a = a.next
-
-	R4:
-		// R4. [Done with level?]
-		if a != nil {
-			goto R5
-		}
-
-		if i == l-1 {
-			goto R6
-		}
-
-		i++
-		v = vs[i]
-		a = Arcs(g, v)
-
-		if debug {
-			log.Printf("R4. Advance i=%d, v=%d, a=%v", i, v, a)
-			dump()
-		}
-
-	R5:
-		// R5. [Try a.]
-		u = a.v
-		tag[u]++
-
-		if debug {
-			log.Printf("R5. Try a=%v", a)
-			dump()
-		}
-
-		if tag[u] > 1 {
-			if debug {
-				log.Printf("R5. tag[%d]=%d > 1", u, tag[u])
-			}
-			goto R3
-		}
-
-		is[l] = i
-		as[l] = a
-		vs[l] = u
-		l++
-
-		goto R2
-
-	R6:
-		// R6. [Backtrack.]
-		if debug {
-			log.Printf("R6. Backtrack")
-			dump()
-		}
-
-		l--
-		if l == 0 {
-			continue
-		}
-
-		i = is[l]
-		// v = vs[i]
-
-		// untag all neighbors of v_k, for l >= k > i
-		for k := i + 1; k <= l; k++ {
-			if debug {
-				log.Printf("|  Untagging neighbors of vs[%d]=%d", k, vs[k])
-			}
-			g.Visit(vs[k], func(w int, c int64) bool {
-				tag[w]--
-				return false
-			})
-		}
-
-		a = as[l].next
-		for a != nil {
-			tag[a.v]--
-			a = a.next
-		}
-
-		a = as[l]
-
-		if debug {
-			log.Printf("R6. Untagging complete")
-			dump()
-		}
-
-		goto R3
 	}
+
+	i = is[l]
+	v = vs[i]
+
+	// untag all neighbors of v_k, for l >= k > i
+	for k := i + 1; k <= l; k++ {
+		if debug {
+			log.Printf("|  Untagging neighbors of vs[%d]=%d", k, vs[k])
+		}
+		g.Visit(vs[k], func(w int, c int64) bool {
+			tag[w]--
+			return false
+		})
+	}
+
+	a = as[l].next
+	for a != nil {
+		tag[a.v]--
+		a = a.next
+	}
+
+	a = as[l]
+
+	if debug {
+		log.Printf("R6. Untagging complete")
+		dump()
+	}
+
+	goto R3
+
 }
