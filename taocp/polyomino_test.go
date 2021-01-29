@@ -214,3 +214,41 @@ func TestPolyominoPacking(t *testing.T) {
 		}
 	}
 }
+
+func TestPolyominoXC(t *testing.T) {
+	cases := []struct {
+		n     int
+		count int
+	}{
+		{3, 0},
+		{4, 33},
+		{5, 2082},
+		// {6, 320098},    // too slow (10s)
+		// {7, 132418528}, // too slow (9h)
+	}
+
+	for _, c := range cases {
+		board := make(Polyomino, 0)
+		for x := 0; x < c.n; x++ {
+			for y := 0; y < c.n; y++ {
+				board = append(board, Point{X: x, Y: y})
+			}
+		}
+
+		shapes := PolyominoPacking(c.n, c.n, c.n, false, true)
+
+		items, options := PolyominoXC(board, shapes)
+
+		count := 0
+		ExactCoverColors(items, options, []string{}, nil,
+			func(solution [][]string) bool {
+				count++
+				return true
+			})
+
+		if count != c.count {
+			t.Errorf("Got %d solutions for n=%d; want %d",
+				count, c.n, c.count)
+		}
+	}
+}

@@ -317,3 +317,44 @@ func PolyominoPacking(x int, y int, n int, includeStraight bool,
 
 	return pos
 }
+
+// PolyominoXC generates items and options for XC solving given an input
+// Polyomino board and list of Polyomino shapes. This function assumes that the
+// shapes already cover all the intended board positions.
+func PolyominoXC(board Polyomino, shapes []Polyomino) (items []string, options [][]string) {
+
+	// Create a Poinset for the board points
+	boardSet := board.toPointset()
+
+	// pointItem generates an item name for a Point
+	pointItem := func(point Point) string {
+		return fmt.Sprintf("%c%c", valueMap[point.X], valueMap[point.Y])
+	}
+
+	// Add the items, one for each board position
+	for _, point := range board {
+		items = append(items, pointItem(point))
+	}
+
+	// Add the options
+	// Iterate over each shape
+	for _, shape := range shapes {
+
+		var option []string
+
+		for _, point := range shape {
+			if !boardSet[point] {
+				log.Fatalf("Shape %v contains point %v which is not in the board",
+					shape, point)
+			}
+
+			option = append(option, pointItem(point))
+		}
+
+		options = append(options, option)
+	}
+
+	return items, options
+
+}
+
