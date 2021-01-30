@@ -355,6 +355,79 @@ func PolyominoXC(board Polyomino, shapes []Polyomino) (items []string, options [
 	}
 
 	return items, options
-
 }
 
+// PolyominoFill translates the board to origin and for each shape translates
+// the shape to origin, determines if this shape has not been handled yet,
+// then generates all placements which fit on the board.
+func PolyominoFill(board Polyomino, shapes []Polyomino) (boardOut Polyomino, shapesOut []Polyomino) {
+
+	// Shift the board to the origin
+	boardOut = board.translateToOrigin()
+
+	// Get board bounds
+	_, _, xBoardMax, yBoardMax := boardOut.Bounds()
+
+	// Create a Poinset for the board points
+	boardSet := boardOut.toPointset()
+
+	seenSet := make(map[string]bool)
+
+	// seen checks if a shape has already been handled; if yes it returns true,
+	// if no it marks as handled and returns false
+	seen := func(shape Polyomino) bool {
+		// Generate the string key
+		keyBuilder := strings.Builder{}
+		for _, point := range shape {
+			keyBuilder.WriteString(fmt.Sprintf("%c%c", valueMap[point.X], valueMap[point.Y]))
+		}
+		key := keyBuilder.String()
+
+		// Check if seen
+		if seenSet[key] {
+			return true
+		}
+
+		seenSet[key] = true
+		return false
+	}
+
+	// Iterate over each shape
+	for _, shape := range shapes {
+
+		// Shift the shape to the origin and sort
+		shapeOut := shape.translateToOrigin()
+
+		// Check if we've handled this shape already
+		if !seen(shapeOut) {
+
+			// Get shape bounds
+			_, _, xMax, yMax := shapeOut.Bounds()
+
+			// Iterate over shape placements
+			for xDelta := 0; xDelta+xMax <= xBoardMax; xDelta++ {
+				for yDelta := 0; yDelta+yMax <= yBoardMax; yDelta++ {
+
+					// Add the placement if all the points are in the board
+					placement := make(Polyomino, len(shapeOut))
+					addPlacement := true
+					for i, point := range shapeOut {
+						x := point.X + xDelta
+						y := point.Y + yDelta
+						placementPoint := Point{X: x, Y: y}
+						if !boardSet[placementPoint] {
+							addPlacement = false
+							break
+						}
+						placement[i] = placementPoint
+					}
+					if addPlacement {
+						shapesOut = append(shapesOut, placement)
+					}
+				}
+			}
+		}
+	}
+
+	return boardOut, shapesOut
+}

@@ -252,3 +252,48 @@ func TestPolyominoXC(t *testing.T) {
 		}
 	}
 }
+
+func TestPolyominoFill(t *testing.T) {
+	cases := []struct {
+		board      Polyomino
+		shapes     []Polyomino
+		boardWant  Polyomino
+		shapesWant []Polyomino
+	}{
+		{
+			Polyomino{Point{1, 1}, Point{1, 2}, Point{1, 3}, Point{2, 3},
+				Point{2, 2}, Point{2, 1}, Point{3, 1}, Point{3, 2}},
+			[]Polyomino{
+				{Point{0, 0}, Point{0, 1}},
+				{Point{1, 0}, Point{1, 1}},
+				{Point{1, 1}, Point{2, 1}},
+			},
+			Polyomino{Point{0, 0}, Point{0, 1}, Point{0, 2}, Point{1, 0},
+				Point{1, 1}, Point{1, 2}, Point{2, 0}, Point{2, 1}},
+			[]Polyomino{
+				{Point{0, 0}, Point{0, 1}},
+				{Point{0, 1}, Point{0, 2}},
+				{Point{1, 0}, Point{1, 1}},
+				{Point{1, 1}, Point{1, 2}},
+				{Point{2, 0}, Point{2, 1}},
+				{Point{0, 0}, Point{1, 0}},
+				{Point{0, 1}, Point{1, 1}},
+				{Point{0, 2}, Point{1, 2}},
+				{Point{1, 0}, Point{2, 0}},
+				{Point{1, 1}, Point{2, 1}},
+			},
+		},
+	}
+
+	for _, c := range cases {
+		boardGot, shapesGot := PolyominoFill(c.board, c.shapes)
+
+		if !reflect.DeepEqual(boardGot, c.boardWant) {
+			t.Errorf("Got board %v; want %v", boardGot, c.boardWant)
+		}
+
+		if !reflect.DeepEqual(shapesGot, c.shapesWant) {
+			t.Errorf("Got shapes %v; want %v", shapesGot, c.shapesWant)
+		}
+	}
+}
