@@ -363,7 +363,7 @@ func PolyominoXC(board Polyomino, shapes []Polyomino) (items []string, options [
 func PolyominoFill(board Polyomino, shapes []Polyomino) (boardOut Polyomino, shapesOut []Polyomino) {
 
 	// Shift the board to the origin
-	boardOut = board.translateToOrigin()
+	boardOut = board.TranslateToOrigin()
 
 	// Get board bounds
 	_, _, xBoardMax, yBoardMax := boardOut.Bounds()
@@ -396,7 +396,7 @@ func PolyominoFill(board Polyomino, shapes []Polyomino) (boardOut Polyomino, sha
 	for _, shape := range shapes {
 
 		// Shift the shape to the origin and sort
-		shapeOut := shape.translateToOrigin()
+		shapeOut := shape.TranslateToOrigin()
 
 		// Check if we've handled this shape already
 		if !seen(shapeOut) {

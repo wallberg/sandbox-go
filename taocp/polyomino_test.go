@@ -216,6 +216,7 @@ func TestPolyominoPacking(t *testing.T) {
 }
 
 func TestPolyominoXC(t *testing.T) {
+	// These tests verify Exercise 7.2.2.1-62
 	cases := []struct {
 		n     int
 		count int
@@ -251,6 +252,52 @@ func TestPolyominoXC(t *testing.T) {
 				count, c.n, c.count)
 		}
 	}
+
+	// These tests verify Exercise 7.2.2.1-68a
+	cases2 := []struct {
+		n          int
+		placements int
+		count      int
+	}{
+		{1, 1, 1},
+		{2, 4, 2},
+		{3, 22, 10},
+		{4, 113, 117},
+		{5, 523, 2908},
+		{6, 2196, 162616},
+		// {7, 8438, 18187302}, // too slow (30m)
+	}
+
+	for _, c := range cases2 {
+		board := make(Polyomino, 0)
+		for x := 0; x < c.n; x++ {
+			for y := 0; y < c.n; y++ {
+				board = append(board, Point{X: x, Y: y})
+			}
+		}
+
+		shapes := PolyominoPacking(c.n, c.n, c.n, true, false)
+		items, options := PolyominoXC(board, shapes)
+
+		if len(options) != c.placements {
+			t.Errorf("Got %d placements for n=%d; want %d", len(options), c.n,
+				c.placements)
+		}
+
+		count := 0
+		// stats := &ExactCoverStats{Progress: true, Delta: 100000000}
+		ExactCoverColors(items, options, []string{}, nil,
+			func(solution [][]string) bool {
+				count++
+				return true
+			})
+
+		if count != c.count {
+			t.Errorf("Got %d solutions for n=%d; want %d",
+				count, c.n, c.count)
+		}
+	}
+
 }
 
 func TestPolyominoFill(t *testing.T) {
@@ -294,6 +341,56 @@ func TestPolyominoFill(t *testing.T) {
 
 		if !reflect.DeepEqual(shapesGot, c.shapesWant) {
 			t.Errorf("Got shapes %v; want %v", shapesGot, c.shapesWant)
+		}
+	}
+
+	// This test verifies Exercise 7.2.2.1-68b
+	cases2 := []struct {
+		x              int
+		y              int
+		n              int
+		allowNonConvex bool
+		placements     int
+		count          int
+	}{
+		// {4, 4, 9, false, 12097, 8113709}, // slow (80m)
+	}
+
+	for _, c := range cases2 {
+
+		// the board
+		board := make(Polyomino, 0)
+		for x := 0; x < c.n; x++ {
+			for y := 0; y < c.n; y++ {
+				board = append(board, Point{X: x, Y: y})
+			}
+		}
+
+		// Generate the shapes
+		shapes := PolyominoPacking(c.x, c.y, c.n, true, c.allowNonConvex)
+
+		// Fill the board with all possible shape placements
+		board, shapes = PolyominoFill(board, shapes)
+
+		// Generate items and options for XC solving
+		items, options := PolyominoXC(board, shapes)
+
+		if len(options) != c.placements {
+			t.Errorf("Got %d placements; want %d", len(options), c.placements)
+		}
+
+		// Solve using XC
+		count := 0
+		// stats := &ExactCoverStats{Progress: true, Delta: 100000000}
+		ExactCoverColors(items, options, []string{}, nil,
+			func(solution [][]string) bool {
+				count++
+				return true
+			})
+
+		if count != c.count {
+			t.Errorf("Got %d solutions; want %d", count, c.count)
+
 		}
 	}
 }

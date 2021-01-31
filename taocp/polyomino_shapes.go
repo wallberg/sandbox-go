@@ -149,7 +149,9 @@ func (po Polyomino) minima() (int, int) {
 	return minx, miny
 }
 
-func (po Polyomino) translateToOrigin() Polyomino {
+// TranslateToOrigin translates a Polyomino to the origin, so min x and y
+// are both 0
+func (po Polyomino) TranslateToOrigin() Polyomino {
 	minx, miny := po.minima()
 	res := make(Polyomino, len(po))
 	for i, p := range po {
@@ -182,10 +184,10 @@ func (po Polyomino) rotationsAndReflections() []Polyomino {
 
 func (po Polyomino) canonical() Polyomino {
 	rr := po.rotationsAndReflections()
-	minr := rr[0].translateToOrigin()
+	minr := rr[0].TranslateToOrigin()
 	mins := minr.String()
 	for i := 1; i < 8; i++ {
-		r := rr[i].translateToOrigin()
+		r := rr[i].TranslateToOrigin()
 		s := r.String()
 		if s < mins {
 			minr = r
