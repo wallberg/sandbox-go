@@ -12,3 +12,4 @@ problems.html
 *.code-workspace
 test/*
 cmd/taocp/taocp
+com/github/wallberg/euler
