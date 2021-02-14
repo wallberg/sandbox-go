@@ -606,6 +606,18 @@ C6:
 			p--
 		}
 	}
+
+	// Exercise 7.2.2.1-83 performance improvement
+	if level == 0 {
+		x := state[0]
+		for ; top[x] > 0; x++ {
+		}
+		j = top[x-1]
+		if j > n && color[x-1] == 0 {
+			cover(j)
+		}
+	}
+
 	i = top[state[level]]
 	state[level] = dlink[state[level]]
 	goto C5
