@@ -7,7 +7,8 @@ import (
 
 // DoubleWordSquare finds n x n arrays whose rows and columns contain 2n
 // different words, using XCC. Each word in words must be the same length.
-func DoubleWordSquare(words []string, stats *ExactCoverStats, visit func([]string) bool) {
+func DoubleWordSquare(words []string, stats *ExactCoverStats,
+	xccOptions *XCCOptions, visit func([]string) bool) {
 
 	// Get value of n and verify all words have length n
 	n := len(words[0])
@@ -37,8 +38,11 @@ func DoubleWordSquare(words []string, stats *ExactCoverStats, visit func([]strin
 		}
 	}
 	sitems = append(sitems, words...)
-	for _, word := range words {
-		sitems = append(sitems, word+"'")
+	if xccOptions.Exercise83 {
+		for _, word := range words {
+			// prime values to remove tranpose solutions
+			sitems = append(sitems, word+"'")
+		}
 	}
 
 	// Setup the 2Wn options
@@ -53,7 +57,8 @@ func DoubleWordSquare(words []string, stats *ExactCoverStats, visit func([]strin
 			aOption = append(aOption, word)
 			dOption = append(dOption, word)
 
-			if i == 1 {
+			if xccOptions.Exercise83 && i == 1 {
+				// prime values to remove tranpose solutions
 				aOption = append(aOption, word+"'")
 				dOption = append(dOption, word+"'")
 			}
@@ -63,7 +68,7 @@ func DoubleWordSquare(words []string, stats *ExactCoverStats, visit func([]strin
 	}
 
 	// Get the solutions
-	XCC(items, options, sitems, stats, false, false,
+	XCC(items, options, sitems, stats, xccOptions,
 		func(solution [][]string) bool {
 			// fmt.Println(solution)
 			visit([]string{"solution goes here"})

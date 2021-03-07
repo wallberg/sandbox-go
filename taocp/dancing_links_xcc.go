@@ -9,6 +9,20 @@ import (
 	"strings"
 )
 
+// XCCOptions holds the various options for running XCC
+type XCCOptions struct {
+	// When true, only visit solutions whose maximum option number is <= the
+	// maximum option number of any solution already found; Exercise 7.2.2.1-84
+	Minimax bool
+
+	// When true and Minimax is true, return only one minimax solution for a
+	// given maximium option number; Exercise 7.2.2.1-85
+	MinimaxSingle bool
+
+	// Use the curious extension of Exercise 7.2.2.1-83
+	Exercise83 bool
+}
+
 // XCC implements Algorithm C (7.2.2.1), exact covering with colors via
 // dancing links.  The task is to find all subsets of options such
 // that:
@@ -24,16 +38,21 @@ import (
 //              "color" appended after a colon, eg "sitem:color"
 // stats     -- structure to capture runtime statistics and provide feedback on
 //              progress
-// minimax   -- when true, only visit solutions whose maximum option number is
-//              <= the maximum option number of any solution already found
-// minimaxSingle
-//           -- return only one minimax solution for a given maximium option number
+// xccOptions
+//           -- various processing options for XCC; nil value is equivalent to
+//              &XCCOptions{} with all default values
+//
 // visit     -- function called with each discovered solution, returns true
 //              if the search should continue
 //
 func XCC(items []string, options [][]string, secondary []string,
-	stats *ExactCoverStats, minimax bool, minimaxSingle bool,
+	stats *ExactCoverStats, xccOptions *XCCOptions,
 	visit func(solution [][]string) bool) error {
+
+	if xccOptions == nil {
+		// Use all default values
+		xccOptions = &XCCOptions{}
+	}
 
 	var (
 		n1       int      // number of primary items
@@ -522,7 +541,7 @@ func XCC(items []string, options [][]string, secondary []string,
 			if x <= 0 {
 				q = d // q was a spacer
 			} else {
-				if minimax && d > cutoff {
+				if xccOptions.Minimax && d > cutoff {
 					// d = x
 					// dlink[q] = x
 					dlink[q], d = x, x
@@ -560,7 +579,7 @@ func XCC(items []string, options [][]string, secondary []string,
 			log.Printf("uncover(i=%d)", i)
 		}
 
-		if minimax {
+		if xccOptions.Minimax {
 			// Remove all nodes > cutoff from item i's list
 			q := dlink[i]
 			for q != i {
@@ -625,7 +644,7 @@ func XCC(items []string, options [][]string, secondary []string,
 				unhide(q)
 			}
 			q = ulink[q]
-			if minimax && q > cutoff {
+			if xccOptions.Minimax && q > cutoff {
 				dlink[q] = i
 				ulink[i] = q
 			}
@@ -703,13 +722,13 @@ func XCC(items []string, options [][]string, secondary []string,
 		}
 
 		// For minimax, remove all nodes > cutoff (new value)
-		if minimax {
+		if xccOptions.Minimax {
 			// Find spacer at the end of the option for max x_k
 			// For minimaxSingle=true find the spacer before the
 			// solution, otherwise the spacer after the solutioin
 			pp := pMax
 			for top[pp] > 0 {
-				if minimaxSingle {
+				if xccOptions.MinimaxSingle {
 					pp--
 				} else {
 					pp++
@@ -738,7 +757,7 @@ func XCC(items []string, options [][]string, secondary []string,
 				}
 
 				// Backtrack for each item in state >= lMax
-				if minimaxSingle {
+				if xccOptions.MinimaxSingle {
 					for k := level - 1; k >= lMax; k-- {
 						i := top[state[k]]
 						uncover(i)
@@ -881,7 +900,11 @@ C6:
 	// reconcile my understanding of this answer to Exercise 83 with the actual
 	// description of the exercise.
 	// TODO: reconcile this discrepency
-	if level == 0 {
+	if xccOptions.Exercise83 && level == 0 {
+		if debug && stats.Verbosity > 1 {
+			log.Print("Exercise 83: see if we should cover")
+		}
+
 		// x is the first primary item covered
 		x := state[0]
 
@@ -1051,7 +1074,7 @@ func SudokuCards(cards [9][3][3]int, stats *ExactCoverStats,
 	solutions := make(map[[9]int][][9][9]int)
 
 	// Solve using XCC
-	XCC(items, options, sitems, stats, false, false,
+	XCC(items, options, sitems, stats, nil,
 		func(solution [][]string) bool {
 			var (
 				cards [9]int
@@ -1207,7 +1230,7 @@ func WordSearch(m int, n int, words []string, stats *ExactCoverStats,
 		}
 	}
 
-	XCC(words, options, secondary, stats, false, false,
+	XCC(words, options, secondary, stats, nil,
 		func(solution [][]string) bool {
 			return visit(solution)
 		})

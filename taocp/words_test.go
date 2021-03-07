@@ -2,17 +2,14 @@ package taocp
 
 import (
 	"testing"
-
-	"github.com/wallberg/sandbox/sgb"
 )
 
 func TestDoubleWordSquare(t *testing.T) {
 
-	var err error
-
 	cases := []struct {
-		words []string
-		count int
+		words           []string
+		removeTranspose bool
+		count           int
 	}{
 		{
 			[]string{
@@ -27,32 +24,54 @@ func TestDoubleWordSquare(t *testing.T) {
 				"defgh",
 				"efghi",
 			},
-			1,
+			false,
+			2,
 		},
 		{
-			nil,
-			323264,
+			[]string{
+				"abcde",
+				"wcdef",
+				"xdefg",
+				"yefgh",
+				"zfghi",
+				"awxyz",
+				"bcdef",
+				"cdefg",
+				"defgh",
+				"efghi",
+			},
+			true,
+			1,
 		},
+		// too long
+		// {
+		// 	nil,
+		//  true,
+		// 	323264,
+		// },
 	}
 
-	cases[1].words, err = sgb.LoadWords()
-	if err != nil {
-		t.Errorf("Error getting words: %v", err)
-		return
-	}
+	// var err error
+	// cases[1].words, err = sgb.LoadWords()
+	// if err != nil {
+	// 	t.Errorf("Error getting words: %v", err)
+	// 	return
+	// }
 
 	for i, c := range cases {
 
 		stats := &ExactCoverStats{
-			Progress: true,
-			Delta:    50000000,
-			// Debug:        true,
+			// Progress: true,
+			// Delta:    50000000,
+			// Debug:    true,
 			// Verbosity:    2,
 			// SuppressDump: true,
 		}
 
+		xccOptions := &XCCOptions{Exercise83: c.removeTranspose}
+
 		count := 0
-		DoubleWordSquare(c.words, stats, func(s []string) bool {
+		DoubleWordSquare(c.words, stats, xccOptions, func(s []string) bool {
 			count++
 			return true
 		})

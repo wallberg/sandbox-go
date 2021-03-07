@@ -41,7 +41,7 @@ func TestXCC(t *testing.T) {
 		// Verbosity: 2,
 	}
 
-	XCC(xcItems, xcOptions, []string{}, stats, false, false,
+	XCC(xcItems, xcOptions, []string{}, stats, nil,
 		func(solution [][]string) bool {
 			if !reflect.DeepEqual(solution, xcExpected) {
 				t.Errorf("Expected %v; got %v", xcExpected, solution)
@@ -65,7 +65,7 @@ func TestXCC(t *testing.T) {
 		// Debug:     true,
 		// Verbosity: 2,
 	}
-	XCC(xccItems, xccOptions, xccSItems, stats, false, false,
+	XCC(xccItems, xccOptions, xccSItems, stats, nil,
 		func(solution [][]string) bool {
 			if !reflect.DeepEqual(solution, xccExpected) {
 				t.Errorf("Expected %v; got %v", xccExpected, solution)
@@ -335,7 +335,11 @@ func TestXCCminimax(t *testing.T) {
 			// Debug:     true,
 			// Verbosity: 2,
 		}
-		err := XCC(c.items, c.options, c.secondary, stats, true, c.single,
+		xccOptions := &XCCOptions{
+			Minimax:       true,
+			MinimaxSingle: c.single,
+		}
+		err := XCC(c.items, c.options, c.secondary, stats, xccOptions,
 			func(solution [][]string) bool {
 				got = append(got, solution)
 				return true
