@@ -57,6 +57,11 @@ func XCC(items []string, options [][]string, secondary []string,
 	)
 
 	dump := func() {
+
+		if stats.SuppressDump {
+			return
+		}
+
 		var b strings.Builder
 		b.WriteString("\n")
 
@@ -871,13 +876,25 @@ C6:
 		}
 	}
 
-	// Exercise 7.2.2.1-83 performance improvement
+	// Exercise 7.2.2.1-83
+	// This code works as expected for Exercise 87.  However, I am unable to
+	// reconcile my understanding of this answer to Exercise 83 with the actual
+	// description of the exercise.
+	// TODO: reconcile this discrepency
 	if level == 0 {
+		// x is the first primary item covered
 		x := state[0]
+
+		// Find the spacer at the right of this option
 		for ; top[x] > 0; x++ {
 		}
+
+		// j is the last item in the option
 		j = top[x-1]
-		if j > n && color[x-1] == 0 {
+
+		if j > n1 && color[x-1] == 0 {
+			// j is a secondary item with no color
+			// permanently remove from further consideration
 			cover(j)
 		}
 	}

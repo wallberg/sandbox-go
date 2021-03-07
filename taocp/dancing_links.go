@@ -17,10 +17,11 @@ import (
 // runtime progress
 type ExactCoverStats struct {
 	// Input parameters
-	Progress  bool // Display runtime progress
-	Debug     bool // Enable debug logging
-	Verbosity int  // Debug verbosity level (0 or 1)
-	Delta     int  // Display progress every Delta number of Nodes
+	Progress     bool // Display runtime progress
+	Debug        bool // Enable debug logging
+	Verbosity    int  // Debug verbosity level (0 or 1)
+	Delta        int  // Display progress every Delta number of Nodes
+	SuppressDump bool // Don't display the dump()
 
 	// Statistics collectors
 	MaxLevel  int   // Maximum level reached
