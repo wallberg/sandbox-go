@@ -67,11 +67,40 @@ func DoubleWordSquare(words []string, stats *ExactCoverStats,
 		}
 	}
 
+	if stats.Debug {
+		log.Print("items", items)
+		log.Print("sitems", sitems)
+		log.Print("options")
+		for _, option := range options {
+			log.Print("  ", option)
+		}
+	}
+
 	// Get the solutions
 	XCC(items, options, sitems, stats, xccOptions,
 		func(solution [][]string) bool {
-			// fmt.Println(solution)
-			visit([]string{"solution goes here"})
+
+			// Build the solution, a_1 .. a_n, then d_1 .. d_n
+			var x []string
+			for i := 1; i <= n; i++ {
+				a := fmt.Sprintf("a%d", i)
+				for _, option := range solution {
+					if option[0] == a {
+						x = append(x, option[n+1])
+						break
+					}
+				}
+			}
+			for i := 1; i <= n; i++ {
+				d := fmt.Sprintf("d%d", i)
+				for _, option := range solution {
+					if option[0] == d {
+						x = append(x, option[n+1])
+						break
+					}
+				}
+			}
+			visit(x)
 			return true
 		})
 }
