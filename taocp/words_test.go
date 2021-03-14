@@ -1,6 +1,7 @@
 package taocp
 
 import (
+	"reflect"
 	"testing"
 )
 
@@ -78,6 +79,94 @@ func TestDoubleWordSquare(t *testing.T) {
 
 		if count != c.count {
 			t.Errorf("Got %d solutions for case #%d; want %d", count, i, c.count)
+		}
+	}
+}
+
+func TestDoubleWordSquareMinimax(t *testing.T) {
+
+	cases := []struct {
+		words    []string
+		solution []string
+	}{
+		{
+			[]string{
+				"utero",
+				"three",
+				"earth",
+				"steps",
+				"anger",
+				"tense",
+				"beast",
+				"blast",
+				"scope",
+				"lance",
+				"argon",
+				"sexed",
+				"piing",
+				"weald",
+				"iodic",
+				"abuzz",
+				"poxed",
+				"hurly",
+			},
+			[]string{
+				"beast", "lance", "argon", "steps", "three",
+				"blast", "earth", "anger", "scope", "tense",
+			},
+		},
+		// {
+		// 	nil,
+		// 	[]string{
+		// 		"blast", "earth", "anger", "scope", "tense",
+		// 		"beast", "lance", "argon", "steps", "three",
+		// 	},
+		// },
+	}
+
+	// var err error
+	// cases[1].words, err = sgb.LoadWords()
+	// if err != nil {
+	// 	t.Errorf("Error getting words: %v", err)
+	// 	return
+	// }
+
+	for i, c := range cases {
+
+		stats := &ExactCoverStats{
+			// Progress: true,
+			// Delta:    50000000,
+			// Debug:     true,
+			// Verbosity: 2,
+			// SuppressDump: true,
+		}
+
+		xccOptions := &XCCOptions{
+			Minimax:       true,
+			MinimaxSingle: true,
+			Exercise83:    false,
+		}
+
+		var got []string
+		DoubleWordSquare(c.words, stats, xccOptions, func(s []string) bool {
+			// Determine max word position
+			// m := 0
+			// for _, word1 := range s {
+			// 	for j, word2 := range c.words {
+			// 		if word1 == word2 {
+			// 			if j > m {
+			// 				m = j
+			// 			}
+			// 			break
+			// 		}
+			// 	}
+			// }
+			got = s
+			return true
+		})
+
+		if !reflect.DeepEqual(got, c.solution) {
+			t.Errorf("Got solution %v for case #%d; want %v", got, i, c.solution)
 		}
 	}
 }
