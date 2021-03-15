@@ -67,7 +67,7 @@ func DoubleWordSquare(words []string, stats *ExactCoverStats,
 		}
 	}
 
-	if stats.Debug {
+	if stats.Debug && stats.Verbosity > 1 {
 		log.Print("items", items)
 		log.Print("sitems", sitems)
 		log.Print("options")

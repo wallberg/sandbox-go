@@ -509,18 +509,23 @@ func XCC(items []string, options [][]string, secondary []string,
 			log.Printf("hide(p=%d)", p)
 		}
 
-		// iterate over the items in this option
+		// iterate over the items in this option, skipping p
 		q := p + 1
 		for q != p {
 			x := top[q]
-			u, d := ulink[q], dlink[q]
 			if x <= 0 {
-				q = u // q was a spacer
+				// q was a spacer, which is the end of the option, so jump
+				// to the first item
+				q = ulink[q]
 			} else {
+				// if color[q] < 0 then it has been purified
 				if color[q] >= 0 {
+					// remove q from the list for item x
+					u, d := ulink[q], dlink[q]
 					dlink[u], ulink[d] = d, u
 					llen[x]--
 				}
+				// advance to the next item in the option
 				q++
 			}
 		}
@@ -531,25 +536,29 @@ func XCC(items []string, options [][]string, secondary []string,
 			log.Printf("unhide(p=%d)", p)
 		}
 
+		// iterate over the items in this option, skipping p, in reverse
+		// order
 		q := p - 1
-		// log.Printf("q=%d", q)
 		for q != p {
 			x := top[q]
-			// log.Printf("x=%d", x)
 			u, d := ulink[q], dlink[q]
-			// log.Printf("u=%d, d=%d", u, d)
 			if x <= 0 {
-				q = d // q was a spacer
+				// q was a spacer, which is the start of the option, so jump
+				// to the last item
+				q = d
 			} else {
 				if xccOptions.Minimax && d > cutoff {
 					// d = x
 					// dlink[q] = x
 					dlink[q], d = x, x
 				}
+				// if color[q] < 0 then it has been purified
 				if color[q] >= 0 {
+					// restore q back to the list for item x
 					dlink[u], ulink[d] = q, q
 					llen[x]++
 				}
+				// advance to the previous item in the option
 				q--
 			}
 			// log.Printf("q=%d", q)
@@ -602,25 +611,33 @@ func XCC(items []string, options [][]string, secondary []string,
 		}
 	}
 
+	// purify effectively removes all options that have conflicting colors
+	// with secondary item p
 	purify := func(p int) {
 		if debug && stats.Verbosity > 1 {
 			log.Printf("purify(p=%d)", p)
 		}
 
-		c := color[p]
+		c := color[p] // color of secondary item p
 		i := top[p]
+
+		// save color[p] in color[i]; every option with this secondary item
+		// will have this same color
 		color[i] = c
+
+		// iterate over each option for this secondary item
 		q := dlink[i]
 		for q != i {
 			if color[q] == c {
-				// this secondary item has the same color, the -1 value is a
-				// flag that indicates this item is already a match, no need to
-				// check the color again.
+				// this secondary item has the same color as p, so flag it with
+				// value of -1 which indicates this item is already a match, no
+				// need to check the color again.
 				color[q] = -1
 			} else {
 				// this secondary item does not have the same color, so hide it
 				hide(q)
 			}
+
 			q = dlink[q]
 		}
 	}
