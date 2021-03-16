@@ -427,6 +427,40 @@ func XCC(items []string, options [][]string, secondary []string,
 		}
 	}
 
+	// sitemColors returns a map of secondary items to their currently selected
+	// color
+	sitemColors := func() *map[string]string {
+		// Only one of the secondary items will have it's color value, the
+		// others will have -1. Build a map of the colors for each secondary
+		// item.
+		lcolors := make(map[string]string)
+
+		// Iterate over each value in the current state
+		for _, p := range state[0:level] {
+
+			// Cyclically gather the items in the option, beginning at p
+			q := p
+			for {
+				if color[q] > 0 {
+					lcolors[name[top[q]]] = colors[color[q]]
+				}
+
+				// Advance to the next item
+				q++
+				if top[q] <= 0 {
+					// This is a spacer, so back to the first item
+					q = ulink[q]
+				}
+
+				if q == p {
+					break
+				}
+			}
+		}
+
+		return &lcolors
+	}
+
 	showProgress := func() {
 
 		if debug && stats.Verbosity > 0 {
@@ -436,19 +470,30 @@ func XCC(items []string, options [][]string, secondary []string,
 		est := 0.0 // estimate of percentage done
 		tcum := 1
 
+		lcolors := sitemColors()
+
 		var b strings.Builder
 		b.WriteString("\n")
 		b.WriteString(fmt.Sprintf("Current level %d of max %d\n", level, stats.MaxLevel))
 
 		// Iterate over the options
 		for _, p := range state[0:level] {
+
 			// Cyclically gather the items in the option, beginning at p
 			q := p
 			b.WriteString(" ")
 			for {
-				b.WriteString(fmt.Sprintf(" %v", name[top[q]]))
+				item := name[top[q]]
+				if color, ok := (*lcolors)[item]; ok {
+					b.WriteString(fmt.Sprintf(" %v:%s", item, color))
+				} else {
+					b.WriteString(fmt.Sprintf(" %v", item))
+				}
+
+				// Advance to the next item
 				q++
 				if top[q] <= 0 {
+					// This is a spacer, so back to the first item
 					q = ulink[q]
 				}
 				if q == p {
@@ -703,7 +748,7 @@ func XCC(items []string, options [][]string, secondary []string,
 		// Only one of the secondary items will have it's color value, the
 		// others will have -1. Save the color and add it to all the matching
 		// secondary items at the end.
-		sitemColor := make(map[string]string)
+		sitemColor := sitemColors()
 
 		// Iterate over the options
 		options := make([][]string, 0)
@@ -713,28 +758,22 @@ func XCC(items []string, options [][]string, secondary []string,
 				lMax = i
 			}
 			options = append(options, make([]string, 0))
-			// Move back to first element in the option
+
+			// Move back to first item in the option
 			for top[p-1] > 0 {
 				p--
 			}
-			// Iterate over elements in the option
+
+			// Iterate over items in the option
 			q := p
 			for top[q] > 0 {
 				name := name[top[q]]
-				if color[q] > 0 {
-					sitemColor[name] = colors[color[q]]
+				if color, ok := (*sitemColor)[name]; ok {
+					options[i] = append(options[i], name+":"+color)
+				} else {
+					options[i] = append(options[i], name)
 				}
-				options[i] = append(options[i], name)
 				q++
-			}
-		}
-
-		// Add the secondary item colors
-		for i, option := range options {
-			for j, item := range option {
-				if color, ok := sitemColor[item]; ok {
-					options[i][j] += ":" + color
-				}
 			}
 		}
 
@@ -756,19 +795,24 @@ func XCC(items []string, options [][]string, secondary []string,
 			// further consideration
 			if pp != cutoff {
 				cutoff = pp
+
+				// Iterate over the items of the visited options
 				for _, p := range state[0:level] {
+
+					// Iterate over the options for this item and recompute
+					// llen[x]
 					x := top[p]
 					q := p
+					llen[x] = 0
 					for q != x {
 						if q > cutoff {
-							// Remove q from the x's list
-							u, d := ulink[q], dlink[q]
+							// Remove q and all subsequent options from the
+							// item's list
+							u, d := ulink[q], x
 							dlink[u], ulink[d] = d, u
-							// TODO: determine if we really need to process
-							// each removed option in order to decrement
-							// llen[x]
-							llen[x]--
+							break
 						}
+						llen[x]++
 						q = dlink[q]
 					}
 				}
