@@ -420,7 +420,7 @@ func XCC(items []string, options [][]string, secondary []string,
 
 		level = 0
 		state = make([]int, nOptions)
-		cutoff = math.MaxInt16
+		cutoff = math.MaxInt32
 
 		if debug {
 			dump()
