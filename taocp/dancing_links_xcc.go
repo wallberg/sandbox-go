@@ -382,24 +382,22 @@ func XCC(items []string, options [][]string, secondary []string,
 					}
 				}
 
-				// Insert the item into name[]
-				i := 0
-				for _, value := range name {
+				// Insert into the option list for this item
+				var i int
+				var value string
+				for i, value = range name {
 					if value == item {
 						break
 					}
-					i++
 				}
+
 				top[x] = i
 				color[x] = itemColor
 
-				// Insert into the option list for this item
 				llen[i]++ // increase the size by one
+
 				head := i
-				tail := i
-				for dlink[tail] != head {
-					tail = dlink[tail]
-				}
+				tail := ulink[head]
 
 				dlink[tail] = x
 				ulink[x] = tail
@@ -554,6 +552,11 @@ func XCC(items []string, options [][]string, secondary []string,
 			log.Printf("hide(p=%d)", p)
 		}
 
+		if p > cutoff {
+			// this should not happen
+			log.Fatalf("fatal: hiding p=%d > cutoff=%d", p, cutoff)
+		}
+
 		// iterate over the items in this option, skipping p
 		q := p + 1
 		for q != p {
@@ -567,6 +570,9 @@ func XCC(items []string, options [][]string, secondary []string,
 				if color[q] >= 0 {
 					// remove q from the list for item x
 					u, d := ulink[q], dlink[q]
+					if d > cutoff {
+						log.Fatalf("fatal in hide: d=%d > cutoff=%d for q=%d", d, cutoff, q)
+					}
 					dlink[u], ulink[d] = d, u
 					llen[x]--
 				}
@@ -585,18 +591,20 @@ func XCC(items []string, options [][]string, secondary []string,
 		// order
 		q := p - 1
 		for q != p {
+			if q > cutoff {
+				log.Fatalf("fatal: unhiding q=%d > cutoff=%d", q, cutoff)
+			}
 			x := top[q]
 			u, d := ulink[q], dlink[q]
+			if xccOptions.Minimax && d > cutoff {
+				dlink[q], d = x, x
+				ulink[x] = q
+			}
 			if x <= 0 {
 				// q was a spacer, which is the start of the option, so jump
 				// to the last item
 				q = d
 			} else {
-				if xccOptions.Minimax && d > cutoff {
-					// d = x
-					// dlink[q] = x
-					dlink[q], d = x, x
-				}
 				// if color[q] < 0 then it has been purified
 				if color[q] >= 0 {
 					// restore q back to the list for item x
@@ -628,27 +636,38 @@ func XCC(items []string, options [][]string, secondary []string,
 		rlink[l], llink[r] = r, l
 	}
 
+	// uncover restores i to the list of items needing to be covered and
+	// unhides all of the item's options
 	uncover := func(i int) {
 		if debug && stats.Verbosity > 1 {
 			log.Printf("uncover(i=%d)", i)
 		}
 
 		if xccOptions.Minimax {
-			// Remove all nodes > cutoff from item i's list
-			q := dlink[i]
-			for q != i {
+			// Cutoff items, if necessary
+			q := ulink[i]
 				if q > cutoff {
-					// Remove q from i's list
-					u, d := ulink[q], dlink[q]
-					dlink[u], ulink[d] = d, u
-					llen[i]--
+				// Iterate over items, from the bottom up
+				for q != i {
+					u := ulink[q]
+					if u < cutoff {
+						// Remove q and all subsequent options from the list
+						if debug && stats.Verbosity > 1 {
+							log.Printf("uncover: cutting off i=%d at q=%d, u=%d", i, q, u)
+						}
+					dlink[u], ulink[i] = i, u
+					break
 				}
-				q = dlink[q]
+					q = ulink[q]
+				}
 			}
 		}
 
+		// restore item i
 		l, r := llink[i], rlink[i]
 		rlink[l], llink[r] = i, i
+
+		// unhide all of its options, in reverse order
 		p := ulink[i]
 		for p != i {
 			unhide(p)
@@ -692,11 +711,31 @@ func XCC(items []string, options [][]string, secondary []string,
 			log.Printf("unpurify(p=%d)", p)
 		}
 
-		// TODO: determine what we need to do here for minimax
+		if xccOptions.Minimax {
+			// Cutoff items, if necessary
+			i := top[p]
+			q := ulink[i]
+				if q > cutoff {
+				// Iterate over items, from the bottom up
+				for q != i {
+					u := ulink[q]
+					if u < cutoff {
+						// Remove q and all subsequent options from the list
+						if debug && stats.Verbosity > 1 {
+							log.Printf("unpurify: cutting off i=%d at q=%d, u=%d", i, q, u)
+						}
+					dlink[u], ulink[i] = i, u
+					break
+				}
+					q = ulink[q]
+				}
+			}
+		}
+
+		// Iterate over all options for this secondary item p
 		c := color[p]
 		i := top[p]
 		q := ulink[i]
-		// log.Printf("c=%d, i=%d, q=%d", c, i, q)
 		for q != i {
 			if color[q] < 0 {
 				// Restore the original color, before purification
@@ -706,10 +745,6 @@ func XCC(items []string, options [][]string, secondary []string,
 				unhide(q)
 			}
 			q = ulink[q]
-			if xccOptions.Minimax && q > cutoff {
-				dlink[q] = i
-				ulink[i] = q
-			}
 			// log.Printf("q=%d", q)
 		}
 	}
@@ -743,7 +778,7 @@ func XCC(items []string, options [][]string, secondary []string,
 	lvisit := func() bool {
 
 		pMax := 0 // Track max p for minimax
-		lMax := 0 // level for max p
+		kMax := 0 // level for max p
 
 		// Only one of the secondary items will have it's color value, the
 		// others will have -1. Save the color and add it to all the matching
@@ -755,7 +790,7 @@ func XCC(items []string, options [][]string, secondary []string,
 		for i, p := range state[0:level] {
 			if p > pMax {
 				pMax = p
-				lMax = i
+				kMax = i
 			}
 			options = append(options, make([]string, 0))
 
@@ -777,11 +812,19 @@ func XCC(items []string, options [][]string, secondary []string,
 			}
 		}
 
+		if debug {
+			log.Printf("visit(%v)", options)
+		}
+
+		if !visit(options) {
+			return false
+		}
+
 		// For minimax, remove all nodes > cutoff (new value)
 		if xccOptions.Minimax {
 			// Find spacer at the end of the option for max x_k
 			// For minimaxSingle=true find the spacer before the
-			// solution, otherwise the spacer after the solutioin
+			// solution, otherwise the spacer after the solution
 			pp := pMax
 			for top[pp] > 0 {
 				if xccOptions.MinimaxSingle {
@@ -794,45 +837,68 @@ func XCC(items []string, options [][]string, secondary []string,
 			// If we have new cutoff value, remove all nodes > cutoff from
 			// further consideration
 			if pp != cutoff {
+
+				// Backtrack for each item in state >= lMax
+				if xccOptions.MinimaxSingle {
+					if debug {
+						log.Printf("C2. MinimaxSingle: kMax=%d, pMax=%d, cutoff=%d", kMax, pMax, cutoff)
+					}
+					for k := level - 1; k >= kMax; k-- {
+						i := top[state[k]]
+						if debug {
+							log.Printf("C2. MinimaxSingle: Backtrack, k=%d, i=%d\n", k, i)
+						}
+
+						// Uncommit each of the items in this option
+						p := state[k] - 1
+						for p != state[k] {
+							j := top[p]
+							if j <= 0 {
+								p = dlink[p]
+							} else {
+								uncommit(p, j)
+								p--
+							}
+						}
+
+						// Uncover item i
+						uncover(i)
+
+						level--
+					}
+				}
+
 				cutoff = pp
 
 				// Iterate over the items of the visited options
 				for _, p := range state[0:level] {
 
-					// Iterate over the options for this item and recompute
-					// llen[x]
+					// Cutoff items, if necessary
 					x := top[p]
-					q := p
-					llen[x] = 0
-					for q != x {
+					q := ulink[x]
 						if q > cutoff {
-							// Remove q and all subsequent options from the
-							// item's list
-							u, d := ulink[q], x
-							dlink[u], ulink[d] = d, u
+						// Iterate over items, from the bottom up
+						for q != x {
+							u := ulink[q]
+							if u < cutoff {
+								// Remove q and all subsequent from the list
+								if debug && stats.Verbosity > 0 {
+									log.Printf("lvisit: cutting off x=%d at q=%d, u=%d", x, q, u)
+								}
+							dlink[u], ulink[x] = x, u
 							break
+							}
+							q = ulink[q]
 						}
-						llen[x]++
-						q = dlink[q]
 					}
 				}
 
-				// Backtrack for each item in state >= lMax
-				if xccOptions.MinimaxSingle {
-					for k := level - 1; k >= lMax; k-- {
-						i := top[state[k]]
-						uncover(i)
-						level--
-					}
-				}
 			}
 		}
 
-		if debug {
-			log.Printf("visit(%v)", options)
-		}
+		validateCutoff()
 
-		return visit(options)
+		return true
 	}
 
 	// C1 [Initialize.]
