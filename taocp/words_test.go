@@ -4,8 +4,6 @@ import (
 	"log"
 	"reflect"
 	"testing"
-
-	"github.com/wallberg/sandbox/sgb"
 )
 
 func TestDoubleWordSquare(t *testing.T) {
@@ -47,7 +45,7 @@ func TestDoubleWordSquare(t *testing.T) {
 			true,
 			1,
 		},
-		// too long
+		// too slow
 		// {
 		// 	nil,
 		//  true,
@@ -87,13 +85,22 @@ func TestDoubleWordSquare(t *testing.T) {
 }
 
 func TestDoubleWordSquareMinimax(t *testing.T) {
-
+	// These tests verify Exercise 7.2.2.1-88
 	cases := []struct {
 		words    []string
 		solution []string
 	}{
 		{
 			[]string{
+				"arena",
+				"sinks",
+				"onset",
+				"needs",
+				"mason",
+				"urine",
+				"sense",
+				"inked",
+				"casts",
 				"utero",
 				"three",
 				"earth",
@@ -112,60 +119,63 @@ func TestDoubleWordSquareMinimax(t *testing.T) {
 				"abuzz",
 				"poxed",
 				"hurly",
+				"music",
 			},
 			[]string{
 				"beast", "lance", "argon", "steps", "three",
 				"blast", "earth", "anger", "scope", "tense",
 			},
 		},
-		{
-			nil,
-			[]string{
-				"beast", "lance", "argon", "steps", "three",
-				"blast", "earth", "anger", "scope", "tense",
-			},
-		},
+		// { // too slow (80s)
+		// 	nil,
+		// 	[]string{
+		// 		"beast", "lance", "argon", "steps", "three",
+		// 		"blast", "earth", "anger", "scope", "tense",
+		// 	},
+		// },
 	}
 
-	var err error
-	cases[1].words, err = sgb.LoadWords()
-	if err != nil {
-		t.Errorf("Error getting words: %v", err)
-		return
-	}
+	// var err error
+	// cases[1].words, err = sgb.LoadWords()
+	// if err != nil {
+	// 	t.Errorf("Error getting words: %v", err)
+	// 	return
+	// }
 
 	for i, c := range cases {
 
 		stats := &ExactCoverStats{
-			Progress:     true,
-			Delta:        5000000,
-			Debug:        false,
-			Verbosity:    2,
-			SuppressDump: true,
+			// Progress:     true,
+			// Delta:        1000000, //5000000,
+			// Debug:        false,
+			// Verbosity:    2,
+			// SuppressDump: true,
 		}
 
 		xccOptions := &XCCOptions{
 			Minimax:       true,
-			MinimaxSingle: false,
-			Exercise83:    false,
+			MinimaxSingle: true,
+			Exercise83:    true,
 		}
 
 		var got []string
 		DoubleWordSquare(c.words, stats, xccOptions, func(s []string) bool {
-			// Determine max word position
-			m := 0
-			for _, word1 := range s {
-				for j, word2 := range c.words {
-					if word1 == word2 {
-						if j > m {
-							m = j
+			got = s
+			if stats.Debug || stats.Progress {
+				// Determine max word position
+				m := 0
+				for _, word1 := range s {
+					for j, word2 := range c.words {
+						if word1 == word2 {
+							if j > m {
+								m = j
+							}
+							break
 						}
-						break
 					}
 				}
+				log.Printf("m=%d, %v", m, s)
 			}
-			got = s
-			log.Printf("m=%d, %v", m, s)
 			return true
 		})
 
