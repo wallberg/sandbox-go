@@ -554,7 +554,7 @@ func XCC(items []string, options [][]string, secondary []string,
 
 		if p > cutoff {
 			// this should not happen
-			log.Fatalf("fatal: hiding p=%d > cutoff=%d", p, cutoff)
+			log.Fatalf("fatal: hiding i=%d with p=%d > cutoff=%d", top[p], p, cutoff)
 		}
 
 		// iterate over the items in this option, skipping p
@@ -587,6 +587,10 @@ func XCC(items []string, options [][]string, secondary []string,
 			log.Printf("unhide(p=%d)", p)
 		}
 
+		if p > cutoff {
+			log.Fatalf("fatal: unhiding i=%d, q=%d > cutoff=%d", top[p], p, cutoff)
+		}
+
 		// iterate over the items in this option, skipping p, in reverse
 		// order
 		q := p - 1
@@ -596,10 +600,6 @@ func XCC(items []string, options [][]string, secondary []string,
 			}
 			x := top[q]
 			u, d := ulink[q], dlink[q]
-			if xccOptions.Minimax && d > cutoff {
-				dlink[q], d = x, x
-				ulink[x] = q
-			}
 			if x <= 0 {
 				// q was a spacer, which is the start of the option, so jump
 				// to the last item
@@ -607,6 +607,9 @@ func XCC(items []string, options [][]string, secondary []string,
 			} else {
 				// if color[q] < 0 then it has been purified
 				if color[q] >= 0 {
+					if xccOptions.Minimax && d > cutoff {
+						dlink[q], d = x, x
+					}
 					// restore q back to the list for item x
 					dlink[u], ulink[d] = q, q
 					llen[x]++
@@ -646,22 +649,15 @@ func XCC(items []string, options [][]string, secondary []string,
 		if xccOptions.Minimax {
 			// Cutoff items, if necessary
 			q := ulink[i]
-				if q > cutoff {
 				// Iterate over items, from the bottom up
-				for q != i {
+			for q > cutoff {
 					u := ulink[q]
-					if u < cutoff {
-						// Remove q and all subsequent options from the list
-						if debug && stats.Verbosity > 1 {
-							log.Printf("uncover: cutting off i=%d at q=%d, u=%d", i, q, u)
-						}
+				// Remove q from the list
 					dlink[u], ulink[i] = i, u
-					break
+				llen[i]--
+				q = u
 				}
-					q = ulink[q]
 				}
-			}
-		}
 
 		// restore item i
 		l, r := llink[i], rlink[i]
@@ -715,20 +711,13 @@ func XCC(items []string, options [][]string, secondary []string,
 			// Cutoff items, if necessary
 			i := top[p]
 			q := ulink[i]
-				if q > cutoff {
 				// Iterate over items, from the bottom up
-				for q != i {
+			for q > cutoff {
 					u := ulink[q]
-					if u < cutoff {
-						// Remove q and all subsequent options from the list
-						if debug && stats.Verbosity > 1 {
-							log.Printf("unpurify: cutting off i=%d at q=%d, u=%d", i, q, u)
-						}
+				// Remove q from the list
 					dlink[u], ulink[i] = i, u
-					break
-				}
-					q = ulink[q]
-				}
+				llen[i]--
+				q = u
 			}
 		}
 
@@ -838,6 +827,24 @@ func XCC(items []string, options [][]string, secondary []string,
 			// further consideration
 			if pp != cutoff {
 
+				cutoff = pp
+
+				// Iterate over the items of the visited options
+				for _, p := range state[0:level] {
+					// Cutoff items, if necessary
+					x := top[p]
+					q := ulink[x]
+					// Iterate over items, from the bottom up
+					for q > cutoff {
+						u := ulink[q]
+						// Remove q from the list
+						dlink[u], ulink[x] = x, u
+						llen[x]--
+						q = u
+					}
+				}
+			}
+
 				// Backtrack for each item in state >= lMax
 				if xccOptions.MinimaxSingle {
 					if debug {
@@ -846,7 +853,7 @@ func XCC(items []string, options [][]string, secondary []string,
 					for k := level - 1; k >= kMax; k-- {
 						i := top[state[k]]
 						if debug {
-							log.Printf("C2. MinimaxSingle: Backtrack, k=%d, i=%d\n", k, i)
+						log.Printf("C2. MinimaxSingle: Backtrack, k=%d, i=%d, Leaving Level %d\n", k, i, level)
 						}
 
 						// Uncommit each of the items in this option
@@ -867,33 +874,6 @@ func XCC(items []string, options [][]string, secondary []string,
 						level--
 					}
 				}
-
-				cutoff = pp
-
-				// Iterate over the items of the visited options
-				for _, p := range state[0:level] {
-
-					// Cutoff items, if necessary
-					x := top[p]
-					q := ulink[x]
-						if q > cutoff {
-						// Iterate over items, from the bottom up
-						for q != x {
-							u := ulink[q]
-							if u < cutoff {
-								// Remove q and all subsequent from the list
-								if debug && stats.Verbosity > 0 {
-									log.Printf("lvisit: cutting off x=%d at q=%d, u=%d", x, q, u)
-								}
-							dlink[u], ulink[x] = x, u
-							break
-							}
-							q = ulink[q]
-						}
-					}
-				}
-
-			}
 		}
 
 		validateCutoff()
@@ -924,7 +904,7 @@ func XCC(items []string, options [][]string, secondary []string,
 C2:
 	// C2. [Enter level l.]
 	if debug {
-		log.Printf("C2. l=%d, x[0:l]=%v\n", level, state[0:level])
+		log.Printf("C2. Enter level %d, x[0:l]=%v\n", level, state[0:level])
 	}
 
 	if stats != nil {
