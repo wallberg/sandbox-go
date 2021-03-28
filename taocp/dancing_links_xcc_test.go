@@ -197,7 +197,6 @@ func TestXCCminimax(t *testing.T) {
 		items     []string
 		options   [][]string
 		secondary []string
-		single    bool
 		solutions [][][]string
 	}{
 		{
@@ -208,7 +207,6 @@ func TestXCCminimax(t *testing.T) {
 				{"a", "z"},
 			},
 			[]string{"x", "y", "z"},
-			false,
 			[][][]string{
 				{{"a", "x"}},
 			},
@@ -222,7 +220,6 @@ func TestXCCminimax(t *testing.T) {
 				{"b", "y"},
 			},
 			[]string{"x", "y", "z"},
-			false,
 			[][][]string{
 				{{"b", "y"}, {"a", "x"}},
 				{{"b", "y"}, {"a", "z"}},
@@ -237,9 +234,9 @@ func TestXCCminimax(t *testing.T) {
 				{"b", "y"},
 			},
 			[]string{"x", "y", "z"},
-			true,
 			[][][]string{
 				{{"b", "y"}, {"a", "x"}},
+				{{"b", "y"}, {"a", "z"}},
 			},
 		},
 		{
@@ -251,7 +248,6 @@ func TestXCCminimax(t *testing.T) {
 				{"b", "x"},
 			},
 			[]string{"x", "y", "z"},
-			true,
 			[][][]string{
 				{{"a", "x"}, {"b", "y"}},
 			},
@@ -273,7 +269,6 @@ func TestXCCminimax(t *testing.T) {
 				{"c", "d", "x"},
 			},
 			[]string{"x", "y", "z"},
-			false,
 			[][][]string{
 				{{"a", "b", "x"}, {"c", "d", "z"}},
 				{{"a", "b", "y:1"}, {"c", "d", "z"}},
@@ -297,7 +292,6 @@ func TestXCCminimax(t *testing.T) {
 				{"c", "d", "x"},
 			},
 			[]string{"x", "y", "z"},
-			false,
 			[][][]string{
 				{{"a", "b", "x"}, {"c", "d", "z"}},
 				{{"a", "b", "y:1"}, {"c", "d", "z"}},
@@ -320,40 +314,72 @@ func TestXCCminimax(t *testing.T) {
 				{"c", "d", "x"},
 			},
 			[]string{"x", "y", "z"},
-			true,
 			[][][]string{
-				{{"a", "b", "x"}, {"c", "d", "z"}},
+				{{"a"}, {"b", "c", "x"}, {"d", "y:3"}},
 			},
 		},
 	}
 
 	for i, c := range cases {
-		got := make([][][]string, 0)
-		stats := &ExactCoverStats{
-			// Progress:  true,
-			// Delta:     0,
-			// Debug:     true,
-			// Verbosity: 2,
-		}
-		xccOptions := &XCCOptions{
-			Minimax:       true,
-			MinimaxSingle: c.single,
-		}
-		err := XCC(c.items, c.options, c.secondary, stats, xccOptions,
-			func(solution [][]string) bool {
-				got = append(got, solution)
-				return true
-			})
+		// Run twice, once with MinimaxSingle = true and once with false
+		for _, single := range []bool{true, false} {
 
-		if err != nil {
-			t.Error(err)
-		}
+			got := make([][][]string, 0)
+			stats := &ExactCoverStats{
+				// Progress:  true,
+				// Delta:     0,
+				// Debug:     true,
+				// Verbosity: 2,
+			}
+			xccOptions := &XCCOptions{
+				Minimax:       true,
+				MinimaxSingle: single,
+			}
+			err := XCC(c.items, c.options, c.secondary, stats, xccOptions,
+				func(solution [][]string) bool {
+					got = append(got, solution)
+					return true
+				})
 
-		sortSolutions(got)
-		sortSolutions(c.solutions)
+			if err != nil {
+				t.Errorf("For case #%d, single=%t, XCC returned error %v", i, single, err)
+			}
 
-		if !reflect.DeepEqual(got, c.solutions) {
-			t.Errorf("For case #%d, got solutions %v; want %v", i, got, c.solutions)
+			if len(got) == 0 {
+				t.Errorf("For case #%d, single=%t, XCC returned no solutions", i, single)
+			}
+
+			// Determine how many of the final solutions we want
+			if single {
+				got = got[len(got)-1:]
+			} else {
+				got = got[len(got)-len(c.solutions):]
+			}
+
+			// Sort the solutions
+			sortSolutions(got)
+			sortSolutions(c.solutions)
+
+			if single {
+				// We want one of the solutions
+				contains := false
+				for _, solution := range c.solutions {
+					if reflect.DeepEqual(got[0], solution) {
+						contains = true
+						break
+					}
+				}
+
+				if !contains {
+					t.Errorf("For case #%d, single=%t, got solution %v; want one of %v", i, single, got[0], c.solutions)
+				}
+
+			} else {
+				// We want all of the solutions
+				if !reflect.DeepEqual(got, c.solutions) {
+					t.Errorf("For case #%d, single=%t, got solutions %v; want %v", i, single, got, c.solutions)
+				}
+			}
 		}
 	}
 }
