@@ -221,7 +221,7 @@ func TestExercise_7221_89(t *testing.T) {
 		// 		"strap", "those", "arose", "refer", "tests",
 		// 	},
 		// },
-		// { // unverified
+		// { // too slow
 		// 	6,
 		// 	[]string{
 		// 		"chests", "lustre", "obtain", "arenas", "circle", "assess",
