@@ -2,10 +2,12 @@ package taocp
 
 import (
 	"log"
+	"math"
 	"reflect"
 	"testing"
 
 	"github.com/wallberg/sandbox/sgb"
+	"github.com/wallberg/sandbox/slice"
 )
 
 func TestDoubleWordSquare(t *testing.T) {
@@ -281,6 +283,229 @@ func TestExercise_7221_89(t *testing.T) {
 
 		if !reflect.DeepEqual(got, c.solution) {
 			t.Errorf("For case #%d got solution %v; want %v", i, got, c.solution)
+		}
+	}
+}
+
+func TestExercise_7221_90(t *testing.T) {
+
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+
+	// These tests verify Exercise 7.2.2.1-89
+	cases := []struct {
+		p        int
+		left     bool
+		solution []string
+	}{
+		{
+			1,
+			false,
+			[]string{
+				"spots",
+			},
+		},
+		{
+			2,
+			true,
+			[]string{
+				"write", "whole",
+			},
+		},
+		{
+			2,
+			false,
+			[]string{
+				"stall", "spies",
+			},
+		},
+		{
+			3,
+			true,
+			[]string{
+				"makes", "lived", "waxes",
+			},
+		},
+		{
+			3,
+			false,
+			[]string{
+				"stood", "holes", "leaps",
+			},
+		},
+		// too slow
+		// {
+		// 	4,
+		// 	true,
+		// 	[]string{
+		// 		"there", "share", "whole", "whose",
+		// 	},
+		// },
+		// {
+		// 	4,
+		// 	false,
+		// 	[]string{
+		// 		"mixed", "tears", "slept", "salad",
+		// 	},
+		// },
+		// {
+		// 	5,
+		// 	true,
+		// 	[]string{
+		// 		"stood", "thank", "share", "ships", "store",
+		// 	},
+		// },
+		// {
+		// 	5,
+		// 	false,
+		// 	[]string{
+		// 		"years", "steam", "sales", "marks", "dried",
+		// 	},
+		// },
+		// {
+		// 	6,
+		// 	true,
+		// 	[]string{
+		// 		"where", "sheep", "small", "still", "whole", "share",
+		// 	},
+		// },
+		// {
+		// 	6,
+		// 	false,
+		// 	[]string{
+		// 		"steps", "seals", "draws", "knots", "traps", "drops",
+		// 	},
+		// },
+		// {
+		// 	7,
+		// 	true,
+		// 	[]string{
+		// 		"makes", "based", "tired", "works", "lands", "lives", "gives",
+		// 	},
+		// },
+		// {
+		// 	7,
+		// 	false,
+		// 	[]string{
+		// 		"tried", "fears", "slips", "seams", "draws", "erect", "tears",
+		// 	},
+		// },
+		// {
+		// 	8,
+		// 	true,
+		// 	[]string{
+		// 		"water", "makes", "loved", "gives", "lakes", "based", "notes", "tones",
+		// 	},
+		// },
+		// {
+		// 	8,
+		// 	false,
+		// 	[]string{
+		// 		"years", "stops", "hooks", "fried", "tears", "slant", "sword", "sweep",
+		// 	},
+		// },
+		// {
+		// 	9,
+		// 	true,
+		// 	[]string{
+		// 		"where", "sheet", "still", "shall", "white", "shape", "stars", "whole", "shore",
+		// 	},
+		// },
+		// {
+		// 	9,
+		// 	false,
+		// 	[]string{
+		// 		"start", "spear", "sales", "tests", "steer", "speak", "skies", "slept", "sport",
+		// 	},
+		// },
+		// {
+		// 	10,
+		// 	true,
+		// 	[]string{
+		// 		"there", "shoes", "shirt", "stone", "shook", "start", "while", "shell", "steel", "sharp",
+		// 	},
+		// },
+		// {
+		// 	10,
+		// 	false,
+		// 	[]string{
+		// 		"years", "stock", "horns", "fuels", "beets", "speed", "tears", "plant", "sword", "sweep",
+		// 	},
+		// },
+	}
+
+	words, err := sgb.LoadWords()
+	if err != nil {
+		t.Errorf("Error getting words: %v", err)
+		return
+	}
+
+	getM := func(a []string) (int, []int) {
+		m := 0
+		mWords := make([]int, len(a))
+		for i, word := range a {
+			mWord := slice.FindString(words, word)
+			mWords[i] = mWord
+			if mWord > m {
+				m = mWord
+			}
+		}
+		return m, mWords
+	}
+
+	for i, c := range cases {
+
+		stats := &ExactCoverStats{
+			// Progress: true,
+			// Delta:    20000000,
+			// Debug:        true,
+			// Verbosity:    2,
+			// SuppressDump: true,
+		}
+
+		xccOptions := &XCCOptions{
+			Minimax:       true,
+			MinimaxSingle: false,
+			Exercise83:    true,
+		}
+
+		mMin := math.MaxInt64
+		var got [][]string // list of solutions with the minimum m value
+
+		WordStair(words, c.p, c.left, stats, xccOptions, func(s []string) bool {
+			// Determine max word position
+			m, mWords := getM(s)
+			if stats.Debug || stats.Progress {
+				log.Printf("m=%d, %v, %v", m, s, mWords)
+			}
+
+			if m < mMin {
+				mMin = m
+				got = nil
+			}
+
+			got = append(got, s)
+			return true
+		})
+
+		// Check that we got a matching cycle of words
+		isCycle := false
+		for _, s := range got {
+			if slice.IsCycleString(s[:c.p], c.solution) ||
+				slice.IsCycleString(s[c.p:], c.solution) ||
+				slice.IsCycleString(slice.ReverseString(s[:c.p]), c.solution) ||
+				slice.IsCycleString(slice.ReverseString(s[c.p:]), c.solution) {
+				isCycle = true
+				break
+			}
+		}
+
+		if !isCycle {
+			m, mWords := getM(c.solution)
+			if stats.Debug || stats.Progress {
+				log.Printf("Expected: m=%d, %v, %v", m, c.solution, mWords)
+			}
+			t.Errorf("For case #%d, p=%d, left=%t, got solutions %v; want %v",
+				i, c.p, c.left, got, c.solution)
 		}
 	}
 }
