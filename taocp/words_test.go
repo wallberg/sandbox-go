@@ -534,3 +534,50 @@ func TestExercise_7221_90(t *testing.T) {
 		}
 	}
 }
+
+func TestWordStairKernel(t *testing.T) {
+
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+
+	// words, err := sgb.LoadWords()
+	// if err != nil {
+	// 	t.Errorf("Error getting words: %v", err)
+	// 	return
+	// }
+
+	// These tests verify Exercise 7.2.2.1-89
+	cases := []struct {
+		words []string
+		left  bool
+		count int
+	}{
+		{
+			[]string{"dried", "years", "steam", "sales", "skies", "seats", "dream", "salad"},
+			false,
+			1,
+		},
+	}
+
+	for i, c := range cases {
+
+		stats := &ExactCoverStats{
+			// Progress: true,
+			// Delta:    20000000,
+			// Debug:        true,
+			// Verbosity:    2,
+			// SuppressDump: true,
+		}
+
+		kernels := make(map[string]bool)
+
+		WordStairKernel(c.words, c.left, stats, func(s string) bool {
+			kernels[s] = true
+			return true
+		})
+
+		if len(kernels) != c.count {
+			t.Errorf("For case #%d, left=%t, got %d kernels; want %d",
+				i, c.left, len(kernels), c.count)
+		}
+	}
+}
