@@ -296,6 +296,7 @@ func TestExercise_7221_90(t *testing.T) {
 		p        int
 		left     bool
 		solution []string
+		mMin     int
 	}{
 		{
 			1,
@@ -303,6 +304,7 @@ func TestExercise_7221_90(t *testing.T) {
 			[]string{
 				"spots",
 			},
+			1300,
 		},
 		{
 			2,
@@ -310,6 +312,7 @@ func TestExercise_7221_90(t *testing.T) {
 			[]string{
 				"write", "whole",
 			},
+			500,
 		},
 		{
 			2,
@@ -317,6 +320,7 @@ func TestExercise_7221_90(t *testing.T) {
 			[]string{
 				"stall", "spies",
 			},
+			1633,
 		},
 		{
 			3,
@@ -324,6 +328,7 @@ func TestExercise_7221_90(t *testing.T) {
 			[]string{
 				"makes", "lived", "waxes",
 			},
+			500,
 		},
 		{
 			3,
@@ -331,6 +336,7 @@ func TestExercise_7221_90(t *testing.T) {
 			[]string{
 				"stood", "holes", "leaps",
 			},
+			1561,
 		},
 		// too slow
 		// {
@@ -339,6 +345,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"there", "share", "whole", "whose",
 		// 	},
+		// 	500,
 		// },
 		// {
 		// 	4,
@@ -346,6 +353,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"mixed", "tears", "slept", "salad",
 		// 	},
+		// 	1300,
 		// },
 		// {
 		// 	5,
@@ -353,6 +361,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"stood", "thank", "share", "ships", "store",
 		// 	},
+		// 	500,
 		// },
 		// {
 		// 	5,
@@ -360,6 +369,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"years", "steam", "sales", "marks", "dried",
 		// 	},
+		// 	1300,
 		// },
 		// {
 		// 	6,
@@ -367,6 +377,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"where", "sheep", "small", "still", "whole", "share",
 		// 	},
+		// 	500,
 		// },
 		// {
 		// 	6,
@@ -374,6 +385,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"steps", "seals", "draws", "knots", "traps", "drops",
 		// 	},
+		// 	1300,
 		// },
 		// {
 		// 	7,
@@ -381,6 +393,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"makes", "based", "tired", "works", "lands", "lives", "gives",
 		// 	},
+		// 	500,
 		// },
 		// {
 		// 	7,
@@ -388,6 +401,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"tried", "fears", "slips", "seams", "draws", "erect", "tears",
 		// 	},
+		// 	1300,
 		// },
 		// {
 		// 	8,
@@ -395,6 +409,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"water", "makes", "loved", "gives", "lakes", "based", "notes", "tones",
 		// 	},
+		// 	504,
 		// },
 		// {
 		// 	8,
@@ -402,6 +417,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"years", "stops", "hooks", "fried", "tears", "slant", "sword", "sweep",
 		// 	},
+		// 	1300,
 		// },
 		// {
 		// 	9,
@@ -409,6 +425,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"where", "sheet", "still", "shall", "white", "shape", "stars", "whole", "shore",
 		// 	},
+		// 	500,
 		// },
 		// {
 		// 	9,
@@ -416,6 +433,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"start", "spear", "sales", "tests", "steer", "speak", "skies", "slept", "sport",
 		// 	},
+		// 	1300,
 		// },
 		// {
 		// 	10,
@@ -423,6 +441,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"there", "shoes", "shirt", "stone", "shook", "start", "while", "shell", "steel", "sharp",
 		// 	},
+		// 	500,
 		// },
 		// {
 		// 	10,
@@ -430,6 +449,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	[]string{
 		// 		"years", "stock", "horns", "fuels", "beets", "speed", "tears", "plant", "sword", "sweep",
 		// 	},
+		// 	1300,
 		// },
 	}
 
@@ -486,6 +506,11 @@ func TestExercise_7221_90(t *testing.T) {
 			got = append(got, s)
 			return true
 		})
+
+		if mMin >= c.mMin {
+			t.Errorf("For case #%d, p=%d, left=%t, got m=%d; want m < %d",
+				i, c.p, c.left, mMin, c.mMin)
+		}
 
 		// Check that we got a matching cycle of words
 		isCycle := false
