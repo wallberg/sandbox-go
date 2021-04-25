@@ -256,7 +256,7 @@ func XCC(items []string, options [][]string, secondary []string,
 		mItems := make(map[string]bool)
 		for _, item := range items {
 			if mItems[item] {
-				return fmt.Errorf("Item '%s' is not unique", item)
+				return fmt.Errorf("item '%s' is not unique", item)
 			}
 			mItems[item] = true
 		}
@@ -265,7 +265,7 @@ func XCC(items []string, options [][]string, secondary []string,
 		mSItems := make(map[string]bool)
 		for _, sitem := range secondary {
 			if mItems[sitem] || mSItems[sitem] {
-				return fmt.Errorf("Secondary item '%s' is not unique", sitem)
+				return fmt.Errorf("secondary item '%s' is not unique", sitem)
 			}
 			mSItems[sitem] = true
 		}
@@ -278,7 +278,7 @@ func XCC(items []string, options [][]string, secondary []string,
 					item = item[:i]
 				}
 				if !mItems[item] && !mSItems[item] {
-					return fmt.Errorf("Option '%v' contains '%s' which is not an item or secondary item", option, item)
+					return fmt.Errorf("option '%v' contains '%s' which is not an item or secondary item", option, item)
 				}
 			}
 		}

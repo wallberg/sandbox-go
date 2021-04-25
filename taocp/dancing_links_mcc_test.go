@@ -37,13 +37,9 @@ func sortSolutions(solutions [][][]string) {
 			}
 		}
 
-		if k < len(solutions[j]) {
-			// We ran out of i options first
-			return true
-		}
-
-		// We ran out of j options first or at the same time
-		return false
+		// Return true if we ran out of i options first, false if we ran out of
+		// j options first or at the same time
+		return k < len(solutions[j])
 
 	})
 }

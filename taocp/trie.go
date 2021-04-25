@@ -255,7 +255,7 @@ func (trie *CPrefixTrie) Traverse(out chan string) {
 func LoadSGBWords(trie *Trie) error {
 	words, err := sgb.LoadWords()
 	if err != nil {
-		return fmt.Errorf("Error reading assets/sgb-words.txt: %s", err)
+		return fmt.Errorf("error reading assets/sgb-words.txt: %s", err)
 	}
 
 	for _, word := range words {
@@ -273,7 +273,7 @@ func LoadOSPD4Words(trie *Trie, n int) error {
 
 	wordsString, err := box.FindString("ospd4.txt")
 	if err != nil {
-		return fmt.Errorf("Error reading assets/ospd4.txt: %s", err)
+		return fmt.Errorf("error reading assets/ospd4.txt: %s", err)
 	}
 
 	// Add each n-letter word to the Trie

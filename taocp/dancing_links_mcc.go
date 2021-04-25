@@ -118,7 +118,7 @@ func MCC(items []string, multiplicities [][2]int, options [][]string,
 		mItems := make(map[string]bool)
 		for _, item := range items {
 			if mItems[item] {
-				return fmt.Errorf("Item '%s' is not unique", item)
+				return fmt.Errorf("item '%s' is not unique", item)
 			}
 			mItems[item] = true
 		}
@@ -127,7 +127,7 @@ func MCC(items []string, multiplicities [][2]int, options [][]string,
 		mSItems := make(map[string]bool)
 		for _, sitem := range secondary {
 			if mItems[sitem] || mSItems[sitem] {
-				return fmt.Errorf("Secondary item '%s' is not unique", sitem)
+				return fmt.Errorf("secondary item '%s' is not unique", sitem)
 			}
 			mSItems[sitem] = true
 		}
@@ -140,29 +140,29 @@ func MCC(items []string, multiplicities [][2]int, options [][]string,
 					item = item[:i]
 				}
 				if !mItems[item] && !mSItems[item] {
-					return fmt.Errorf("Option '%v' contains '%s' which is not an item or secondary item", option, item)
+					return fmt.Errorf("option '%v' contains '%s' which is not an item or secondary item", option, item)
 				}
 			}
 		}
 
 		// Multiplicities
 		if len(items) != len(multiplicities) {
-			return fmt.Errorf("Number of items, %d, does not match number of multiplicities, %d",
+			return fmt.Errorf("number of items, %d, does not match number of multiplicities, %d",
 				len(items), len(multiplicities))
 		}
 
 		for i, m := range multiplicities {
 			u, v := m[0], m[1]
 			if u < 0 {
-				return fmt.Errorf("Multiplicity i=%d, u=%d, v=%d: u must be >= 0",
+				return fmt.Errorf("multiplicity i=%d, u=%d, v=%d: u must be >= 0",
 					i, u, v)
 			}
 			if v < 1 {
-				return fmt.Errorf("Multiplicity i=%d, u=%d, v=%d: v must be > 0",
+				return fmt.Errorf("multiplicity i=%d, u=%d, v=%d: v must be > 0",
 					i, u, v)
 			}
 			if u > v {
-				return fmt.Errorf("Multiplicity i=%d, u=%d, v=%d: v must be >= u",
+				return fmt.Errorf("multiplicity i=%d, u=%d, v=%d: v must be >= u",
 					i, u, v)
 			}
 		}

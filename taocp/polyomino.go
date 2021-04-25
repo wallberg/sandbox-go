@@ -115,7 +115,7 @@ func ParsePlacementPairs(s string) (Polyomino, error) {
 
 		// Find 2 values in each pair
 		m := rePair.FindAllStringSubmatch(pairString, -1)
-		if m != nil && len(m) == 2 {
+		if len(m) == 2 {
 			xValues := getValues(m[0][0])
 			yValues := getValues(m[1][0])
 
@@ -129,7 +129,7 @@ func ParsePlacementPairs(s string) (Polyomino, error) {
 				}
 			}
 		} else {
-			return nil, fmt.Errorf("Unable to parse pair: '%s'", pairString)
+			return nil, fmt.Errorf("unable to parse pair: '%s'", pairString)
 		}
 	}
 
