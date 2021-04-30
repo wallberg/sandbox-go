@@ -31,6 +31,7 @@ type xcCommand struct {
 	Output    string `short:"o" long:"output" description:"Output YAML" default:"-"`
 	Verbosity int    `short:"v" long:"verbosity" description:"Verbosity level" default:"1"`
 	Delta     int    `short:"d" long:"delta" description:"Display progress ~Delta nodes (Verbosity > 0)" default:"10000000"`
+	Compact   bool   `short:"c" long:"compact" description:"Output solutions in compact format, one per line"`
 }
 
 func (command xcCommand) Execute(args []string) error {
@@ -82,14 +83,38 @@ func (command xcCommand) Execute(args []string) error {
 		Verbosity: command.Verbosity - 2,
 		Delta:     command.Delta,
 	}
-	output.WriteString("solutions:\n")
-	err = taocp.XCC(xcYaml.Items, options, xcYaml.SItems, stats, false, false,
+
+	// XCC processing options
+	xccOptions := &taocp.XCCOptions{
+		Minimax:       false,
+		MinimaxSingle: false,
+		Exercise83:    false,
+	}
+
+	if !command.Compact {
+		output.WriteString("solutions:\n")
+	}
+	err = taocp.XCC(xcYaml.Items, options, xcYaml.SItems, stats, xccOptions,
 		func(solution [][]string) bool {
-			output.WriteString("  -\n")
-			for _, option := range solution {
-				output.WriteString("    - \"")
-				output.WriteString(strings.Join(option, " "))
-				output.WriteString("\"\n")
+			if !command.Compact {
+				output.WriteString("  -\n")
+				for _, option := range solution {
+					output.WriteString("    - \"")
+					output.WriteString(strings.Join(option, " "))
+					output.WriteString("\"\n")
+				}
+			} else {
+				var s strings.Builder
+				for _, option := range solution {
+					if s.Len() > 0 {
+						s.WriteString(", ")
+					}
+					s.WriteString("\"")
+					s.WriteString(strings.Join(option, " "))
+					s.WriteString("\"")
+				}
+				s.WriteString("\n")
+				output.WriteString(s.String())
 			}
 			return true
 		})
