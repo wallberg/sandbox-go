@@ -74,3 +74,57 @@ func TestReverseString(t *testing.T) {
 		}
 	}
 }
+
+func TestAppendUniqueString(t *testing.T) {
+
+	cases := []struct {
+		xValues [][]string // Values of x to insert
+		a       [][]string // Expected resulting [][]string
+	}{
+		{
+			[][]string{},
+			nil,
+		},
+		{
+			[][]string{{}},
+			[][]string{{}},
+		},
+		{
+			[][]string{{"a"}},
+			[][]string{{"a"}},
+		},
+		{
+			[][]string{{"a"}, {"b"}},
+			[][]string{{"a"}, {"b"}},
+		},
+		{
+			[][]string{{"a"}, {"b"}, {"a"}},
+			[][]string{{"a"}, {"b"}},
+		},
+		{
+			[][]string{{"a"}, {"b"}, {"a", "b"}},
+			[][]string{{"a"}, {"b"}, {"a", "b"}},
+		},
+		{
+			[][]string{{"a"}, {"b"}, {"a", "b"}, {"a", "b"}},
+			[][]string{{"a"}, {"b"}, {"a", "b"}},
+		},
+		{
+			[][]string{{"a"}, {"b"}, {"a", "b"}, {"a", "b"}, {"b"}, {"a", "b", "c"}},
+			[][]string{{"a"}, {"b"}, {"a", "b"}, {"a", "b", "c"}},
+		},
+	}
+
+	for i, c := range cases {
+
+		// Insert all values of x
+		var a [][]string
+		for _, x := range c.xValues {
+			a = AppendUniqueString(a, x)
+		}
+
+		if !reflect.DeepEqual(a, c.a) {
+			t.Errorf("For case #%d (xValues=%v) got %v; want %v", i, c.xValues, a, c.a)
+		}
+	}
+}

@@ -49,3 +49,28 @@ func ReverseString(a []string) []string {
 	}
 	return reverse
 }
+
+// AppendUniqueString inserts x into a, if not already present.  Returns new value of a, a la append()
+func AppendUniqueString(a [][]string, x []string) [][]string {
+
+	// Iterate over the existing values of a
+	for _, y := range a {
+		// Check if their lengths are identical
+		if len(x) == len(y) {
+			// Check if their values are identical
+			for i, v := range x {
+				if v != y[i] {
+					// Not identical
+					goto END
+				}
+			}
+			// lengths are the identical and all values are identical
+			// return a unchanged
+			return a
+		}
+	END:
+		// Not identical, continue to next value of y
+	}
+
+	return append(a, x)
+}
