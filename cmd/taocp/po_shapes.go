@@ -41,7 +41,7 @@ type poShapesCommand struct {
 func (command poShapesCommand) Execute(args []string) error {
 	// Error check the input
 	if command.N > 62 {
-		return fmt.Errorf("Got n=%d; want n <= 62 because we use [0-9a-zA-Z] to represent the coordinates", command.N)
+		return fmt.Errorf("got n=%d; want n <= 62 because we use [0-9a-zA-Z] to represent the coordinates", command.N)
 	}
 
 	// Open output file for writing

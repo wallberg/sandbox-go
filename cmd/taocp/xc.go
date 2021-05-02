@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -27,15 +28,23 @@ Uses YAML for input and output`,
 }
 
 type xcCommand struct {
-	Input     string `short:"i" long:"input" description:"Input YAML" default:"-"`
-	Output    string `short:"o" long:"output" description:"Output YAML" default:"-"`
-	Verbosity int    `short:"v" long:"verbosity" description:"Verbosity level" default:"1"`
-	Delta     int    `short:"d" long:"delta" description:"Display progress ~Delta nodes (Verbosity > 0)" default:"10000000"`
-	Compact   bool   `short:"c" long:"compact" description:"Output solutions in compact format, one per line"`
+	Input         string `short:"i" long:"input" description:"Input YAML" default:"-"`
+	Output        string `short:"o" long:"output" description:"Output YAML" default:"-"`
+	Verbosity     int    `short:"v" long:"verbosity" description:"Verbosity level" default:"1"`
+	Delta         int    `short:"d" long:"delta" description:"Display progress ~Delta nodes (Verbosity > 0)" default:"10000000"`
+	Compact       bool   `short:"c" long:"compact" description:"Output solutions in compact format, one per line"`
+	Minimax       bool   `short:"m" long:"minimax" description:"Return minimax solutions (multiple)"`
+	MinimaxSingle bool   `short:"s" long:"minimax-single" description:"Return minimax solutions (single)"`
+	Exercise83    bool   `short:"e" long:"exercise83" description:"Use the curious extension of Exercise 7.2.2.1-83"`
 }
 
 func (command xcCommand) Execute(args []string) error {
 	var err error
+
+	// Validate Minimax options
+	if command.Minimax && command.MinimaxSingle {
+		return fmt.Errorf("please select only one of --minimax, --minimax-single")
+	}
 
 	// Open input file for reading
 	var input *os.File
@@ -86,9 +95,9 @@ func (command xcCommand) Execute(args []string) error {
 
 	// XCC processing options
 	xccOptions := &taocp.XCCOptions{
-		Minimax:       false,
-		MinimaxSingle: false,
-		Exercise83:    false,
+		Minimax:       command.Minimax || command.MinimaxSingle,
+		MinimaxSingle: command.MinimaxSingle,
+		Exercise83:    command.Exercise83,
 	}
 
 	if !command.Compact {
