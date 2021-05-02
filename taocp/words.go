@@ -229,8 +229,7 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 
 // WordStairKernel finds word stair kernels for word length n=5, see Exercise
 // 7.2.2.1-91
-func WordStairKernel(words []string, left bool, stats *ExactCoverStats,
-	visit func(string) bool) {
+func WordStairKernel(words []string, left bool) ([]string, [][]string, []string) {
 
 	// Get value of n and verify all words have length n
 	n := len(words[0])
@@ -256,16 +255,12 @@ func WordStairKernel(words []string, left bool, stats *ExactCoverStats,
 		options [][]string // Options
 	)
 
-	xccOptions := &XCCOptions{
-		Exercise83: true, // Remove transpose solutions
-	}
-
 	// Setup the 8 primary items
 	items = []string{
-		"x3x4x5c2c3",
 		"c4c5c6c7c8",
-		"c9c10c11c12x6",
 		"c13c14x7x8x9",
+		"x3x4x5c2c3",
+		"c9c10c11c12x6",
 		"x1x2x5c5c9",
 		"c1c2c6c10c13",
 		"c3c7c11c14x10",
@@ -326,44 +321,38 @@ func WordStairKernel(words []string, left bool, stats *ExactCoverStats,
 
 	}
 
-	if stats.Debug && stats.Verbosity > 1 {
-		log.Print("items", items)
-		log.Print("sitems", sitems)
-		log.Print("options")
-		for _, option := range options {
-			log.Print("  ", option)
-		}
-	}
+	// // Get the solutions
+	// XCC(items, options, sitems, stats, xccOptions,
+	// 	func(solution [][]string) bool {
+	// 		kernel := make([]byte, 14)
 
-	// Get the solutions
-	XCC(items, options, sitems, stats, xccOptions,
-		func(solution [][]string) bool {
-			kernel := make([]byte, 14)
+	// 		for _, option := range solution {
+	// 			// log.Println("option:", option)
+	// 			switch option[0] {
+	// 			case "c1c2c6c10c13":
+	// 				kernel[0] = option[1][3]
+	// 			case "x3x4x5c2c3":
+	// 				kernel[1] = option[1][3]
+	// 				kernel[2] = option[2][3]
+	// 			case "c4c5c6c7c8":
+	// 				kernel[3] = option[1][3]
+	// 				kernel[4] = option[2][3]
+	// 				kernel[5] = option[3][3]
+	// 				kernel[6] = option[4][3]
+	// 				kernel[7] = option[5][3]
+	// 			case "c9c10c11c12x6":
+	// 				kernel[8] = option[1][3]
+	// 				kernel[9] = option[2][4]
+	// 				kernel[10] = option[3][4]
+	// 				kernel[11] = option[4][4]
+	// 			case "c13c14x7x8x9":
+	// 				kernel[12] = option[1][4]
+	// 				kernel[13] = option[2][4]
+	// 			}
+	// 		}
+	// 		resume := visit(string(kernel))
+	// 		return resume
+	// 	})
 
-			for _, option := range solution {
-				switch option[0] {
-				case "c1c2c6c10c13":
-					kernel[0] = option[1][3]
-				case "x3x4x5c2c3":
-					kernel[1] = option[1][3]
-					kernel[2] = option[2][3]
-				case "c4c5c6c7c8":
-					kernel[3] = option[1][3]
-					kernel[4] = option[2][3]
-					kernel[5] = option[3][3]
-					kernel[6] = option[4][3]
-					kernel[7] = option[5][3]
-				case "c9c10c11c12x6":
-					kernel[8] = option[1][3]
-					kernel[9] = option[2][4]
-					kernel[10] = option[3][4]
-					kernel[11] = option[4][4]
-				case "c13c14x7x8x9":
-					kernel[12] = option[1][4]
-					kernel[13] = option[2][4]
-				}
-			}
-			resume := visit(string(kernel))
-			return resume
-		})
+	return items, options, sitems
 }
