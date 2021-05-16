@@ -407,7 +407,7 @@ func TestExercise_7221_90(t *testing.T) {
 		// 	8,
 		// 	true,
 		// 	[]string{
-		// 		"water", "makes", "loved", "gives", "lakes", "based", "notes", "tones",
+		// 		"water", "makes", "loved", "given", "lakes", "based", "notes", "tones",
 		// 	},
 		// 	504,
 		// },
@@ -484,7 +484,7 @@ func TestExercise_7221_90(t *testing.T) {
 
 		xccOptions := &XCCOptions{
 			Minimax:       true,
-			MinimaxSingle: false,
+			MinimaxSingle: true,
 			Exercise83:    true,
 		}
 
