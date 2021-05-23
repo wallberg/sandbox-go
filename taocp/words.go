@@ -265,17 +265,18 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 		"c8c12x7x11x12",
 	}
 
-	// Setup the 14 secondary items, c1-c14 (colored)
+	// Setup the 16 secondary items, c1-c14,x5,x7 (colored)
 	for i := 1; i <= 14; i++ {
 		sitems = append(sitems, fmt.Sprintf("c%d", i))
 	}
+	sitems = append(sitems, "x5", "x7")
 
 	// Setup the options
 	for _, word := range words {
 		if left {
 			// x3 x4 x5 c2 c3
 			options = slice.AppendUniqueString(options, []string{"x3x4x5c2c3",
-				"c2:" + word[1:2], "c3:" + word[0:1]})
+				"x5:" + word[2:3], "c2:" + word[1:2], "c3:" + word[0:1]})
 
 			// c4 c5 c6 c7 c8
 			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
@@ -287,11 +288,11 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 			// c13 c14 x7 x8 x9
 			options = slice.AppendUniqueString(options, []string{"c13c14x7x8x9",
-				"c13:" + word[4:5], "c14:" + word[3:4]})
+				"c13:" + word[4:5], "c14:" + word[3:4], "x7:" + word[2:3]})
 		} else {
 			// x3 x4 x5 c2 c3
 			options = slice.AppendUniqueString(options, []string{"x3x4x5c2c3",
-				"c2:" + word[3:4], "c3:" + word[4:5]})
+				"x5:" + word[2:3], "c2:" + word[3:4], "c3:" + word[4:5]})
 
 			// c4 c5 c6 c7 c8
 			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
@@ -303,12 +304,12 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 			// c13 c14 x7 x8 x9
 			options = slice.AppendUniqueString(options, []string{"c13c14x7x8x9",
-				"c13:" + word[0:1], "c14:" + word[1:2]})
+				"c13:" + word[0:1], "c14:" + word[1:2], "x7:" + word[2:3]})
 		}
 
 		// x1 x2 x5 c5 c9
 		options = slice.AppendUniqueString(options, []string{"x1x2x5c5c9",
-			"c5:" + word[3:4], "c9:" + word[4:5]})
+			"x5:" + word[2:3], "c5:" + word[3:4], "c9:" + word[4:5]})
 
 		// c1 c2 c6 c10 c13
 		options = slice.AppendUniqueString(options, []string{"c1c2c6c10c13",
@@ -320,7 +321,7 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 		// c8 c12 x7 x11 x12
 		options = slice.AppendUniqueString(options, []string{"c8c12x7x11x12",
-			"c8:" + word[0:1], "c12:" + word[1:2]})
+			"c8:" + word[0:1], "c12:" + word[1:2], "x7:" + word[2:3]})
 	}
 
 	return items, options, sitems
