@@ -3,6 +3,8 @@ package taocp
 import (
 	"fmt"
 	"log"
+
+	"github.com/wallberg/sandbox/slice"
 )
 
 // DoubleWordSquare finds n x n arrays whose rows and columns contain 2n
@@ -244,10 +246,6 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 		}
 	}
 
-	if left {
-		log.Fatalf("left=%t, but this function currently only supports left=false", left)
-	}
-
 	// Use XCC to build the list of kernels
 	var (
 		items   []string   // Primary items
@@ -267,92 +265,63 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 		"c8c12x7x11x12",
 	}
 
-	// Setup the 14 + 2W secondary items, c1-c14 (colored) + words + words'
+	// Setup the 14 secondary items, c1-c14 (colored)
 	for i := 1; i <= 14; i++ {
 		sitems = append(sitems, fmt.Sprintf("c%d", i))
 	}
-	sitems = append(sitems, words...)
+
+	// Setup the options
 	for _, word := range words {
-		// prime values to remove tranpose solutions
-		sitems = append(sitems, word+"'")
-	}
+		if left {
+			// x3 x4 x5 c2 c3
+			options = slice.AppendUniqueString(options, []string{"x3x4x5c2c3",
+				"c2:" + word[1:2], "c3:" + word[0:1]})
 
-	// Setup the 8W options
-	for _, word := range words {
-		// x3 x4 x5 c2 c3
-		options = append(options, []string{"x3x4x5c2c3",
-			"c2:" + word[3:4], "c3:" + word[4:5],
-			word})
+			// c4 c5 c6 c7 c8
+			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
+				"c4:" + word[4:5], "c5:" + word[3:4], "c6:" + word[2:3], "c7:" + word[1:2], "c8:" + word[0:1]})
 
-		// c4 c5 c6 c7 c8
-		options = append(options, []string{"c4c5c6c7c8",
-			"c4:" + word[0:1], "c5:" + word[1:2], "c6:" + word[2:3], "c7:" + word[3:4], "c8:" + word[4:5],
-			word, word + "'"})
+			// c9 c10 c11 c12 x6
+			options = slice.AppendUniqueString(options, []string{"c9c10c11c12x6",
+				"c9:" + word[4:5], "c10:" + word[3:4], "c11:" + word[2:3], "c12:" + word[1:2]})
 
-		// c9 c10 c11 c12 x6
-		options = append(options, []string{"c9c10c11c12x6",
-			"c9:" + word[0:1], "c10:" + word[1:2], "c11:" + word[2:3], "c12:" + word[3:4],
-			word})
+			// c13 c14 x7 x8 x9
+			options = slice.AppendUniqueString(options, []string{"c13c14x7x8x9",
+				"c13:" + word[4:5], "c14:" + word[3:4]})
+		} else {
+			// x3 x4 x5 c2 c3
+			options = slice.AppendUniqueString(options, []string{"x3x4x5c2c3",
+				"c2:" + word[3:4], "c3:" + word[4:5]})
 
-		// c13 c14 x7 x8 x9
-		options = append(options, []string{"c13c14x7x8x9",
-			"c13:" + word[0:1], "c14:" + word[1:2],
-			word})
+			// c4 c5 c6 c7 c8
+			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
+				"c4:" + word[0:1], "c5:" + word[1:2], "c6:" + word[2:3], "c7:" + word[3:4], "c8:" + word[4:5]})
+
+			// c9 c10 c11 c12 x6
+			options = slice.AppendUniqueString(options, []string{"c9c10c11c12x6",
+				"c9:" + word[0:1], "c10:" + word[1:2], "c11:" + word[2:3], "c12:" + word[3:4]})
+
+			// c13 c14 x7 x8 x9
+			options = slice.AppendUniqueString(options, []string{"c13c14x7x8x9",
+				"c13:" + word[0:1], "c14:" + word[1:2]})
+		}
 
 		// x1 x2 x5 c5 c9
-		options = append(options, []string{"x1x2x5c5c9",
-			"c5:" + word[3:4], "c9:" + word[4:5],
-			word})
+		options = slice.AppendUniqueString(options, []string{"x1x2x5c5c9",
+			"c5:" + word[3:4], "c9:" + word[4:5]})
 
 		// c1 c2 c6 c10 c13
-		options = append(options, []string{"c1c2c6c10c13",
-			"c1:" + word[0:1], "c2:" + word[1:2], "c6:" + word[2:3], "c10:" + word[3:4], "c13:" + word[4:5],
-			word, word + "'"})
+		options = slice.AppendUniqueString(options, []string{"c1c2c6c10c13",
+			"c1:" + word[0:1], "c2:" + word[1:2], "c6:" + word[2:3], "c10:" + word[3:4], "c13:" + word[4:5]})
 
 		// c3 c7 c11 c14 x10
-		options = append(options, []string{"c3c7c11c14x10",
-			"c3:" + word[0:1], "c7:" + word[1:2], "c11:" + word[2:3], "c14:" + word[3:4],
-			word})
+		options = slice.AppendUniqueString(options, []string{"c3c7c11c14x10",
+			"c3:" + word[0:1], "c7:" + word[1:2], "c11:" + word[2:3], "c14:" + word[3:4]})
 
 		// c8 c12 x7 x11 x12
-		options = append(options, []string{"c8c12x7x11x12",
-			"c8:" + word[0:1], "c12:" + word[1:2],
-			word})
-
+		options = slice.AppendUniqueString(options, []string{"c8c12x7x11x12",
+			"c8:" + word[0:1], "c12:" + word[1:2]})
 	}
-
-	// // Get the solutions
-	// XCC(items, options, sitems, stats, xccOptions,
-	// 	func(solution [][]string) bool {
-	// 		kernel := make([]byte, 14)
-
-	// 		for _, option := range solution {
-	// 			// log.Println("option:", option)
-	// 			switch option[0] {
-	// 			case "c1c2c6c10c13":
-	// 				kernel[0] = option[1][3]
-	// 			case "x3x4x5c2c3":
-	// 				kernel[1] = option[1][3]
-	// 				kernel[2] = option[2][3]
-	// 			case "c4c5c6c7c8":
-	// 				kernel[3] = option[1][3]
-	// 				kernel[4] = option[2][3]
-	// 				kernel[5] = option[3][3]
-	// 				kernel[6] = option[4][3]
-	// 				kernel[7] = option[5][3]
-	// 			case "c9c10c11c12x6":
-	// 				kernel[8] = option[1][3]
-	// 				kernel[9] = option[2][4]
-	// 				kernel[10] = option[3][4]
-	// 				kernel[11] = option[4][4]
-	// 			case "c13c14x7x8x9":
-	// 				kernel[12] = option[1][4]
-	// 				kernel[13] = option[2][4]
-	// 			}
-	// 		}
-	// 		resume := visit(string(kernel))
-	// 		return resume
-	// 	})
 
 	return items, options, sitems
 }

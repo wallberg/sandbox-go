@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
-from com.github.wallberg.taocp.Backtrack import walkers_backtrack
-import unittest
 import logging
 import sys
 import re
+import argparse
+
 import networkx as nx
+
+from com.github.wallberg.taocp.Backtrack import walkers_backtrack
 
 """
 Explore Word Stair Kernels from The Art of Computer Programming, Volume 4,
@@ -17,7 +19,7 @@ Dancing Links, 2020
 logger = logging.getLogger('com.github.wallberg.taocp.word_stair_kernels')
 
 
-def exercise_91():
+def exercise_91(args):
     """ Find the longest cycle in a multi-set of right word stair kernels. """
 
     g = nx.DiGraph()
@@ -34,7 +36,6 @@ def exercise_91():
 
             if option[0] == "c1c2c6c10c13":
                 kernel[0] = option[1][3]
-                word2 = option[6]
 
             elif option[0] == "x3x4x5c2c3":
                 kernel[1] = option[1][3]
@@ -46,7 +47,6 @@ def exercise_91():
                 kernel[5] = option[3][3]
                 kernel[6] = option[4][3]
                 kernel[7] = option[5][3]
-                word1 = option[6]
 
             elif option[0] == "c9c10c11c12x6":
                 kernel[8] = option[1][3]
@@ -67,6 +67,15 @@ def exercise_91():
             # being the arc
             n1 = ''.join(kernel[0:7] + kernel[8:10])
             n2 = ''.join(kernel[2:3] + kernel[6:14])
+
+            if args.right:
+                # Right word stair
+                word1 = kernel[3:8]
+            else:
+                # Left word stair
+                word1 = kernel[7:2:-1]
+
+            word2 = kernel[0:2] + kernel[5] + kernel[9] + kernel[12]
 
             g.add_edge(n1, n2, kernel=kernel, word1=word1, word2=word2)
 
@@ -217,6 +226,14 @@ if __name__ == '__main__':
     logger.addHandler(logging.StreamHandler())
     logger.setLevel(logging.INFO)
 
-    unittest.main(exit=False)
+    # Setup command line arguments
+    parser = argparse.ArgumentParser()
 
-    exercise_91()
+    parser.add_argument("-r", "--right",
+                        action='store_true',
+                        help="Process a right word stair; (default: a left word stair)")
+
+    # Process command line arguments
+    args = parser.parse_args()
+
+    exercise_91(args)
