@@ -31,7 +31,7 @@ type xcCommand struct {
 	Input         string `short:"i" long:"input" description:"Input YAML" default:"-"`
 	Output        string `short:"o" long:"output" description:"Output YAML" default:"-"`
 	Verbosity     int    `short:"v" long:"verbosity" description:"Verbosity level" default:"1"`
-	Delta         int    `short:"d" long:"delta" description:"Display progress ~Delta nodes (Verbosity > 0)" default:"10000000"`
+	Delta         int    `short:"d" long:"delta" description:"Display progress ~Delta nodes (Verbosity > 0)" default:"100000000"`
 	Compact       bool   `short:"c" long:"compact" description:"Output solutions in compact format, one per line"`
 	Minimax       bool   `short:"m" long:"minimax" description:"Return minimax solutions (multiple)"`
 	MinimaxSingle bool   `short:"s" long:"minimax-single" description:"Return minimax solutions (single)"`
