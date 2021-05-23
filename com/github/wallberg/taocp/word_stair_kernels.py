@@ -81,8 +81,6 @@ def exercise_91(args):
 
             kernels.add(kernel)
 
-    print("Kernels: ", len(kernels))
-
     def print_graph(g, verbose=False):
         print('nodes: ', len(g))
         print('edges: ', sum([1 for e in g.edges()]))
@@ -99,7 +97,7 @@ def exercise_91(args):
 
     while True:
         changed = False
-        nodes = list(n for n in g)
+        nodes = list(g)
         for n in nodes:
             in_degree = sum([1 for s in g.predecessors(n)])
             out_degree = sum([1 for p in g.successors(n)])
@@ -115,7 +113,8 @@ def exercise_91(args):
 
     # Second reduction: Find a node v of out-degree 1. Backtrack to discover a
     # simple path, from v, that contributes only distinct words. If there is no
-    # such path, remove v from the graph and reduce it again.
+    # such path, remove v from the graph and reduce it again. Keep track of
+    # max length cycles as we go.
 
     print()
     print("Second Reduction")
@@ -143,101 +142,55 @@ def exercise_91(args):
 
         return True
 
-    # Setup backtrack S() function
-    class PathFound(Exception):
-        pass
-
     max_cycle = []
 
-    def get_s(reduction=True):
-        """ Generate the S function for walkers_backtrack. """
+    def S(n, level, x):
 
-        def S(n, level, x):
+        """ Return values at level, which hold true for
+        x_1 to x_(level-1). """
 
-            """ Return values at level, which hold true for
-            x_1 to x_(level-1). """
+        nonlocal g, max_cycle
 
-            nonlocal g, max_cycle
+        if level == 1:
+            return [candidate]
 
-            if level == 1:
-                return [candidate]
+        values = []
 
-            values = []
+        for successor in g[x[level-2]]:
 
-            for successor in g[x[level-2]]:
+            # Does this transition contribute unique words?
+            path = x[0:level-1] + [successor]
+            if unique_words(path):
 
-                # Does this transition contribute unique words?
-                path = x[0:level-1] + [successor]
-                if unique_words(path):
+                if successor == candidate:
+                    # Found path with unique words
 
-                    if successor == candidate:
-                        # Found path with unique words
+                    # We are looking for cycles of maximum length
+                    cycle = path
+                    if len(cycle) >= len(max_cycle):
+                        max_cycle = cycle
 
-                        if reduction:
-                            # If reducing we want to stop here and indicate
-                            # we found a path
-                            raise PathFound()
+                        # Gather the words
+                        words = []
+                        for i in range(0, len(cycle)-1):
+                            keydict = g.get_edge_data(cycle[i], cycle[i+1])
+                            words.append(keydict['word1'] + ":" + keydict['word2'])
 
-                        else:
-                            # We are looking for cycles of maximum length
-                            cycle = path
-                            if len(cycle) >= len(max_cycle):
-                                max_cycle = cycle
+                        print()
+                        print("Cycle:", cycle)
+                        print("Words:", words)
+                else:
+                    # Add it to the returned values
+                    values.append(successor)
 
-                                # Gather the words
-                                words = []
-                                for i in range(0, len(cycle)-1):
-                                    keydict = g.get_edge_data(cycle[i], cycle[i+1])
-                                    words.append(keydict['word1'] + ":" + keydict['word2'])
-
-                                print()
-                                print("Cycle:", cycle)
-                                print("Words:", words)
-                    else:
-                        # Add it to the returned values
-                        values.append(successor)
-
-            return values
-
-        return S
-
-    # # Loop until no node is removed
-    # while True:
-
-    #     node_removed = False
-
-    #     # Iterate over all nodes
-    #     for candidate in g:
-    #         out_degree = sum([1 for p in g.successors(candidate)])
-    #         if out_degree == 1:
-    #             try:
-    #                 # Search for a simple path, from candidate, that contributes
-    #                 # only distinct words
-    #                 for _ in walkers_backtrack(g.size(), get_s()):
-    #                     pass
-
-    #                 # No path found
-    #                 g.remove_node(candidate)
-    #                 node_removed = True
-    #                 break
-
-    #             except PathFound:
-    #                 # Path found, so we can continue to the next candidate
-    #                 pass
-
-    #     if not node_removed:
-    #         break
-
-    # if len(g) > 0:
-    #     print_graph(g, verbose=False)
+        return values
 
     # Find the longest cycle
     nodes = list(g)
     for candidate in nodes:
         # Search for a simple path, from candidate, that contributes
         # only distinct words
-        for _ in walkers_backtrack(g.size(), get_s(reduction=False)):
-            pass
+        for _ in walkers_backtrack(g.size(), S): pass
 
         # Now look for cycles which don't include this node
         g.remove_node(candidate)
