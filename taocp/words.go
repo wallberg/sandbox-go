@@ -265,11 +265,12 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 		"c8c12x7x11x12",
 	}
 
-	// Setup the 16 secondary items, c1-c14,x5,x7 (colored)
+	// Setup the 14+2+W secondary items, c1-c14,x5,x7 (colored) and every word
 	for i := 1; i <= 14; i++ {
 		sitems = append(sitems, fmt.Sprintf("c%d", i))
 	}
 	sitems = append(sitems, "x5", "x7")
+	sitems = append(sitems, words...)
 
 	// Setup the options
 	for _, word := range words {
@@ -280,7 +281,7 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 			// c4 c5 c6 c7 c8
 			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
-				"c4:" + word[4:5], "c5:" + word[3:4], "c6:" + word[2:3], "c7:" + word[1:2], "c8:" + word[0:1]})
+				"c4:" + word[4:5], "c5:" + word[3:4], "c6:" + word[2:3], "c7:" + word[1:2], "c8:" + word[0:1], word})
 
 			// c9 c10 c11 c12 x6
 			options = slice.AppendUniqueString(options, []string{"c9c10c11c12x6",
@@ -296,7 +297,7 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 			// c4 c5 c6 c7 c8
 			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
-				"c4:" + word[0:1], "c5:" + word[1:2], "c6:" + word[2:3], "c7:" + word[3:4], "c8:" + word[4:5]})
+				"c4:" + word[0:1], "c5:" + word[1:2], "c6:" + word[2:3], "c7:" + word[3:4], "c8:" + word[4:5], word})
 
 			// c9 c10 c11 c12 x6
 			options = slice.AppendUniqueString(options, []string{"c9c10c11c12x6",
@@ -313,7 +314,7 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 		// c1 c2 c6 c10 c13
 		options = slice.AppendUniqueString(options, []string{"c1c2c6c10c13",
-			"c1:" + word[0:1], "c2:" + word[1:2], "c6:" + word[2:3], "c10:" + word[3:4], "c13:" + word[4:5]})
+			"c1:" + word[0:1], "c2:" + word[1:2], "c6:" + word[2:3], "c10:" + word[3:4], "c13:" + word[4:5], word})
 
 		// c3 c7 c11 c14 x10
 		options = slice.AppendUniqueString(options, []string{"c3c7c11c14x10",

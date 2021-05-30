@@ -136,13 +136,13 @@ def exercise_91(args):
         keydict = g.get_edge_data(x[level-2], successor)
         word1, word2 = keydict['word1'], keydict['word2']
 
-        # See if word1 or word2 are unique
-        if word1 == word2:
-            return False
-
-        for i in range(0, 2*(level-2)):
-            if words[i] == word1 or words[i] == word2:
+        # See if word1 and word2 are unique
+        i = 2 * (level-2)
+        for j in range(0, i):
+            if words[j] == word1 or words[j] == word2:
                 return False
+
+        words[i], words[i+1] = word1, word2
 
         return True
 
@@ -176,8 +176,9 @@ def exercise_91(args):
 
                         print()
                         print("Words:", level-1)
-                        print("  ", words[0:(2*level):2])
-                        print("  ", words[1:(2*level):2])
+                        i = 2 * (level - 1)
+                        print("  ", words[0:i:2])
+                        print("  ", words[1:i:2])
 
                 else:
                     # Add it to the returned values
