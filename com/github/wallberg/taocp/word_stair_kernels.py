@@ -111,74 +111,74 @@ def exercise_91(args):
     if len(g) > 0:
         print_graph(g, verbose=False)
 
-    # Second reduction: Find a node v of out-degree 1. Backtrack to discover a
-    # simple path, from v, that contributes only distinct words. If there is no
-    # such path, remove v from the graph and reduce it again. Keep track of
-    # max length cycles as we go.
+    # Second reduction: Backtrack to discover all simple paths, from
+    # v, that contribute only distinct words. Remove v. Repeat until no nodes
+    # remain. Keep track of max length cycles as we go.
 
     print()
     print("Second Reduction")
 
-    def unique_words(pairlist):
+    words = [None] * (g.size() * 2)
+
+    def unique_words(x, level, successor):
         """ Determine if all word pairs return unique words. """
 
-        nonlocal g
+        nonlocal g, words
 
-        words = set()
+        # Get words from previous level (already confirmed unique)
+        if level > 2:
+            keydict = g.get_edge_data(x[level-3], x[level-2])
+            i = 2 * (level-3)
+            words[i] = keydict['word1']
+            words[i+1] = keydict['word2']
 
-        for i in range(0, len(pairlist)-1):
-            node1, node2 = pairlist[i], pairlist[i+1]
+        # Get the new words
+        keydict = g.get_edge_data(x[level-2], successor)
+        word1, word2 = keydict['word1'], keydict['word2']
 
-            keydict = g.get_edge_data(node1, node2)
-            word1, word2 = keydict['word1'], keydict['word2']
+        # See if word1 or word2 are unique
+        if word1 == word2:
+            return False
 
-            if word1 in words:
-               return False
-            words.add(word1)
-
-            if word2 in words:
-               return False
-            words.add(word2)
+        for i in range(0, 2*(level-2)):
+            if words[i] == word1 or words[i] == word2:
+                return False
 
         return True
 
-    max_cycle = []
+    max_level = 0
 
     def S(n, level, x):
 
         """ Return values at level, which hold true for
-        x_1 to x_(level-1). """
+        x_1 to x_level. """
 
-        nonlocal g, max_cycle
+        nonlocal g, max_level, candidate
 
         if level == 1:
+            # print(candidate)
             return [candidate]
 
         values = []
+        # print(x[0:level-1])
 
         for successor in g[x[level-2]]:
 
             # Does this transition contribute unique words?
-            path = x[0:level-1] + [successor]
-            if unique_words(path):
+            if unique_words(x, level, successor):
 
                 if successor == candidate:
                     # Found path with unique words
 
                     # We are looking for cycles of maximum length
-                    cycle = path
-                    if len(cycle) >= len(max_cycle):
-                        max_cycle = cycle
-
-                        # Gather the words
-                        words = []
-                        for i in range(0, len(cycle)-1):
-                            keydict = g.get_edge_data(cycle[i], cycle[i+1])
-                            words.append(keydict['word1'] + ":" + keydict['word2'])
+                    if level >= max_level:
+                        max_level = level
 
                         print()
-                        print("Cycle:", cycle)
-                        print("Words:", words)
+                        print("Words:", level-1)
+                        print("  ", words[0:(2*level):2])
+                        print("  ", words[1:(2*level):2])
+
                 else:
                     # Add it to the returned values
                     values.append(successor)
