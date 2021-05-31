@@ -938,7 +938,14 @@ C2:
 	}
 
 	// C3. [Choose i.]
-	i = mrv()
+	if xccOptions.Exercise83 && level == 0 {
+		if debug && stats.Verbosity > 1 {
+			log.Print("Exercise 83: always choose i=1 at level=0")
+		}
+		i = 1
+	} else {
+		i = mrv()
+	}
 
 	if debug {
 		log.Printf("C3. Choose i=%d (%s)\n", i, name[i])
