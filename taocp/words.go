@@ -255,14 +255,14 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 	// Setup the 8 primary items
 	items = []string{
-		"c4c5c6c7c8",
-		"c13c14x7x8x9",
-		"x3x4x5c2c3",
-		"c9c10c11c12x6",
-		"x1x2x5c5c9",
-		"c1c2c6c10c13",
-		"c3c7c11c14x10",
-		"c8c12x7x11x12",
+		"c4a",
+		"c13a",
+		"x3a",
+		"c9a",
+		"x1d",
+		"c1d",
+		"c3d",
+		"c8d",
 	}
 
 	// Setup the 14+2+W secondary items, c1-c14,x5,x7 (colored) and every word
@@ -276,52 +276,52 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 	for _, word := range words {
 		if left {
 			// x3 x4 x5 c2 c3
-			options = slice.AppendUniqueString(options, []string{"x3x4x5c2c3",
+			options = slice.AppendUniqueString(options, []string{"x3a",
 				"x5:" + word[2:3], "c2:" + word[1:2], "c3:" + word[0:1]})
 
 			// c4 c5 c6 c7 c8
-			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
+			options = slice.AppendUniqueString(options, []string{"c4a",
 				"c4:" + word[4:5], "c5:" + word[3:4], "c6:" + word[2:3], "c7:" + word[1:2], "c8:" + word[0:1], word})
 
 			// c9 c10 c11 c12 x6
-			options = slice.AppendUniqueString(options, []string{"c9c10c11c12x6",
+			options = slice.AppendUniqueString(options, []string{"c9a",
 				"c9:" + word[4:5], "c10:" + word[3:4], "c11:" + word[2:3], "c12:" + word[1:2]})
 
 			// c13 c14 x7 x8 x9
-			options = slice.AppendUniqueString(options, []string{"c13c14x7x8x9",
+			options = slice.AppendUniqueString(options, []string{"c13a",
 				"c13:" + word[4:5], "c14:" + word[3:4], "x7:" + word[2:3]})
 		} else {
 			// x3 x4 x5 c2 c3
-			options = slice.AppendUniqueString(options, []string{"x3x4x5c2c3",
+			options = slice.AppendUniqueString(options, []string{"x3a",
 				"x5:" + word[2:3], "c2:" + word[3:4], "c3:" + word[4:5]})
 
 			// c4 c5 c6 c7 c8
-			options = slice.AppendUniqueString(options, []string{"c4c5c6c7c8",
+			options = slice.AppendUniqueString(options, []string{"c4a",
 				"c4:" + word[0:1], "c5:" + word[1:2], "c6:" + word[2:3], "c7:" + word[3:4], "c8:" + word[4:5], word})
 
 			// c9 c10 c11 c12 x6
-			options = slice.AppendUniqueString(options, []string{"c9c10c11c12x6",
+			options = slice.AppendUniqueString(options, []string{"c9a",
 				"c9:" + word[0:1], "c10:" + word[1:2], "c11:" + word[2:3], "c12:" + word[3:4]})
 
 			// c13 c14 x7 x8 x9
-			options = slice.AppendUniqueString(options, []string{"c13c14x7x8x9",
+			options = slice.AppendUniqueString(options, []string{"c13a",
 				"c13:" + word[0:1], "c14:" + word[1:2], "x7:" + word[2:3]})
 		}
 
 		// x1 x2 x5 c5 c9
-		options = slice.AppendUniqueString(options, []string{"x1x2x5c5c9",
+		options = slice.AppendUniqueString(options, []string{"x1d",
 			"x5:" + word[2:3], "c5:" + word[3:4], "c9:" + word[4:5]})
 
 		// c1 c2 c6 c10 c13
-		options = slice.AppendUniqueString(options, []string{"c1c2c6c10c13",
+		options = slice.AppendUniqueString(options, []string{"c1d",
 			"c1:" + word[0:1], "c2:" + word[1:2], "c6:" + word[2:3], "c10:" + word[3:4], "c13:" + word[4:5], word})
 
 		// c3 c7 c11 c14 x10
-		options = slice.AppendUniqueString(options, []string{"c3c7c11c14x10",
+		options = slice.AppendUniqueString(options, []string{"c3d",
 			"c3:" + word[0:1], "c7:" + word[1:2], "c11:" + word[2:3], "c14:" + word[3:4]})
 
 		// c8 c12 x7 x11 x12
-		options = slice.AppendUniqueString(options, []string{"c8c12x7x11x12",
+		options = slice.AppendUniqueString(options, []string{"c8d",
 			"c8:" + word[0:1], "c12:" + word[1:2], "x7:" + word[2:3]})
 	}
 

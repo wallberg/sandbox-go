@@ -34,27 +34,27 @@ def exercise_91(args):
         for option in line.strip().split(", "):
             option = option[1:-1].split(' ')
 
-            if option[0] == "c1c2c6c10c13":
+            if option[0] == "c1d":
                 kernel[0] = option[1][3]
 
-            elif option[0] == "x3x4x5c2c3":
+            elif option[0] == "x3a":
                 kernel[1] = option[2][3]
                 kernel[2] = option[3][3]
 
-            elif option[0] == "c4c5c6c7c8":
+            elif option[0] == "c4a":
                 kernel[3] = option[1][3]
                 kernel[4] = option[2][3]
                 kernel[5] = option[3][3]
                 kernel[6] = option[4][3]
                 kernel[7] = option[5][3]
 
-            elif option[0] == "c9c10c11c12x6":
+            elif option[0] == "c9a":
                 kernel[8] = option[1][3]
                 kernel[9] = option[2][4]
                 kernel[10] = option[3][4]
                 kernel[11] = option[4][4]
 
-            elif option[0] == "c13c14x7x8x9":
+            elif option[0] == "c13a":
                 kernel[12] = option[1][4]
                 kernel[13] = option[2][4]
 
@@ -87,6 +87,18 @@ def exercise_91(args):
         if verbose:
             for n1, n2, kernel in g.edges(data='kernel'):
                 print(f"{n1} -> {n2} {kernel}")
+
+    def print_dot(g):
+        """ Print dot format graph. """
+        print("digraph g {")
+        for n1, n2 in g.edges:
+            keydict = g.get_edge_data(n1, n2)
+            word1, word2 = keydict['word1'], keydict['word2']
+            print(f'  {n1} -> {n2} [label="{word1}:{word2}"];')
+        print("}")
+
+    # print_dot(g)
+    # return
 
     print_graph(g, verbose=False)
 
@@ -191,7 +203,7 @@ def exercise_91(args):
     for candidate in nodes:
         # Search for a simple path, from candidate, that contributes
         # only distinct words
-        for _ in walkers_backtrack(g.size(), S): pass
+        for _ in walkers_backtrack(len(nodes)+1, S): pass
 
         # Now look for cycles which don't include this node
         g.remove_node(candidate)
