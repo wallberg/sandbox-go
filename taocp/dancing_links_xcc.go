@@ -56,11 +56,12 @@ func XCC(items []string, options [][]string, secondary []string,
 	var (
 		n1       int      // number of primary items
 		n2       int      // number of secondary items
-		n        int      // total number of items
+		n        int      // total number of items (N)
+		m        int      // total number of options (M)
 		size     int      // total size of the options table
 		name     []string // name of the item
-		llink    []int    // right link of the item
-		rlink    []int    // left link of the item
+		rlink    []int    // right link of the item
+		llink    []int    // left link of the item
 		top      []int    // pointer to the vertical list header (item)
 		llen     []int
 		ulink    []int
@@ -329,12 +330,12 @@ func XCC(items []string, options [][]string, secondary []string,
 		rlink[n1] = 0
 
 		// Fill out the option tables
-		nOptions := len(options)
+		m = len(options)
 		nOptionItems := 0
 		for _, option := range options {
 			nOptionItems += len(option)
 		}
-		size = n + 1 + nOptions + 1 + nOptionItems
+		size = n + 1 + m + 1 + nOptionItems
 
 		top = make([]int, size)
 		llen = top[0 : n+1] // first n+1 elements of top
@@ -416,7 +417,7 @@ func XCC(items []string, options [][]string, secondary []string,
 		}
 
 		level = 0
-		state = make([]int, nOptions)
+		state = make([]int, m)
 		cutoff = size
 
 		if debug {
@@ -523,15 +524,21 @@ func XCC(items []string, options [][]string, secondary []string,
 		log.Print(b.String())
 	}
 
-	// mrv selects the next item to try using the Minimum Remaining
-	// Values heuristic.
-	mrv := func() int {
+	// next_item selects the next item to try using these heuristics
+	// - Minimum Remaining Values
+	// - Sharp Preference
+	next_item := func() int {
 
 		i := 0
 		theta := -1
+		var lambda int
 		p := rlink[0]
 		for p != 0 {
-			lambda := llen[p]
+			if llen[p] > 1 && name[p][0:1] != "#" {
+				lambda = m + llen[p]
+			} else {
+				lambda = llen[p]
+			}
 			if lambda < theta || theta == -1 {
 				theta = lambda
 				i = p
@@ -944,7 +951,7 @@ C2:
 		}
 		i = 1
 	} else {
-		i = mrv()
+		i = next_item()
 	}
 
 	if debug {
