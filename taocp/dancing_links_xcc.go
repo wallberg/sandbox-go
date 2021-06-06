@@ -984,7 +984,7 @@ C5:
 C6:
 	// C6. [Try again.]
 	if debug {
-		log.Println("C6. Try again")
+		log.Printf("C6. Try again, l=%d\n", level)
 	}
 
 	if stats != nil {
@@ -1009,9 +1009,6 @@ C6:
 	// description of the exercise.
 	// TODO: reconcile this discrepency
 	if xccOptions.Exercise83 && level == 0 {
-		if debug && stats.Verbosity > 1 {
-			log.Print("Exercise 83: see if we should cover")
-		}
 
 		// x is the first primary item covered
 		x := state[0]
@@ -1026,8 +1023,15 @@ C6:
 		if j > n1 && color[x-1] == 0 {
 			// j is a secondary item with no color
 			// permanently remove from further consideration
+			if debug && stats.Verbosity > 1 {
+				log.Printf("Exercise 83: covering j=%d\n", j)
+			}
 			cover(j)
+			if debug && stats.Verbosity > 2 {
+				dump()
+			}
 		}
+
 	}
 
 	i = top[state[level]]
