@@ -14,20 +14,20 @@ import (
 
 // initialize this command by adding it to the parser
 func init() {
-	var command xcCommand
+	var command xccCommand
 
-	_, err := parser.AddCommand("xc",
+	_, err := parser.AddCommand("xcc",
 		"Exact Cover w/ Colors (XCC)",
-		`Solve Exact Cover w/ Colors (XCC) problems using taocp.ExactCoverColors
+		`Solve Exact Cover w/ Colors (XCC) problems using taocp.XCC
 Uses YAML for input and output`,
 		&command,
 	)
 	if err != nil {
-		log.Fatalf("Error adding xc command: %v", err)
+		log.Fatalf("Error adding xcc command: %v", err)
 	}
 }
 
-type xcCommand struct {
+type xccCommand struct {
 	Input         string `short:"i" long:"input" description:"Input YAML" default:"-"`
 	Output        string `short:"o" long:"output" description:"Output YAML" default:"-"`
 	Verbosity     int    `short:"v" long:"verbosity" description:"Verbosity level" default:"1"`
@@ -38,7 +38,7 @@ type xcCommand struct {
 	Exercise83    bool   `short:"e" long:"exercise83" description:"Use the curious extension of Exercise 7.2.2.1-83"`
 }
 
-func (command xcCommand) Execute(args []string) error {
+func (command xccCommand) Execute(args []string) error {
 	var err error
 
 	// Validate Minimax options
