@@ -267,24 +267,22 @@ func MCC(items []string, multiplicities [][2]int, options [][]string,
 					}
 				}
 
-				// Insert the item into name[]
-				i := 0
-				for _, value := range name {
+				// Insert into the option list for this item
+				var i int
+				var value string
+				for i, value = range name {
 					if value == item {
 						break
 					}
-					i++
 				}
+
 				top[x] = i
 				color[x] = itemColor
 
-				// Insert into the option list for this item
 				llen[i]++ // increase the size by one
+
 				head := i
-				tail := i
-				for dlink[tail] != head {
-					tail = dlink[tail]
-				}
+				tail := ulink[head]
 
 				dlink[tail] = x
 				ulink[x] = tail
