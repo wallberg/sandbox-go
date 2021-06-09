@@ -272,6 +272,9 @@ func XCC(items []string, options [][]string, secondary []string,
 		}
 
 		// Options
+		if len(options) == 0 {
+			return fmt.Errorf("options may not be empty")
+		}
 		for _, option := range options {
 			for _, item := range option {
 				i := strings.Index(item, ":")

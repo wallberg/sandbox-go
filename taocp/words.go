@@ -327,3 +327,175 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 
 	return items, options, sitems
 }
+
+// WordCross packs a given set of words into an m x n rectangle with conditions.
+// Exercise 7.2.2.1-109
+func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
+
+	// Generate the problem as XCC
+	var (
+		items   []string   // Primary items
+		sitems  []string   // Secondary items
+		options [][]string // Options
+	)
+
+	// Setup the w + m(n-1) + (m-1)n primary items
+	for w := range words {
+		// words
+		items = append(items, fmt.Sprintf("#%d", w))
+	}
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			if j != n {
+				// horizontal edges
+				items = append(items, fmt.Sprintf("H%d%d", i, j))
+			}
+			if i != m {
+				// vertical edges
+				items = append(items, fmt.Sprintf("V%d%d", i, j))
+			}
+		}
+	}
+
+	// Setup the 2mn secondary items
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			// letter or blank in the cell
+			sitems = append(sitems, fmt.Sprintf("%d%d", i, j))
+			// 0 - cell is empty, 1 - cell has a letter
+			sitems = append(sitems, fmt.Sprintf("%d%d'", i, j))
+		}
+	}
+
+	// Setup the options
+	for w, word := range words {
+		l := len(word)
+
+		// Horizontal word options
+		for i := 1; i <= m; i++ {
+			for j := 0; j+l <= n; j++ {
+				option := []string{fmt.Sprintf("#%d", w)}
+				if j > 0 {
+					// Leading blank
+					option = append(option, fmt.Sprintf("%d%d:.", i, j))
+					option = append(option, fmt.Sprintf("%d%d':0", i, j))
+
+					// Horizontal edge
+					option = append(option, fmt.Sprintf("H%d%d", i, j))
+				}
+
+				// Cell contents
+				for c := 1; c <= l; c++ {
+					option = append(option, fmt.Sprintf("%d%d:%s", i, j+c, word[c-1:c]))
+					option = append(option, fmt.Sprintf("%d%d':1", i, j+c))
+
+					if c < l {
+						// Horizontal edge
+						option = append(option, fmt.Sprintf("H%d%d", i, j+c))
+					}
+				}
+
+				if j+l < n {
+					// Horizontal edge
+					option = append(option, fmt.Sprintf("H%d%d", i, j+l))
+
+					// Trailing blank
+					option = append(option, fmt.Sprintf("%d%d:.", i, j+l+1))
+					option = append(option, fmt.Sprintf("%d%d':0", i, j+l+1))
+				}
+				options = append(options, option)
+			}
+		}
+
+		// Vertical word options
+		// (omit word #0 when m = n)
+		if w > 0 || m != n {
+			for j := 1; j <= n; j++ {
+				for i := 0; i+l <= m; i++ {
+					option := []string{fmt.Sprintf("#%d", w)}
+					if i > 0 {
+						// Leading blank
+						option = append(option, fmt.Sprintf("%d%d:.", i, j))
+						option = append(option, fmt.Sprintf("%d%d':0", i, j))
+
+						// Vertical edge
+						option = append(option, fmt.Sprintf("V%d%d", i, j))
+					}
+
+					// Cell contents
+					for c := 1; c <= l; c++ {
+						option = append(option, fmt.Sprintf("%d%d:%s", i+c, j, word[c-1:c]))
+						option = append(option, fmt.Sprintf("%d%d':1", i+c, j))
+
+						if c < l {
+							// Vertical edge
+							option = append(option, fmt.Sprintf("V%d%d", i+c, j))
+						}
+					}
+
+					if i+l < m {
+						// Vertical edge
+						option = append(option, fmt.Sprintf("V%d%d", i+l, j))
+
+						// Trailing blank
+						option = append(option, fmt.Sprintf("%d%d:.", i+l+1, j))
+						option = append(option, fmt.Sprintf("%d%d':0", i+l+1, j))
+					}
+					options = append(options, option)
+				}
+			}
+		}
+	}
+
+	// Edge options
+	for i := 1; i <= m; i++ {
+		for j := 1; j <= n; j++ {
+			if j != n {
+				// horizontal edges
+				options = append(options, []string{
+					fmt.Sprintf("H%d%d", i, j),
+					fmt.Sprintf("%d%d':0", i, j),
+					fmt.Sprintf("%d%d':1", i, j+1),
+					fmt.Sprintf("%d%d:.", i, j),
+				})
+				options = append(options, []string{
+					fmt.Sprintf("H%d%d", i, j),
+					fmt.Sprintf("%d%d':1", i, j),
+					fmt.Sprintf("%d%d':0", i, j+1),
+					fmt.Sprintf("%d%d:.", i, j+1),
+				})
+				options = append(options, []string{
+					fmt.Sprintf("H%d%d", i, j),
+					fmt.Sprintf("%d%d':0", i, j),
+					fmt.Sprintf("%d%d':0", i, j+1),
+					fmt.Sprintf("%d%d:.", i, j),
+					fmt.Sprintf("%d%d:.", i, j+1),
+				})
+			}
+			if i != m {
+				// vertical edges
+				options = append(options, []string{
+					fmt.Sprintf("V%d%d", i, j),
+					fmt.Sprintf("%d%d':0", i, j),
+					fmt.Sprintf("%d%d':1", i+1, j),
+					fmt.Sprintf("%d%d:.", i, j),
+				})
+				options = append(options, []string{
+					fmt.Sprintf("V%d%d", i, j),
+					fmt.Sprintf("%d%d':1", i, j),
+					fmt.Sprintf("%d%d':0", i+1, j),
+					fmt.Sprintf("%d%d:.", i+1, j),
+				})
+				options = append(options, []string{
+					fmt.Sprintf("V%d%d", i, j),
+					fmt.Sprintf("%d%d':0", i, j),
+					fmt.Sprintf("%d%d':0", i+1, j),
+					fmt.Sprintf("%d%d:.", i, j),
+					fmt.Sprintf("%d%d:.", i+1, j),
+				})
+			}
+		}
+	}
+
+	return items, options, sitems
+}
