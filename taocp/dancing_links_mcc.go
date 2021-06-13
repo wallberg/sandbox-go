@@ -19,7 +19,7 @@ import (
 // Arguments:
 // items     -- sorted list of primary items
 // multiplicities
-//           -- list of u, v values corresponding to the list of items
+//           -- list of u, v values corresponding to the list of primary items
 // options   -- list of list of options; every option must contain at least one
 // 			    primary item
 // secondary -- sorted list of secondary items; can contain an optional
