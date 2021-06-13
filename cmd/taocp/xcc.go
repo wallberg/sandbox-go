@@ -37,6 +37,7 @@ type xccCommand struct {
 	MinimaxSingle bool   `short:"s" long:"minimax-single" description:"Return minimax solutions (single)"`
 	Exercise83    bool   `short:"e" long:"exercise83" description:"Use the curious extension of Exercise 7.2.2.1-83"`
 	DisableSharp  bool   `short:"p" long:"disable-sharp" description:"Disable use of the sharp preference heuristic"`
+	Limit         int    `short:"l" long:"limit" description:"Halt after this number of solutions found" default:"0"`
 }
 
 func (command xccCommand) Execute(args []string) error {
@@ -107,6 +108,7 @@ func (command xccCommand) Execute(args []string) error {
 	}
 	err = taocp.XCC(xcYaml.Items, options, xcYaml.SItems, stats, xccOptions,
 		func(solution [][]string) bool {
+
 			if !command.Compact {
 				output.WriteString("  -\n")
 				for _, option := range solution {
@@ -126,6 +128,10 @@ func (command xccCommand) Execute(args []string) error {
 				}
 				s.WriteString("\n")
 				output.WriteString(s.String())
+			}
+
+			if command.Limit > 0 && stats.Solutions == command.Limit {
+				return false
 			}
 			return true
 		})
