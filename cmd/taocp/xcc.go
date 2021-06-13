@@ -36,6 +36,7 @@ type xccCommand struct {
 	Minimax       bool   `short:"m" long:"minimax" description:"Return minimax solutions (multiple)"`
 	MinimaxSingle bool   `short:"s" long:"minimax-single" description:"Return minimax solutions (single)"`
 	Exercise83    bool   `short:"e" long:"exercise83" description:"Use the curious extension of Exercise 7.2.2.1-83"`
+	DisableSharp  bool   `short:"p" long:"disable-sharp" description:"Disable use of the sharp preference heuristic"`
 }
 
 func (command xccCommand) Execute(args []string) error {
@@ -95,9 +96,10 @@ func (command xccCommand) Execute(args []string) error {
 
 	// XCC processing options
 	xccOptions := &taocp.XCCOptions{
-		Minimax:       command.Minimax || command.MinimaxSingle,
-		MinimaxSingle: command.MinimaxSingle,
-		Exercise83:    command.Exercise83,
+		Minimax:               command.Minimax || command.MinimaxSingle,
+		MinimaxSingle:         command.MinimaxSingle,
+		Exercise83:            command.Exercise83,
+		EnableSharpPreference: !command.DisableSharp,
 	}
 
 	if !command.Compact {

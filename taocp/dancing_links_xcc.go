@@ -20,6 +20,9 @@ type XCCOptions struct {
 
 	// Use the curious extension of Exercise 7.2.2.1-83
 	Exercise83 bool
+
+	// Enable sharp heuristic preference
+	EnableSharpPreference bool
 }
 
 // XCC implements Algorithm C (7.2.2.1), exact covering with colors via
@@ -537,7 +540,7 @@ func XCC(items []string, options [][]string, secondary []string,
 		var lambda int
 		p := rlink[0]
 		for p != 0 {
-			if llen[p] > 1 && name[p][0:1] != "#" {
+			if xccOptions.EnableSharpPreference && llen[p] > 1 && name[p][0:1] != "#" {
 				lambda = m + llen[p]
 			} else {
 				lambda = llen[p]
