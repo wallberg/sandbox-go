@@ -133,7 +133,5 @@ func (command xccCommand) Execute(args []string) error {
 		return err
 	}
 
-	log.Println("Stats:", *stats)
-
 	return nil
 }

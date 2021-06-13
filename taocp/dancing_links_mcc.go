@@ -369,8 +369,7 @@ func MCC(items []string, multiplicities [][2]int, options [][]string,
 
 		est += 1.0 / float64(2*tcum)
 
-		b.WriteString(fmt.Sprintf("solutions=%d, nodes=%d, est=%4.4f\n",
-			stats.Solutions, stats.Nodes, est))
+		b.WriteString(fmt.Sprintf("est=%4.4f, %v\n", est, *stats))
 		log.Print(b.String())
 	}
 

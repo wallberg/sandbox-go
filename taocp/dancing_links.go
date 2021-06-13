@@ -34,7 +34,7 @@ type ExactCoverStats struct {
 func (s ExactCoverStats) String() string {
 	// Find first non-zero level count
 	i := len(s.Levels)
-	for s.Levels[i-1] == 0 && i > 0 {
+	for s.Levels[i-1] == 0 && i > 1 {
 		i--
 	}
 
@@ -280,8 +280,7 @@ func ExactCover(items []string, options [][]string, secondary []string,
 
 		est += 1.0 / float64(2*tcum)
 
-		log.Printf("  solutions=%d, nodes=%d, est=%4.4f\n",
-			stats.Solutions, stats.Nodes, est)
+		log.Printf("  est=%4.4f, %v\n", est, *stats)
 		log.Println("---")
 	}
 
