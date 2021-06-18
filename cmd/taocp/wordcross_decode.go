@@ -35,6 +35,8 @@ func init() {
 }
 
 type wcDecodeCommand struct {
+	M         int    `short:"m" long:"m" description:"number of rows" default:"8"`
+	N         int    `short:"n" long:"n" description:"number of columngs" default:"8"`
 	Input     string `short:"i" long:"input" description:"Input YAML" default:"-"`
 	Distinct  bool   `short:"d" long:"distinct" description:"Limit to distinct solutions"`
 	Connected bool   `short:"c" long:"connected" description:"Limit to connected solutions"`
@@ -72,26 +74,9 @@ func (command wcDecodeCommand) Execute(args []string) error {
 	}
 
 	// Process the solutions
-	var m, n, i, j int
+	m, n := command.M, command.N
+	var i, j int
 	reCell := regexp.MustCompile(`^([0-9A-Za-z]{2}):([A-Za-z])$`)
-
-	// Determine the size of the wordcross puzzle (m x n)
-	for _, option := range solutions.Solutions[0] {
-		for _, item := range strings.Fields(string(option)) {
-			if match := reCell.FindStringSubmatch(item); match != nil {
-				if i, j, err = taocp.DecodeCell(match[1]); err != nil {
-					return err
-				}
-
-				if i > m {
-					m = i
-				}
-				if j > n {
-					n = j
-				}
-			}
-		}
-	}
 
 	// getKey creates a key to uniquely identify a grid
 	getKey := func(grid [][]string) string {
