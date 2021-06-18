@@ -503,3 +503,40 @@ R6:
 	goto R3
 
 }
+
+// RemoveIsolated generates a new graph with isolated vertices (outdegree zero) removed.
+// Also returns a map of previous vertex values to new vertex values, nil if none removed.
+func RemoveIsolated(g *graph.Mutable) (*graph.Mutable, map[int]int) {
+	mapping := make(map[int]int)
+
+	// Get mapping of old vertex values to new (ie, remove isolated vertices)
+	vNew := 0
+	for v := 0; v < g.Order(); v++ {
+		if g.Degree(v) > 0 {
+			mapping[v] = vNew
+			vNew++
+		}
+	}
+
+	if len(mapping) == g.Order() {
+		// There were no isolated vertices removed
+		return g, nil
+	}
+
+	// Build the new graph
+	h := graph.New(len(mapping))
+	for v := 0; v < g.Order(); v++ {
+		if g.Degree(v) > 0 {
+			vNew := mapping[v]
+			g.Visit(v, func(w int, c int64) (skip bool) {
+				// Determine if w is also in the new graph
+				if wNew, ok := mapping[w]; ok {
+					h.AddCost(vNew, wNew, c)
+				}
+				return
+			})
+		}
+	}
+
+	return h, mapping
+}

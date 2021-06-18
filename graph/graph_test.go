@@ -201,3 +201,47 @@ func TestConnectedSubsets(t *testing.T) {
 		}
 	}
 }
+
+func TestRemoveIsolated(t *testing.T) {
+	g := graph.New(5)
+	g.AddBoth(0, 1)
+	g.AddCost(1, 4, 10)
+	g.AddCost(4, 1, 12)
+	g.Add(1, 2)
+	g.AddCost(1, 3, 11)
+	g.Add(3, 2)
+
+	var mapping map[int]int
+	var h *graph.Mutable
+
+	// First iteration
+	g, mapping = RemoveIsolated(g)
+
+	if g.Order() != 4 {
+		t.Errorf("Got order=%d after first iteration; want 4", g.Order())
+	}
+	if len(mapping) != 4 {
+		t.Errorf("Got len(mapping)=%d after first iteration; want 4", len(mapping))
+	}
+
+	// Second iteration
+	g, mapping = RemoveIsolated(g)
+
+	if g.Order() != 3 {
+		t.Errorf("Got order=%d after second iteration; want 3", g.Order())
+	}
+	if len(mapping) != 3 {
+		t.Errorf("Got len(mapping)=%d after second iteration; want 3", len(mapping))
+	}
+
+	// Third iteration
+	h, mapping = RemoveIsolated(g)
+
+	if h != g {
+		t.Errorf("g itself not returned after third iteration")
+	}
+	if mapping != nil {
+		t.Errorf("nil mapping not returned after third iteration")
+	}
+
+}

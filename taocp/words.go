@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 
+	"codeberg.org/ac/base62"
 	"github.com/wallberg/sandbox/slice"
 )
 
@@ -328,6 +329,28 @@ func WordStairKernel(words []string, left bool) ([]string, [][]string, []string)
 	return items, options, sitems
 }
 
+// EncodeCell converts (i, j) int coordinates to base62 string
+func EncodeCell(i int, j int) string {
+	return base62.Encode(uint32(i)) + base62.Encode(uint32(j))
+}
+
+// DecodeCell converts base62 string coordinates to int (i, j)
+func DecodeCell(ij string) (int, int, error) {
+	var i uint32
+	var j uint32
+	var err error
+
+	if i, err = base62.Decode(ij[0:1]); err != nil {
+		return -1, -1, err
+	}
+
+	if j, err = base62.Decode(ij[1:2]); err != nil {
+		return -1, -1, err
+	}
+
+	return int(i), int(j), nil
+}
+
 // WordCross packs a given set of words into an m x n rectangle with conditions.
 // Exercise 7.2.2.1-109
 func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
@@ -348,11 +371,11 @@ func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
 		for j := 1; j <= n; j++ {
 			if j != n {
 				// horizontal edges
-				items = append(items, fmt.Sprintf("H%d%d", i, j))
+				items = append(items, "H"+EncodeCell(i, j))
 			}
 			if i != m {
 				// vertical edges
-				items = append(items, fmt.Sprintf("V%d%d", i, j))
+				items = append(items, "V"+EncodeCell(i, j))
 			}
 		}
 	}
@@ -361,9 +384,9 @@ func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
 	for i := 1; i <= m; i++ {
 		for j := 1; j <= n; j++ {
 			// letter or blank in the cell
-			sitems = append(sitems, fmt.Sprintf("%d%d", i, j))
+			sitems = append(sitems, EncodeCell(i, j))
 			// 0 - cell is empty, 1 - cell has a letter
-			sitems = append(sitems, fmt.Sprintf("%d%d'", i, j))
+			sitems = append(sitems, EncodeCell(i, j)+"'")
 		}
 	}
 
@@ -377,31 +400,31 @@ func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
 				option := []string{fmt.Sprintf("#%d", w)}
 				if j > 0 {
 					// Leading blank
-					option = append(option, fmt.Sprintf("%d%d:.", i, j))
-					option = append(option, fmt.Sprintf("%d%d':0", i, j))
+					option = append(option, EncodeCell(i, j)+":.")
+					option = append(option, EncodeCell(i, j)+"':0")
 
 					// Horizontal edge
-					option = append(option, fmt.Sprintf("H%d%d", i, j))
+					option = append(option, "H"+EncodeCell(i, j))
 				}
 
 				// Cell contents
 				for c := 1; c <= l; c++ {
-					option = append(option, fmt.Sprintf("%d%d:%s", i, j+c, word[c-1:c]))
-					option = append(option, fmt.Sprintf("%d%d':1", i, j+c))
+					option = append(option, EncodeCell(i, j+c)+":"+word[c-1:c])
+					option = append(option, EncodeCell(i, j+c)+"':1")
 
 					if c < l {
 						// Horizontal edge
-						option = append(option, fmt.Sprintf("H%d%d", i, j+c))
+						option = append(option, "H"+EncodeCell(i, j+c))
 					}
 				}
 
 				if j+l < n {
 					// Horizontal edge
-					option = append(option, fmt.Sprintf("H%d%d", i, j+l))
+					option = append(option, "H"+EncodeCell(i, j+l))
 
 					// Trailing blank
-					option = append(option, fmt.Sprintf("%d%d:.", i, j+l+1))
-					option = append(option, fmt.Sprintf("%d%d':0", i, j+l+1))
+					option = append(option, EncodeCell(i, j+l+1)+":.")
+					option = append(option, EncodeCell(i, j+l+1)+"':0")
 				}
 				options = append(options, option)
 			}
@@ -415,31 +438,31 @@ func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
 					option := []string{fmt.Sprintf("#%d", w)}
 					if i > 0 {
 						// Leading blank
-						option = append(option, fmt.Sprintf("%d%d:.", i, j))
-						option = append(option, fmt.Sprintf("%d%d':0", i, j))
+						option = append(option, EncodeCell(i, j)+":.")
+						option = append(option, EncodeCell(i, j)+"':0")
 
 						// Vertical edge
-						option = append(option, fmt.Sprintf("V%d%d", i, j))
+						option = append(option, "V"+EncodeCell(i, j))
 					}
 
 					// Cell contents
 					for c := 1; c <= l; c++ {
-						option = append(option, fmt.Sprintf("%d%d:%s", i+c, j, word[c-1:c]))
-						option = append(option, fmt.Sprintf("%d%d':1", i+c, j))
+						option = append(option, EncodeCell(i+c, j)+":"+word[c-1:c])
+						option = append(option, EncodeCell(i+c, j)+"':1")
 
 						if c < l {
 							// Vertical edge
-							option = append(option, fmt.Sprintf("V%d%d", i+c, j))
+							option = append(option, "V"+EncodeCell(i+c, j))
 						}
 					}
 
 					if i+l < m {
 						// Vertical edge
-						option = append(option, fmt.Sprintf("V%d%d", i+l, j))
+						option = append(option, "V"+EncodeCell(i+l, j))
 
 						// Trailing blank
-						option = append(option, fmt.Sprintf("%d%d:.", i+l+1, j))
-						option = append(option, fmt.Sprintf("%d%d':0", i+l+1, j))
+						option = append(option, EncodeCell(i+l+1, j)+":.")
+						option = append(option, EncodeCell(i+l+1, j)+"':0")
 					}
 					options = append(options, option)
 				}
@@ -453,45 +476,45 @@ func WordCross(words []string, m int, n int) ([]string, [][]string, []string) {
 			if j != n {
 				// horizontal edges
 				options = append(options, []string{
-					fmt.Sprintf("H%d%d", i, j),
-					fmt.Sprintf("%d%d':0", i, j),
-					fmt.Sprintf("%d%d':1", i, j+1),
-					fmt.Sprintf("%d%d:.", i, j),
+					"H" + EncodeCell(i, j),
+					EncodeCell(i, j) + "':0",
+					EncodeCell(i, j+1) + "':1",
+					EncodeCell(i, j) + ":.",
 				})
 				options = append(options, []string{
-					fmt.Sprintf("H%d%d", i, j),
-					fmt.Sprintf("%d%d':1", i, j),
-					fmt.Sprintf("%d%d':0", i, j+1),
-					fmt.Sprintf("%d%d:.", i, j+1),
+					"H" + EncodeCell(i, j),
+					EncodeCell(i, j) + "':1",
+					EncodeCell(i, j+1) + "':0",
+					EncodeCell(i, j+1) + ":.",
 				})
 				options = append(options, []string{
-					fmt.Sprintf("H%d%d", i, j),
-					fmt.Sprintf("%d%d':0", i, j),
-					fmt.Sprintf("%d%d':0", i, j+1),
-					fmt.Sprintf("%d%d:.", i, j),
-					fmt.Sprintf("%d%d:.", i, j+1),
+					"H" + EncodeCell(i, j),
+					EncodeCell(i, j) + "':0",
+					EncodeCell(i, j+1) + "':0",
+					EncodeCell(i, j) + ":.",
+					EncodeCell(i, j+1) + ":.",
 				})
 			}
 			if i != m {
 				// vertical edges
 				options = append(options, []string{
-					fmt.Sprintf("V%d%d", i, j),
-					fmt.Sprintf("%d%d':0", i, j),
-					fmt.Sprintf("%d%d':1", i+1, j),
-					fmt.Sprintf("%d%d:.", i, j),
+					"V" + EncodeCell(i, j),
+					EncodeCell(i, j) + "':0",
+					EncodeCell(i+1, j) + "':1",
+					EncodeCell(i, j) + ":.",
 				})
 				options = append(options, []string{
-					fmt.Sprintf("V%d%d", i, j),
-					fmt.Sprintf("%d%d':1", i, j),
-					fmt.Sprintf("%d%d':0", i+1, j),
-					fmt.Sprintf("%d%d:.", i+1, j),
+					"V" + EncodeCell(i, j),
+					EncodeCell(i, j) + "':1",
+					EncodeCell(i+1, j) + "':0",
+					EncodeCell(i+1, j) + ":.",
 				})
 				options = append(options, []string{
-					fmt.Sprintf("V%d%d", i, j),
-					fmt.Sprintf("%d%d':0", i, j),
-					fmt.Sprintf("%d%d':0", i+1, j),
-					fmt.Sprintf("%d%d:.", i, j),
-					fmt.Sprintf("%d%d:.", i+1, j),
+					"V" + EncodeCell(i, j),
+					EncodeCell(i, j) + "':0",
+					EncodeCell(i+1, j) + "':0",
+					EncodeCell(i, j) + ":.",
+					EncodeCell(i+1, j) + ":.",
 				})
 			}
 		}

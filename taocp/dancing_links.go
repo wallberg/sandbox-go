@@ -61,6 +61,17 @@ func NewExactCoverYaml(items []string, sitems []string, options [][]string) *Exa
 	return &xcYaml
 }
 
+// ExactCoverOption represents a single option in a solution
+type ExactCoverOption string
+
+// ExactCoverSolution represents a list of options in a single solution
+type ExactCoverSolution []ExactCoverOption
+
+// ExactCoverSolutions represents a list of solutions (Exact Cover output)
+type ExactCoverSolutions struct {
+	Solutions []ExactCoverSolution
+}
+
 // ExactCover implements Algorithm X, exact cover via dancing links.
 // The task is to find all subsets of options such that each primary item j
 // occurs exactly once.

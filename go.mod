@@ -3,6 +3,7 @@ module github.com/wallberg/sandbox
 go 1.14
 
 require (
+	codeberg.org/ac/base62 v0.0.0-20210305150220-e793b546833a
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packr v1.30.1
 	github.com/gobuffalo/packr/v2 v2.8.0 // indirect
