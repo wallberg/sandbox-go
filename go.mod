@@ -12,5 +12,5 @@ require (
 	github.com/stretchr/testify v1.5.1 // indirect
 	github.com/yourbasic/graph v0.0.0-20170921192928-40eb135c0b26
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/yaml.v2 v2.2.4
+	gopkg.in/yaml.v2 v2.2.8
 )
