@@ -8,18 +8,20 @@ import (
 	"strings"
 )
 
-// SATAlgorithmA implements Algorithm A (7.2.2.2), satisfiability by backtracking.
-// The task is to determine if the clause set is satisfiable, and if it is returning
-// one satisfying assignment of the clauses.
+// SATAlgorithmA implements Algorithm A (7.2.2.2), satisfiability by backtracking,
+// with modifications from Exercise 122 to return all satisfying assignments.
 //
 // Arguments:
 // n       -- number of strictly distinct literals
 // clauses -- list of clauses to satisfy
 // stats   -- SAT processing statistics
 // options -- runtime options
+// visit   -- function called with satisfying assignments; should return
+//            true to request another assignment, false to halt
 //
-func SATAlgorithmA(n int, clauses SATClauses,
-	stats *SATStats, options *SATOptions) (bool, []int) {
+func SATAlgorithmAAll(n int, clauses SATClauses,
+	stats *SATStats, options *SATOptions,
+	visit func(solution []int) bool) {
 
 	// State represents a single cell in the state table
 	type State struct {
@@ -35,7 +37,6 @@ func SATAlgorithmA(n int, clauses SATClauses,
 		state     []State // search state
 		start     []int   // start of each clause in the table
 		size      []int   // table of clause lengths
-		a         int     // number of active clauses
 		d         int     // depth-plus-one of the implicit search tree
 		l         int     // literal
 		p         int     // index into the state table
@@ -128,7 +129,7 @@ func SATAlgorithmA(n int, clauses SATClauses,
 	// showProgress
 	showProgress := func() {
 		var b strings.Builder
-		b.WriteString(fmt.Sprintf("d=%d, a=%d, moves=%v\n", d, a, moves[1:d+1]))
+		b.WriteString(fmt.Sprintf("d=%d, moves=%v\n", d, moves[1:d+1]))
 
 		log.Print(b.String())
 	}
@@ -216,8 +217,8 @@ func SATAlgorithmA(n int, clauses SATClauses,
 		}
 	}
 
-	// lvisit prepares the solution
-	lvisit := func() []int {
+	// lvisit prepares the solution and passes to visit()
+	lvisit := func() bool {
 		solution := make([]int, n)
 		for i := 1; i < n+1; i++ {
 			solution[i-1] = (moves[i] % 2) ^ 1
@@ -225,8 +226,7 @@ func SATAlgorithmA(n int, clauses SATClauses,
 		if debug {
 			log.Printf("visit solution=%v", solution)
 		}
-
-		return solution
+		return visit(solution)
 	}
 
 	//
@@ -239,11 +239,10 @@ func SATAlgorithmA(n int, clauses SATClauses,
 		log.Printf("A1. Initialize")
 	}
 
-	a = m
 	d = 1
 
 	if debug {
-		log.Printf("    d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
+		log.Printf("    d=%d, l=%d, moves=%v", d, l, moves[1:d+1])
 	}
 
 	if progress {
@@ -252,34 +251,42 @@ func SATAlgorithmA(n int, clauses SATClauses,
 
 A2:
 	//
-	// A2. [Choose.]
+	// A2. [Visit or choose.]
 	//
-
-	// Choose l or ^l, whichever is contained in the most clauses
-	l = 2 * d
-	if state[l].C <= state[l+1].C {
-		l += 1
-	}
-
-	moves[d] = l & 1
-	if state[l^1].C == 0 {
-		moves[d] += 4
-	}
-
 	if debug {
-		log.Printf("A2. [Choose.] d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
+		log.Printf("A2. [Visit or choose.]")
 	}
 
-	if state[l].C == a {
+	if d > n {
 		// visit the solution
 		if debug {
-			log.Println("A2.   Visit the solution")
+			log.Println("A2. Visit the solution")
 		}
 		if stats != nil {
 			stats.Solutions++
 		}
 
-		return true, lvisit()
+		resume := lvisit()
+
+		if !resume {
+			if debug {
+				log.Println("A2. Halting the search")
+			}
+			if progress {
+				showProgress()
+			}
+			return
+		}
+
+		goto A6
+
+	} else {
+		l = 2*d + 1
+		moves[d] = 1
+
+		if debug {
+			log.Printf("A2. Choose l=%d, moves=%v", l, moves[1:d+1])
+		}
 	}
 
 A3:
@@ -358,19 +365,16 @@ A3:
 			f, b := state[s].F, state[s].B
 			state[f].B = b
 			state[b].F = f
-			state[state[s].L].C -= 1
-			if state[state[s].L].C < 0 {
-				dump()
-				log.Fatal("A4. C(L(s)) should not be < 0")
-			}
+			// state[state[s].L].C -= 1
+			// if state[state[s].L].C < 0 {
+			// 	dump()
+			// 	log.Fatal("A4. C(L(s)) should not be < 0")
+			// }
 		}
 
 		p = state[p].F
 
 	}
-
-	// Update count of total active clauses
-	a -= state[l].C
 
 	// Increment the depth
 	d += 1
@@ -385,17 +389,18 @@ A5:
 		log.Printf("A5. [Try again.]")
 	}
 
-	if moves[d] < 2 {
-		moves[d] = 3 - moves[d]
-		l = 2*d + (moves[d] & 1)
+	if moves[d] == 1 {
+		moves[d] = 2
+		l = 2 * d
 
 		if debug {
-			log.Printf("A5. d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
+			log.Printf("A5. l=%d, moves=%v", l, moves[1:d+1])
 		}
 
 		goto A3
 	}
 
+A6:
 	//
 	// A6. [Backtrack.]
 	//
@@ -405,7 +410,7 @@ A5:
 
 	if d == 1 {
 		// unsatisfiable
-		return false, nil
+		return
 	}
 
 	// Decrement the depth
@@ -415,7 +420,7 @@ A5:
 	l = 2*d + (moves[d] & 1)
 
 	if debug {
-		log.Printf("A6. d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
+		log.Printf("A6. d=%d, l=%d, moves=%v", d, l, moves[1:d+1])
 	}
 
 	//
@@ -424,9 +429,6 @@ A5:
 	if debug {
 		log.Printf("A7. [Reactivate l's clauses.]")
 	}
-
-	// Update count of total active clauses
-	a += state[l].C
 
 	// Unsuppress all clauses that contain l.
 
@@ -443,7 +445,7 @@ A5:
 			f, b := state[s].F, state[s].B
 			state[f].B = s
 			state[b].F = s
-			state[state[s].L].C += 1
+			// state[state[s].L].C += 1
 		}
 
 		// Advance to the next clause
@@ -451,7 +453,7 @@ A5:
 	}
 
 	if debug {
-		log.Printf("A7. d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
+		log.Printf("A7. d=%d, l=%d, moves=%v", d, l, moves[1:d+1])
 	}
 
 	//
