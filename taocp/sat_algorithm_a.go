@@ -152,11 +152,15 @@ func SATAlgorithmA(n int, clauses SATClauses,
 
 		// Initialize the state table
 		m = len(clauses)
-		stateSize = 2*n + 2 + 3*m
-		state = make([]State, stateSize)
 		start = make([]int, m+1)
 		size = make([]int, m+1)
 		moves = make([]int, n+1)
+
+		stateSize = 2*n + 2
+		for _, clause := range clauses {
+			stateSize += len(clause)
+		}
+		state = make([]State, stateSize)
 
 		// index into state
 		p := stateSize - 1
@@ -255,7 +259,7 @@ A2:
 	// A2. [Choose.]
 	//
 
-	// Choose l or ^l, whichever is contained in the most clauses
+	// Choose l if it is contained in the most clauses, other ^l
 	l = 2 * d
 	if state[l].C <= state[l+1].C {
 		l += 1
