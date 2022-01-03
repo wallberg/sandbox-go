@@ -49,8 +49,13 @@ func TestSATAlgorithmAFromFile(t *testing.T) {
 		// {"testdata/SATExamples/A1.sat", 2043, 24772, false},
 		// {"testdata/SATExamples/A2.sat", 2071, 25197, true},
 		// {"testdata/SATExamples/K0.sat", 512, 5896, false},
-		{"testdata/SATExamples/P2.sat", 144, 530, false},
-		{"testdata/SATExamples/P3.sat", 144, 529, true},
+		// {"testdata/SATExamples/P2.sat", 144, 530, false},
+		// {"testdata/SATExamples/P3.sat", 144, 529, true},
+		// {"testdata/SATExamples/P4.sat", 400, 2509, true},
+		// {"testdata/SATExamples/L2.sat", 273, 1020, false},
+		// {"testdata/SATExamples/L5.sat", 1472, 102922, true},
+		{"testdata/SATExamples/L1.sat", 130, 2437, false},
+		{"testdata/SATExamples/X2.sat", 129, 354, false},
 	}
 
 	for _, c := range cases {
@@ -76,8 +81,9 @@ func TestSATAlgorithmAFromFile(t *testing.T) {
 		}
 
 		stats := SATStats{
-			Debug:    true,
-			Progress: true,
+			// Debug:    true,
+			// Progress: true,
+			// Delta:    100000000,
 		}
 		options := SATOptions{}
 

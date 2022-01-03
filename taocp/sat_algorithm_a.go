@@ -128,7 +128,7 @@ func SATAlgorithmA(n int, clauses SATClauses,
 	// showProgress
 	showProgress := func() {
 		var b strings.Builder
-		b.WriteString(fmt.Sprintf("d=%d, a=%d, moves=%v\n", d, a, moves[1:d+1]))
+		b.WriteString(fmt.Sprintf("Nodes=%d, d=%d, a=%d, l=%d, moves=%v\n", stats.Nodes, d, a, l, moves[1:d+1]))
 
 		log.Print(b.String())
 	}
@@ -274,6 +274,21 @@ A2:
 		log.Printf("A2. [Choose.] d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
 	}
 
+	if stats != nil {
+		stats.Levels[d-1]++
+		stats.Nodes++
+
+		if progress {
+			if d > stats.MaxLevel {
+				stats.MaxLevel = d
+			}
+			if stats.Nodes >= stats.Theta {
+				showProgress()
+				stats.Theta += stats.Delta
+			}
+		}
+	}
+
 	if state[l].C == a {
 		// visit the solution
 		if debug {
@@ -395,6 +410,10 @@ A5:
 
 		if debug {
 			log.Printf("A5. d=%d, a=%d, l=%d, moves=%v", d, a, l, moves[1:d+1])
+		}
+
+		if stats != nil {
+			stats.Nodes++
 		}
 
 		goto A3
