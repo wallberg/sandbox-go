@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// SATAlgorithmA implements Algorithm A (7.2.2.2), satisfiability by backtracking.
+// SatAlgorithmA implements Algorithm A (7.2.2.2), satisfiability by backtracking.
 // The task is to determine if the clause set is satisfiable, and if it is returning
 // one satisfying assignment of the clauses.
 //
@@ -18,7 +18,7 @@ import (
 // stats   -- SAT processing statistics
 // options -- runtime options
 //
-func SATAlgorithmA(n int, clauses SATClauses,
+func SatAlgorithmA(n int, clauses SATClauses,
 	stats *SATStats, options *SATOptions) (bool, []int) {
 
 	// State represents a single cell in the state table

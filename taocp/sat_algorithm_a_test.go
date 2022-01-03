@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestSATAlgorithmA(t *testing.T) {
+func TestSatAlgorithmA(t *testing.T) {
 
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
@@ -28,7 +28,7 @@ func TestSATAlgorithmA(t *testing.T) {
 		}
 		options := SATOptions{}
 
-		got, _ := SATAlgorithmA(c.n, c.clauses, &stats, &options)
+		got, _ := SatAlgorithmA(c.n, c.clauses, &stats, &options)
 
 		if got != c.sat {
 			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, got)
@@ -36,7 +36,7 @@ func TestSATAlgorithmA(t *testing.T) {
 	}
 }
 
-func TestSATAlgorithmAFromFile(t *testing.T) {
+func TestSatAlgorithmAFromFile(t *testing.T) {
 
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
@@ -87,7 +87,7 @@ func TestSATAlgorithmAFromFile(t *testing.T) {
 		}
 		options := SATOptions{}
 
-		got, _ := SATAlgorithmA(len(variables), clauses, &stats, &options)
+		got, _ := SatAlgorithmA(len(variables), clauses, &stats, &options)
 
 		if got != c.sat {
 			t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, got)

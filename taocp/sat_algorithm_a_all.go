@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-// SATAlgorithmA implements Algorithm A (7.2.2.2), satisfiability by backtracking,
+// SatAlgorithmAAll implements Algorithm A (7.2.2.2), satisfiability by backtracking,
 // with modifications from Exercise 122 to return all satisfying assignments.
 //
 // Arguments:
@@ -19,7 +19,7 @@ import (
 // visit   -- function called with satisfying assignments; should return
 //            true to request another assignment, false to halt
 //
-func SATAlgorithmAAll(n int, clauses SATClauses,
+func SatAlgorithmAAll(n int, clauses SATClauses,
 	stats *SATStats, options *SATOptions,
 	visit func(solution []int) bool) {
 

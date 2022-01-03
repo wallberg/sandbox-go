@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestSATAlgorithmAAll(t *testing.T) {
+func TestSatAlgorithmAAll(t *testing.T) {
 
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
@@ -29,7 +29,7 @@ func TestSATAlgorithmAAll(t *testing.T) {
 		options := SATOptions{}
 
 		got := false
-		SATAlgorithmAAll(c.n, c.clauses, &stats, &options,
+		SatAlgorithmAAll(c.n, c.clauses, &stats, &options,
 			func(solution []int) bool {
 				got = true
 				// log.Printf("solution=%v", solution)
