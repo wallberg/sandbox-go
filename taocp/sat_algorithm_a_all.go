@@ -153,11 +153,15 @@ func SATAlgorithmAAll(n int, clauses SATClauses,
 
 		// Initialize the state table
 		m = len(clauses)
-		stateSize = 2*n + 2 + 3*m
-		state = make([]State, stateSize)
 		start = make([]int, m+1)
 		size = make([]int, m+1)
 		moves = make([]int, n+1)
+
+		stateSize = 2*n + 2
+		for _, clause := range clauses {
+			stateSize += len(clause)
+		}
+		state = make([]State, stateSize)
 
 		// index into state
 		p := stateSize - 1
