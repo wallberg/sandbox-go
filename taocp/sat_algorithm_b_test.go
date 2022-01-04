@@ -52,35 +52,35 @@ func TestSatAlgorithmBFromFile(t *testing.T) {
 
 	for _, c := range cases {
 
-		t.Logf("File: %s", c.filename)
+		t.Run(c.filename, func(t *testing.T) {
 
-		clauses, variables, err := ReadSAT(c.filename)
+			clauses, variables, err := ReadSAT(c.filename)
 
-		if err != nil {
-			t.Errorf("expected to read file %s; got error %v", c.filename, err)
-			continue
-		}
-		if len(variables) != c.numVariables {
-			t.Errorf("expected %d variables; got %d", c.numVariables, len(variables))
-			continue
-		}
-		if len(clauses) != c.numClauses {
-			t.Errorf("expected %d clauses; got %d", c.numClauses, len(clauses))
-			continue
-		}
+			if err != nil {
+				t.Errorf("expected to read file %s; got error %v", c.filename, err)
+				return
+			}
+			if len(variables) != c.numVariables {
+				t.Errorf("expected %d variables; got %d", c.numVariables, len(variables))
+				return
+			}
+			if len(clauses) != c.numClauses {
+				t.Errorf("expected %d clauses; got %d", c.numClauses, len(clauses))
+				return
+			}
 
-		stats := SATStats{
-			// Debug:    true,
-			// Progress: true,
-			// Delta:    1000000000,
-		}
-		options := SATOptions{}
+			stats := SATStats{
+				// Debug:    true,
+				// Progress: true,
+				// Delta:    1000000000,
+			}
+			options := SATOptions{}
 
-		got, _ := SatAlgorithmB(len(variables), clauses, &stats, &options)
+			got, _ := SatAlgorithmB(len(variables), clauses, &stats, &options)
 
-		if got != c.sat {
-			t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, got)
-		}
-
+			if got != c.sat {
+				t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, got)
+			}
+		})
 	}
 }
