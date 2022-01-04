@@ -16,8 +16,8 @@ import (
 // stats   -- SAT processing statistics
 // options -- runtime options
 //
-func SatAlgorithmB(n int, clauses SATClauses,
-	stats *SATStats, options *SATOptions) (bool, []int) {
+func SatAlgorithmB(n int, clauses SatClauses,
+	stats *SatStats, options *SatOptions) (bool, []int) {
 
 	// State represents a single cell in the state table
 	type State struct {

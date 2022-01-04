@@ -18,8 +18,8 @@ import (
 // stats   -- SAT processing statistics
 // options -- runtime options
 //
-func SatAlgorithmA(n int, clauses SATClauses,
-	stats *SATStats, options *SATOptions) (bool, []int) {
+func SatAlgorithmA(n int, clauses SatClauses,
+	stats *SatStats, options *SatOptions) (bool, []int) {
 
 	// State represents a single cell in the state table
 	type State struct {
@@ -172,7 +172,7 @@ func SatAlgorithmA(n int, clauses SATClauses,
 			size[j] = clauseLen
 
 			// Sort literals of the clause in ascending order
-			clause := make(SATClause, clauseLen)
+			clause := make(SatClause, clauseLen)
 			copy(clause, clauses[j-1])
 			sort.SliceStable(clause, func(i, j int) bool {
 				// Sort by the absolute value of the literal, descending

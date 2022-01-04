@@ -12,21 +12,21 @@ func TestSatAlgorithmA(t *testing.T) {
 	cases := []struct {
 		n       int        // number of strictly distinct literals
 		sat     bool       // is satisfiable
-		clauses SATClauses // clauses to satisfy
+		clauses SatClauses // clauses to satisfy
 	}{
-		{3, true, SATClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
-		{3, false, SATClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
+		{3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
 		{4, true, ClausesRPrime},
 		{4, false, ClausesR},
 	}
 
 	for _, c := range cases {
 
-		stats := SATStats{
+		stats := SatStats{
 			// Debug: true,
 			// Progress: true,
 		}
-		options := SATOptions{}
+		options := SatOptions{}
 
 		got, _ := SatAlgorithmA(c.n, c.clauses, &stats, &options)
 
@@ -53,7 +53,7 @@ func TestSatAlgorithmAFromFile(t *testing.T) {
 	for _, c := range cases {
 
 		t.Run(c.filename, func(t *testing.T) {
-			clauses, variables, err := ReadSAT(c.filename)
+			clauses, variables, err := SatRead(c.filename)
 
 			// log.Printf("map=%v", literals)
 			// for _, clause := range clauses {
@@ -73,12 +73,12 @@ func TestSatAlgorithmAFromFile(t *testing.T) {
 				return
 			}
 
-			stats := SATStats{
+			stats := SatStats{
 				// Debug:    true,
 				// Progress: true,
 				// Delta:    100000000,
 			}
-			options := SATOptions{}
+			options := SatOptions{}
 
 			got, _ := SatAlgorithmA(len(variables), clauses, &stats, &options)
 

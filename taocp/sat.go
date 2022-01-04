@@ -12,9 +12,9 @@ import (
 //
 // §7.2.2.2 Satisfiability (SAT)
 
-// SATStats is a struct for tracking SAT statistics and reporting
+// SatStats is a struct for tracking SAT statistics and reporting
 // runtime progress
-type SATStats struct {
+type SatStats struct {
 	// Input parameters
 	Progress     bool // Display runtime progress
 	Debug        bool // Enable debug logging
@@ -30,12 +30,12 @@ type SATStats struct {
 	Solutions int   // Count of solutions returned
 }
 
-// SATOptions provides SAT runtime options
-type SATOptions struct {
+// SatOptions provides SAT runtime options
+type SatOptions struct {
 }
 
 // String returns a String representation of type SATStats struct
-func (s SATStats) String() string {
+func (s SatStats) String() string {
 	// Find first non-zero level count
 	i := len(s.Levels)
 	for s.Levels[i-1] == 0 && i > 1 {
@@ -46,23 +46,23 @@ func (s SATStats) String() string {
 		s.Solutions, s.Levels[:i])
 }
 
-// SATClause represents a single clause
-type SATClause []int
+// SatClause represents a single clause
+type SatClause []int
 
-// SATClauses represents a list of clauses
-type SATClauses []SATClause
+// SatClauses represents a list of clauses
+type SatClauses []SatClause
 
-// ReadSAT reads a SAT file in Knuth format and returns
+// SatRead reads a SAT file in Knuth format and returns
 // a list of clauses along with the mapping of variables
 // (numeric to string name)
-func ReadSAT(filename string) (SATClauses, map[int]string, error) {
+func SatRead(filename string) (SatClauses, map[int]string, error) {
 
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error opening %s for reading: %v", filename, err)
 	}
 
-	var clauses SATClauses
+	var clauses SatClauses
 	variable2name := make(map[int]string)
 	name2variable := make(map[string]int)
 	nextVariable := 1 // next literal to use
@@ -74,7 +74,7 @@ func ReadSAT(filename string) (SATClauses, map[int]string, error) {
 		// Check if a comment line
 		if !strings.HasPrefix(line, "~ ") {
 			// Create a new clause
-			var clause SATClause
+			var clause SatClause
 
 			// Iterate over the literals of the clause
 			for _, name := range strings.Fields(line) {

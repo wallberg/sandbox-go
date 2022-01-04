@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-var ClausesR = SATClauses{
+var ClausesR = SatClauses{
 	{1, 2, -3},
 	{2, 3, -4},
 	{3, 4, 1},
@@ -31,7 +31,7 @@ func TestReadSAT(t *testing.T) {
 
 	for _, c := range cases {
 
-		clauses, variables, err := ReadSAT(c.filename)
+		clauses, variables, err := SatRead(c.filename)
 
 		// log.Printf("map=%v", literals)
 		// for _, clause := range clauses {

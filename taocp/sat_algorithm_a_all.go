@@ -19,8 +19,8 @@ import (
 // visit   -- function called with satisfying assignments; should return
 //            true to request another assignment, false to halt
 //
-func SatAlgorithmAAll(n int, clauses SATClauses,
-	stats *SATStats, options *SATOptions,
+func SatAlgorithmAAll(n int, clauses SatClauses,
+	stats *SatStats, options *SatOptions,
 	visit func(solution []int) bool) {
 
 	// State represents a single cell in the state table
@@ -173,7 +173,7 @@ func SatAlgorithmAAll(n int, clauses SATClauses,
 			size[j] = clauseLen
 
 			// Sort literals of the clause in ascending order
-			clause := make(SATClause, clauseLen)
+			clause := make(SatClause, clauseLen)
 			copy(clause, clauses[j-1])
 			sort.SliceStable(clause, func(i, j int) bool {
 				// Sort by the absolute value of the literal, descending
