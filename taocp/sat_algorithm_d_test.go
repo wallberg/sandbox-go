@@ -1,6 +1,7 @@
 package taocp
 
 import (
+	"fmt"
 	"log"
 	"reflect"
 	"testing"
@@ -92,6 +93,35 @@ func TestSatAlgorithmDFromFile(t *testing.T) {
 
 			if got != c.sat {
 				t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, got)
+			}
+		})
+	}
+}
+
+func TestSatAlgorithmDLangford(t *testing.T) {
+
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+
+	for n := 2; n <= 12; n++ {
+
+		t.Run(fmt.Sprintf("langford(%d)", n), func(t *testing.T) {
+			stats := SatStats{
+				// Debug: true,
+				// Progress: true,
+			}
+			options := SatOptions{}
+
+			expected := false
+			if n%4 == 0 || n%4 == 3 {
+				expected = true
+			}
+
+			clauses, coverOptions := SatLangford(n)
+
+			got, _ := SatAlgorithmD(len(coverOptions), clauses, &stats, &options)
+
+			if got != expected {
+				t.Errorf("expected langford(%d) satisfiable=%t; got %t", n, expected, got)
 			}
 		})
 	}

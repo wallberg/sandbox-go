@@ -52,6 +52,31 @@ type SatClause []int
 // SatClauses represents a list of clauses
 type SatClauses []SatClause
 
+// AppendUniqueSatClause inserts x into a, if not already present.  Returns new value of a, a la append()
+func AppendUniqueSatClause(a SatClauses, x SatClause) SatClauses {
+
+	// Iterate over the existing values of a
+	for _, y := range a {
+		// Check if their lengths are identical
+		if len(x) == len(y) {
+			// Check if their values are identical
+			for i, v := range x {
+				if v != y[i] {
+					// Not identical
+					goto END
+				}
+			}
+			// lengths are the identical and all values are identical
+			// return a unchanged
+			return a
+		}
+	END:
+		// Not identical, continue to next value of y
+	}
+
+	return append(a, x)
+}
+
 // SatRead reads a SAT file in Knuth format and returns
 // a list of clauses along with the mapping of variables
 // (numeric to string name)
@@ -136,4 +161,77 @@ func SatWaerdan(j, k, n int) SatClauses {
 	}
 
 	return clauses
+}
+
+type LangfordOption struct {
+	D  int // digit (1..n)
+	S1 int // slot1 in the sequence (1..2n)
+	S2 int // slot2 in the sequence (1..2n)
+}
+
+// SatLangford returns the SAT clauses for Langford pairs, langford(n), along with the
+// set of exact covering options corresponding to each SAT variable
+func SatLangford(n int) (clauses SatClauses, options []LangfordOption) {
+
+	symmetric2sat := func(symmetric []int) (clauses [][]int) {
+		clauses = append(clauses, symmetric)
+		for j := 0; j < len(symmetric); j++ {
+			for k := j + 1; k < len(symmetric); k++ {
+				clauses = append(clauses, []int{-1 * symmetric[j], -1 * symmetric[k]})
+			}
+		}
+		return clauses
+	}
+
+	// Generate the exact covering options
+	for d := 1; d <= n; d++ {
+		s1 := 1
+		s2 := s1 + d + 1
+		for s2 <= 2*n {
+			// Add the option, but skip some options to prevent symmetric results
+			// See Exercise 7.2.2.1-15
+			x := 0
+			if n%2 == 0 {
+				x = 1
+			}
+			if d != n-x || s1 <= n/2 {
+				options = append(options, LangfordOption{d, s1, s2})
+			}
+			s1++
+			s2++
+		}
+	}
+
+	// Generate the symmetric function for the n digits and 2*n slots
+	var symmetrics [][]int
+	for d := 1; d <= n; d++ {
+		var symmetric []int
+		for i, option := range options {
+			// Check if this digit is in this option
+			if d == option.D {
+				symmetric = append(symmetric, i+1)
+			}
+		}
+		symmetrics = append(symmetrics, symmetric)
+	}
+	for s := 1; s <= 2*n; s++ {
+		var symmetric []int
+		for i, option := range options {
+			// Check if this digit is in this option
+			if s == option.S1 || s == option.S2 {
+				symmetric = append(symmetric, i+1)
+			}
+		}
+		symmetrics = append(symmetrics, symmetric)
+	}
+
+	// Express the symmetric functions as AND of OR SAT clauses
+	for _, symmetric := range symmetrics {
+		for _, clause := range symmetric2sat(symmetric) {
+			// Append the clause to clauses, if not already present
+			clauses = AppendUniqueSatClause(clauses, clause)
+		}
+	}
+
+	return clauses, options
 }
