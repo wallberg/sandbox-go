@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"log"
+	"reflect"
 	"testing"
 )
 
@@ -10,15 +11,16 @@ func TestSatAlgorithmD(t *testing.T) {
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	cases := []struct {
-		n       int        // number of strictly distinct literals
-		sat     bool       // is satisfiable
-		clauses SatClauses // clauses to satisfy
+		n        int        // number of strictly distinct literals
+		sat      bool       // is satisfiable
+		solution []int      // solution
+		clauses  SatClauses // clauses to satisfy
 	}{
-		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
-		{3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
-		{4, true, ClausesRPrime},
-		{4, false, ClausesR},
-		{9, false, ClausesWaerden339},
+		{3, true, []int{0, 0, 1}, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
+		{3, false, nil, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{4, true, []int{0, 1, 0, 1}, ClausesRPrime},
+		{4, false, nil, ClausesR},
+		{9, false, nil, ClausesWaerden339},
 	}
 
 	for _, c := range cases {
@@ -29,10 +31,15 @@ func TestSatAlgorithmD(t *testing.T) {
 		}
 		options := SatOptions{}
 
-		got, _ := SatAlgorithmD(c.n, c.clauses, &stats, &options)
+		sat, solution := SatAlgorithmD(c.n, c.clauses, &stats, &options)
 
-		if got != c.sat {
-			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, got)
+		if sat != c.sat {
+			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
+			continue
+		}
+		if sat && !reflect.DeepEqual(solution, c.solution) {
+			t.Errorf("expected solution=%v for clauses %v; got %v", c.solution, c.clauses, solution)
+			continue
 		}
 	}
 }

@@ -233,7 +233,7 @@ func SatAlgorithmD(n int, clauses SatClauses,
 	lvisit := func() []int {
 		solution := make([]int, n)
 		for i := 1; i < n+1; i++ {
-			solution[i-1] = (x[i] % 2) ^ 1
+			solution[h[i]-1] = (moves[i] % 2) ^ 1
 		}
 		if debug {
 			log.Printf("visit solution=%v", solution)
