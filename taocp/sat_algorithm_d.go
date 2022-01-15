@@ -328,21 +328,6 @@ D2:
 
 	k = tail
 
-	if stats != nil {
-		stats.Levels[d]++
-		stats.Nodes++
-
-		if progress {
-			if d > stats.MaxLevel {
-				stats.MaxLevel = d
-			}
-			if stats.Nodes >= stats.Theta {
-				showProgress()
-				stats.Theta += stats.Delta
-			}
-		}
-	}
-
 	//
 	// D3. [Look for unit clauses.]
 	//
@@ -400,6 +385,21 @@ D5:
 	d += 1
 	h[d] = head
 	k = head
+
+	if stats != nil {
+		stats.Levels[d]++
+		stats.Nodes++
+
+		if progress {
+			if d > stats.MaxLevel {
+				stats.MaxLevel = d
+			}
+			if stats.Nodes >= stats.Theta {
+				showProgress()
+				stats.Theta += stats.Delta
+			}
+		}
+	}
 
 	if tail == k {
 		tail = 0

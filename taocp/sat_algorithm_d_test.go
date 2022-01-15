@@ -126,3 +126,69 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkSatAlgorithmDFromFile(b *testing.B) {
+
+	cases := []struct {
+		filename     string // file name of the SAT data file
+		numVariables int    // number of variable
+		numClauses   int    // number of clauses to satisfy
+		sat          bool   // is satisfiable
+	}{
+		{"testdata/SATExamples/L1.sat", 130, 2437, false},
+		{"testdata/SATExamples/L2.sat", 273, 1020, false},
+		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
+		{"testdata/SATExamples/X2.sat", 129, 354, false},
+		{"testdata/SATExamples/P3.sat", 144, 529, true},
+		{"testdata/SATExamples/P4.sat", 400, 2509, true},
+	}
+
+	for _, c := range cases {
+
+		firstExecution := true
+
+		clauses, variables, _ := SatRead(c.filename)
+
+		b.Run(c.filename, func(b *testing.B) {
+
+			for i := 0; i < b.N; i++ {
+				stats := SatStats{}
+				options := SatOptions{}
+
+				sat, _ := SatAlgorithmD(len(variables), clauses, &stats, &options)
+
+				if firstExecution {
+					b.Logf("SAT=%t, n=%d, m=%d, nodes=%d", sat, len(variables), len(clauses), stats.Nodes)
+					firstExecution = false
+				}
+			}
+
+		})
+	}
+}
+
+func BenchmarkSatAlgorithmDLangford(b *testing.B) {
+
+	for _, n := range []int{5, 9, 13} {
+
+		firstExecution := true
+
+		clauses, coverOptions := SatLangford(n)
+
+		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
+
+			for i := 0; i < b.N; i++ {
+				stats := SatStats{}
+				options := SatOptions{}
+
+				sat, _ := SatAlgorithmD(len(coverOptions), clauses, &stats, &options)
+
+				if firstExecution {
+					b.Logf("SAT=%t, n=%d, m=%d, nodes=%d", sat, len(coverOptions), len(clauses), stats.Nodes)
+					firstExecution = false
+				}
+			}
+
+		})
+	}
+}
