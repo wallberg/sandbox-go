@@ -127,6 +127,53 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 	}
 }
 
+// TestSatAlgorithmDSat3 tests Sat3() using Algorithm D.
+func TestSat3(t *testing.T) {
+
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+
+	cases := []struct {
+		n        int        // number of strictly distinct literals
+		sat      bool       // is satisfiable
+		solution []int      // solution
+		clauses  SatClauses // clauses to satisfy
+	}{
+		{3, true, []int{0, 0, 1}, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
+		{3, false, nil, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{4, true, []int{0, 1, 0, 1}, ClausesRPrime},
+		{4, false, nil, ClausesR},
+		{9, false, nil, ClausesWaerden339},
+	}
+
+	for _, c := range cases {
+
+		sat3, n3, clauses3 := Sat3(c.n, c.clauses)
+
+		if !sat3 {
+			if n3 <= c.n {
+				t.Errorf("expected number of SAT3 variables for filename to be greater than %d; got %d", c.n, n3)
+			}
+			if len(clauses3) <= len(c.clauses) {
+				t.Errorf("expected number of SAT3 clauses for filename to be greater than %d; got %d", len(c.clauses), len(clauses3))
+			}
+		}
+
+		stats := SatStats{}
+		options := SatOptions{}
+
+		sat, solution := SatAlgorithmD(n3, clauses3, &stats, &options)
+
+		if sat != c.sat {
+			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
+			continue
+		}
+		if sat && !reflect.DeepEqual(solution, c.solution) {
+			t.Errorf("expected solution=%v for clauses %v; got %v", c.solution, c.clauses, solution)
+			continue
+		}
+	}
+}
+
 func BenchmarkSatAlgorithmDFromFile(b *testing.B) {
 
 	cases := []struct {

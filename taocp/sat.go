@@ -305,3 +305,45 @@ func SatMaxR(r int, clause SatClause, startV int) (newclauses SatClauses, numV i
 
 	return newclauses, numV
 }
+
+// Sat3 converts SAT clauses into 3SAT. If the clauses were already 3SAT
+// this function returns true and the original clauses, otherwise it returns
+// false and 3SAT equivalent clauses
+func Sat3(n int, clauses SatClauses) (sat3 bool, n3 int, clauses3 SatClauses) {
+
+	// Check if the clauses are 3SAT to begin with
+	sat3 = true
+	for _, clause := range clauses {
+		if len(clause) > 3 {
+			sat3 = false
+			break
+		}
+	}
+	if sat3 {
+		return sat3, n, clauses
+	}
+
+	// Convert to 3SAT
+	n3 = n
+	for _, clause := range clauses {
+		if len(clause) <= 3 {
+			clauses3 = append(clauses3, clause)
+		} else {
+			// We will generate clauses for S_(>=1) by negating the clause and
+			// finding S_(<= n-1)
+			clauseNegated := make(SatClause, len(clause))
+			for i, v := range clause {
+				clauseNegated[i] = v * -1
+			}
+
+			// Generate equivalent 3SAT clauses
+			clauses3New, numV := SatMaxR(len(clause)-1, clauseNegated, n3+1)
+
+			// Add the new clauses and variables to the list
+			clauses3 = append(clauses3, clauses3New...)
+			n3 += numV
+		}
+	}
+
+	return sat3, n3, clauses3
+}
