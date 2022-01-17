@@ -235,3 +235,73 @@ func SatLangford(n int) (clauses SatClauses, options []LangfordOption) {
 
 	return clauses, options
 }
+
+// SatMaxR generates new variables and clauses to ensure that x_1 + ... + x_n is at most r,
+// which is S_(<= r). (n - r)r new variables will be created, beginning at startV.
+// Returns the list of new clauses and the number of variables created,
+// (startV,...,startV+numV-1). As a special case, if n >= 4 and r = n-1, then
+// n-2 clauses of length 3 will be created with n-3 variables.
+func SatMaxR(r int, clause SatClause, startV int) (newclauses SatClauses, numV int) {
+	n := len(clause)
+
+	// Special case, n >= 4 and r = n - 1
+	if n >= 4 && r == n-1 {
+		numV = n - 3
+
+		for j := 1; j < n-1; j++ {
+			var v1, v2, v3 int
+			if j == 1 {
+				// the first clause
+				v1 = clause[j-1] * -1
+				v2 = clause[j] * -1
+				v3 = startV + j - 1
+			} else if j == n-2 {
+				// the last clause
+				v1 = clause[j] * -1
+				v2 = clause[j+1] * -1
+				v3 = (startV + j - 2) * -1
+			} else {
+				// a middle clause
+				v1 = clause[j] * -1
+				v2 = (startV + j - 2) * -1
+				v3 = startV + j - 1
+			}
+			newclauses = append(newclauses, SatClause{v1, v2, v3})
+		}
+
+		return newclauses, numV
+	}
+
+	// General case
+	numV = (n - r) * r
+
+	for j := 1; j < n-r; j++ {
+		for k := 1; k <= r; k++ {
+			v1 := (startV - 1 + (j-1)*r + k) * -1
+			v2 := startV - 1 + j*r + k
+			// fmt.Printf("%d [%d %d], %d [%d %d]\n", v1, k, j, v2, k, j+1)
+			newclauses = append(newclauses, SatClause{v1, v2})
+		}
+	}
+
+	for j := 1; j <= n-r; j++ {
+		for k := 0; k <= r; k++ {
+			v1 := clause[j+k-1] * -1
+			v2 := (startV - 1 + (j-1)*r + k) * -1
+			v3 := startV - 1 + (j-1)*r + k + 1
+
+			if k == 0 {
+				// fmt.Printf("%d, %d [%d %d]\n", v1, v3, k+1, j)
+				newclauses = append(newclauses, SatClause{v1, v3})
+			} else if k == r {
+				// fmt.Printf("%d, %d [%d %d]\n", v1, v2, k, j)
+				newclauses = append(newclauses, SatClause{v1, v2})
+			} else {
+				// fmt.Printf("%d, %d [%d %d], %d [%d %d]\n", v1, v2, k, j, v3, k+1, j)
+				newclauses = append(newclauses, SatClause{v1, v2, v3})
+			}
+		}
+	}
+
+	return newclauses, numV
+}

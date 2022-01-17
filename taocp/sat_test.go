@@ -78,3 +78,29 @@ func TestSatWaerden(t *testing.T) {
 		}
 	}
 }
+
+func TestSatMaxR(t *testing.T) {
+	cases := []struct {
+		n, r, numV int
+	}{
+		{2, 1, 1},
+		{3, 1, 2},
+		{4, 1, 3},
+		{4, 3, 1},
+		{10, 8, 16},
+		{10, 9, 7},
+		{20, 10, 100},
+	}
+
+	for _, c := range cases {
+		clause := make(SatClause, c.n)
+		for i := 1; i <= c.n; i++ {
+			clause[i-1] = -1 * i
+		}
+
+		_, numV := SatMaxR(c.r, clause, c.n+1)
+		if c.numV != numV {
+			t.Errorf("expected for %d new variables for n=%d, r=%d; got %d", c.numV, c.n, c.r, numV)
+		}
+	}
+}
