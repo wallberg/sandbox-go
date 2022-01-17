@@ -387,7 +387,7 @@ D5:
 	k = head
 
 	if stats != nil {
-		stats.Levels[d]++
+		stats.Levels[d-1]++
 		stats.Nodes++
 
 		if progress {
