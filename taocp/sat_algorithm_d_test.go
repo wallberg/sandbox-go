@@ -138,8 +138,8 @@ func TestSat3(t *testing.T) {
 		solution []int      // solution
 		clauses  SatClauses // clauses to satisfy
 	}{
-		{3, true, []int{0, 0, 1}, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
-		{3, false, nil, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{4, true, []int{0, 0, 1, 0}, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3, 4}, {1, -4}}},
+		{4, false, nil, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3, 4}, {-4}}},
 		{4, true, []int{0, 1, 0, 1}, ClausesRPrime},
 		{4, false, nil, ClausesR},
 		{9, false, nil, ClausesWaerden339},
@@ -162,6 +162,9 @@ func TestSat3(t *testing.T) {
 		options := SatOptions{}
 
 		sat, solution := SatAlgorithmD(n3, clauses3, &stats, &options)
+		if solution != nil {
+			solution = solution[0:c.n]
+		}
 
 		if sat != c.sat {
 			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
