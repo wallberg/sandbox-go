@@ -17,103 +17,28 @@ import (
 // options -- runtime options
 //
 func SatAlgorithmL(n int, clauses SatClauses,
-	stats *SatStats, options *SatOptions) (bool, []int) {
-
-	// State represents a single cell in the state table
-	type State struct {
-		L int // literal
-	}
+	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
 	var (
-		nOrig       int     // original value of n, before conversion to SAT3
-		m           int     // total number of clauses
-		stateSize   int     // total size of the state table
-		state       []State // search state
-		start       []int   // start of each clause in the table
-		watch       []int   // list of all clauses that currently watch l
-		link        []int   // the number of another clause with the same watch literal
-		h           []int   // the literal being watched at depth d
-		next        []int   // active ring : not-yet-set variables whose watch lists aren't empty
-		head        int     // head pointer into the active ring
-		tail        int     // tail pointer into the active ring
-		d           int     // depth of the implicit search tree
-		x           []int   // selected literal at depth d
-		l, lp       int     // literal
-		p, q        int     // index into the state table
-		b           int     // branch on literal?
-		f           int     // flag?
-		i, j, jp, k int     // indices
-		moves       []int   // store current progress
-		debug       bool    // debugging is enabled
-		progress    bool    // progress tracking is enabled
+		nOrig      int   // original value of n, before conversion to SAT3
+		m          int   // total number of clauses
+		varx       []int // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
+		inx        []int // INX
+		d          int   // depth of the implicit search tree
+		f          int   // number of fixed variables
+		istackSize int   // size of istack
+		istamp     int   // stamp to make downdating BIMP tables easier
+		k          int   // indices
+		debug      bool  // debugging is enabled
+		progress   bool  // progress tracking is enabled
 	)
+
+	fmt.Println(nOrig, d, m, f, istackSize, istamp)
 
 	// dump
 	dump := func() {
 
 		var b strings.Builder
-		b.WriteString("\n")
-
-		// State, p
-		b.WriteString("   p = ")
-		for p := range state {
-			b.WriteString(fmt.Sprintf(" %2d", p))
-		}
-		b.WriteString("\n")
-
-		// State, L
-		b.WriteString("L(p) = ")
-		for p := range state {
-			if state[p].L == 0 {
-				b.WriteString("  -")
-			} else {
-				b.WriteString(fmt.Sprintf(" %2d", state[p].L))
-			}
-		}
-		b.WriteString("\n")
-
-		// l
-		b.WriteString("       l = ")
-		for l := range watch {
-			b.WriteString(fmt.Sprintf(" %2d", l))
-		}
-		b.WriteString("\n")
-
-		// WATCH
-		b.WriteString("WATCH(l) = ")
-		for _, val := range watch {
-			b.WriteString(fmt.Sprintf(" %2d", val))
-		}
-		b.WriteString("\n")
-
-		// NEXT
-		b.WriteString(" NEXT(v) = ")
-		for _, val := range next {
-			b.WriteString(fmt.Sprintf(" %2d", val))
-		}
-		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("head=%d, tail=%d\n", head, tail))
-		b.WriteString(fmt.Sprintf("active ring=%s\n", activeRing()))
-
-		// j
-		b.WriteString("       j = ")
-		for j := range start {
-			b.WriteString(fmt.Sprintf(" %2d", j))
-		}
-		b.WriteString("\n")
-
-		// START
-		b.WriteString("START(j) = ")
-		for _, val := range start {
-			b.WriteString(fmt.Sprintf(" %2d", val))
-		}
-		b.WriteString("\n")
-
-		// LINK
-		b.WriteString(" LINK(j) = ")
-		for _, val := range link {
-			b.WriteString(fmt.Sprintf(" %2d", val))
-		}
 		b.WriteString("\n")
 
 		log.Print(b.String())
@@ -122,7 +47,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// showProgress
 	showProgress := func() {
 		var b strings.Builder
-		b.WriteString(fmt.Sprintf("Nodes=%d, d=%d, l=%d, moves=%v\n", stats.Nodes, d, l, moves[1:d+1]))
+		// b.WriteString(fmt.Sprintf("Nodes=%d, d=%d, l=%d, moves=%v\n", stats.Nodes, d, l, moves[1:d+1]))
 
 		log.Print(b.String())
 	}
@@ -143,94 +68,22 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			debug = stats.Debug
 			progress = stats.Progress
 		}
-
-		// Initialize the state table
-		m = len(clauses)
-		start = make([]int, m+1)
-		link = make([]int, m+1)
-		watch = make([]int, 2*n+2)
-		moves = make([]int, n+1)
-		h = make([]int, n+1)
-		next = make([]int, n+1)
-		x = make([]int, n+1)
-
-		// Record all binary clauses in the BIMP array
-
-		// Record all ternary clauses in the TIMP array
-
-		// Let U be the number of distinct variable in unit clauses
-
-		// Terminate unsuccessfully if two unit clauses contradict each other
-
-		// Record all distinct unit literals in FORCE[k] for 0 <= k < U
-
-		for _, clause := range clauses {
-			stateSize += len(clause)
-		}
-		state = make([]State, stateSize)
-
-		start[0] = stateSize
-
-		// index into state
-		p = stateSize - 1
-
-		// Iterate over the clauses
-		for j := 1; j <= len(clauses); j++ {
-			clause := clauses[j-1]
-			start[j] = p - len(clause) + 1
-
-			// Iterate over literal values of the clauses
-			for _, k := range clause {
-				// compute literal l
-				var l int
-				if k >= 0 {
-					l = 2 * k
-				} else {
-					l = -2*k + 1
-				}
-
-				// insert into the state table
-				state[p].L = l
-
-				// Check if this is the last literal in the clause
-				if p == start[j] {
-					// Insert this literal into the watch list of clauses.
-					// watch is the head of the list, with link containing
-					// the next pointers. The last clause in the list has
-					// value of 0.
-					if watch[l] == 0 {
-						// Insert the first clause into the list
-						watch[l] = j
-					} else {
-						// Insert this clause to the end of the list
-						jp := watch[l]
-						for link[jp] != 0 {
-							jp = link[jp]
-						}
-						link[jp] = j
-					}
-				}
-
-				// advance to the next position in the table
-				p -= 1
-			}
-		}
 	}
 
-	// lvisit prepares the solution
-	lvisit := func() []int {
-		solution := make([]int, nOrig)
-		// for i := 1; i < n+1; i++ {
-		// 	if h[i] > 0 {
-		// 		solution[h[i]-1] = (moves[i] % 2) ^ 1
-		// 	}
-		// }
-		if debug {
-			log.Printf("visit solution=%v", solution)
-		}
+	// // lvisit prepares the solution
+	// lvisit := func() []int {
+	// 	solution := make([]int, nOrig)
+	// 	// for i := 1; i < n+1; i++ {
+	// 	// 	if h[i] > 0 {
+	// 	// 		solution[h[i]-1] = (moves[i] % 2) ^ 1
+	// 	// 	}
+	// 	// }
+	// 	if debug {
+	// 		log.Printf("visit solution=%v", solution)
+	// 	}
 
-		return solution
-	}
+	// 	return solution
+	// }
 
 	//
 	// L1 [Initialize.]
@@ -246,6 +99,31 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		log.Printf("L1. Initialize")
 	}
 
+	m = len(clauses)
+
+	// Record all binary clauses in the BIMP array
+
+	// Record all ternary clauses in the TIMP array
+
+	// Let U be the number of distinct variable in unit clauses
+
+	// Terminate unsuccessfully if two unit clauses contradict each other
+
+	// Record all distinct unit literals in FORCE[k] for 0 <= k < U
+
+	// Configure initial permutation
+	varx = make([]int, n)
+	inx = make([]int, n+1)
+	for k = 0; k < n; k++ {
+		varx[k] = k + 1
+		inx[k+1] = k
+	}
+
+	d = 0
+	f = 0
+	istackSize = 0
+	istamp = 0
+
 	if debug {
 		dump()
 	}
@@ -253,6 +131,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	if progress {
 		showProgress()
 	}
+
+	return false, nil
 
 	// 	//
 	// 	// L2. [Success?]
