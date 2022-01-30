@@ -104,3 +104,29 @@ func TestSatMaxR(t *testing.T) {
 		}
 	}
 }
+
+func TestSatTest(t *testing.T) {
+	cases := []struct {
+		n        int
+		clauses  SatClauses
+		solution []int
+		sat      bool
+	}{
+		{1, SatClauses{}, []int{0, 1}, false},
+		{1, SatClauses{}, []int{0}, true},
+		{1, SatClauses{}, []int{0}, true},
+		{1, SatClauses{{1}}, []int{0}, false},
+		{1, SatClauses{{-1}}, []int{1}, false},
+		{1, SatClauses{{1}}, []int{1}, true},
+		{1, SatClauses{{-1}}, []int{0}, true},
+		{3, SatClauses{{-1, -2}, {1, 3}}, []int{0, 0, 0}, false},
+		{3, SatClauses{{-1, -2}, {1, 3}, {2, 3}}, []int{0, 0, 1}, true},
+	}
+
+	for _, c := range cases {
+		sat := SatTest(c.n, c.clauses, c.solution)
+		if c.sat != sat {
+			t.Errorf("expected for %t for n=%d, clauses=%v, solution=%v; got %t", c.sat, c.n, c.clauses, c.solution, sat)
+		}
+	}
+}

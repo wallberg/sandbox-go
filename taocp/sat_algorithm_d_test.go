@@ -89,10 +89,15 @@ func TestSatAlgorithmDFromFile(t *testing.T) {
 			}
 			options := SatOptions{}
 
-			got, _ := SatAlgorithmD(len(variables), clauses, &stats, &options)
+			sat, solution := SatAlgorithmD(len(variables), clauses, &stats, &options)
 
-			if got != c.sat {
-				t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, got)
+			if sat != c.sat {
+				t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, sat)
+			} else if sat {
+				validSolution := SatTest(c.numVariables, clauses, solution)
+				if !validSolution {
+					t.Errorf("expected a valid solution for filename %s; did not get one", c.filename)
+				}
 			}
 		})
 	}
@@ -118,10 +123,15 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 
 			clauses, coverOptions := SatLangford(n)
 
-			got, _ := SatAlgorithmD(len(coverOptions), clauses, &stats, &options)
+			sat, solution := SatAlgorithmD(len(coverOptions), clauses, &stats, &options)
 
-			if got != expected {
-				t.Errorf("expected langford(%d) satisfiable=%t; got %t", n, expected, got)
+			if sat != expected {
+				t.Errorf("expected langford(%d) satisfiable=%t; got %t", n, expected, sat)
+			} else if sat {
+				validSolution := SatTest(len(coverOptions), clauses, solution)
+				if !validSolution {
+					t.Errorf("expected a valid solution for langford(%d); did not get one", n)
+				}
 			}
 		})
 	}
