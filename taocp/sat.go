@@ -347,3 +347,35 @@ func Sat3(n int, clauses SatClauses) (sat3 bool, n3 int, clauses3 SatClauses) {
 
 	return sat3, n3, clauses3
 }
+
+// SatTest tests if a solution satisfies a set of clauses
+func SatTest(n int, clauses SatClauses, solution []int) bool {
+
+	// Verify the solution matches n
+	if n != len(solution) {
+		return false
+	}
+
+	// Every clause must be satisfied
+	for _, clause := range clauses {
+
+		// One of the variables in the clause must be true to be satisfied
+		clauseSat := false
+		for _, v := range clause {
+			if v < 0 {
+				clauseSat = solution[v*-1-1] == 0
+			} else {
+				clauseSat = solution[v-1] == 1
+			}
+			if clauseSat {
+				break
+			}
+		}
+
+		if !clauseSat {
+			return false
+		}
+	}
+
+	return true
+}
