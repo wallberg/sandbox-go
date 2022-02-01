@@ -30,12 +30,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		tsize      []int // TSIZE number of clauses for each l
 		link       []int // LINK circular list of the three literals in each clause in TIMP
 		p, pp, ppp int   // index into TIMP
-
-		istackSize int  // size of istack
-		istamp     int  // stamp to make downdating BIMP tables easier
-		k          int  // indices
-		debug      bool // debugging is enabled
-		progress   bool // progress tracking is enabled
+		units      int   // U - number of distinct variables in unit clauses
+		force      []int // FORCE - stack of U unit variables which have a forced value
+		istackSize int   // size of istack
+		istamp     int   // stamp to make downdating BIMP tables easier
+		k          int   // indices
+		debug      bool  // debugging is enabled
+		progress   bool  // progress tracking is enabled
 	)
 
 	fmt.Println(nOrig, d, m, f, istackSize, istamp)
@@ -45,6 +46,17 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		var b strings.Builder
 		b.WriteString("\n")
+
+		// FORCE
+		b.WriteString("FORCE\n")
+		b.WriteString(fmt.Sprintf("units=%d: ", units))
+		for i := 0; i < units; i++ {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(fmt.Sprintf("{%d}", force[i]))
+		}
+		b.WriteString("\n\n")
 
 		// TIMP
 		b.WriteString("TIMP\n")
@@ -63,6 +75,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			}
 			b.WriteString("\n")
 		}
+		b.WriteString("\n")
 
 		log.Print(b.String())
 	}
@@ -142,7 +155,36 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	m = len(clauses)
 
+	//
+	// Record all unit clauses with forced variable values
+	//
+	force = make([]int, 2*n+2)
+	units = 0
+	for _, clause := range clauses {
+		if len(clause) == 1 {
+			l := k2l(clause[0])
+
+			// Look for a contradiction
+			for k := 0; k < units; k++ {
+				if l^1 == force[k] {
+					// A contradiction
+					if debug {
+						log.Printf("L1. Found a unit clause contradiction")
+					}
+					return false, nil
+				}
+			}
+
+			// Add l to the stack of distinct unit clauses
+			force[units] = l
+			units += 1
+
+		}
+	}
+
+	//
 	// Record all binary clauses in the BIMP array
+	//
 
 	//
 	// Record all ternary clauses in the TIMP array
