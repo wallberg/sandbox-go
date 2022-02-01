@@ -20,17 +20,22 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
 	var (
-		nOrig      int   // original value of n, before conversion to SAT3
+		nOrig      int   // original value of n, before conversion to 3SAT
 		m          int   // total number of clauses
 		varx       []int // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		inx        []int // INX
 		d          int   // depth of the implicit search tree
 		f          int   // number of fixed variables
-		istackSize int   // size of istack
-		istamp     int   // stamp to make downdating BIMP tables easier
-		k          int   // indices
-		debug      bool  // debugging is enabled
-		progress   bool  // progress tracking is enabled
+		timp       []int // TIMP ternary clauses
+		tsize      []int // TSIZE number of clauses for each l
+		link       []int // LINK circular list of the three literals in each clause in TIMP
+		p, pp, ppp int   // index into TIMP
+
+		istackSize int  // size of istack
+		istamp     int  // stamp to make downdating BIMP tables easier
+		k          int  // indices
+		debug      bool // debugging is enabled
+		progress   bool // progress tracking is enabled
 	)
 
 	fmt.Println(nOrig, d, m, f, istackSize, istamp)
@@ -40,6 +45,24 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		var b strings.Builder
 		b.WriteString("\n")
+
+		// TIMP
+		b.WriteString("TIMP\n")
+		for l := 2; l <= 2*n+1; l++ {
+			b.WriteString(fmt.Sprintf("%d: ", l))
+			for i := 0; i < tsize[l]; i++ {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				p := timp[l] + 2*i
+				b.WriteString(fmt.Sprintf("{%d,%d}->", timp[p], timp[p+1]))
+				p = link[p]
+				b.WriteString(fmt.Sprintf("{%d,%d}->", timp[p], timp[p+1]))
+				p = link[p]
+				b.WriteString(fmt.Sprintf("{%d,%d}", timp[p], timp[p+1]))
+			}
+			b.WriteString("\n")
+		}
 
 		log.Print(b.String())
 	}
@@ -70,6 +93,24 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
+	// k2l converts variable k to literal 2k if positive, 2k+1 if negative
+	k2l := func(k int) int {
+		if k < 0 {
+			return -2*k + 1
+		} else {
+			return 2 * k
+		}
+	}
+
+	// // l2k
+	// l2k := func(l int) int {
+	// 	if l%2 == 0 {
+	// 		return l >> 2
+	// 	} else {
+	// 		return (l >> 2) * -1
+	// 	}
+	// }
+
 	// // lvisit prepares the solution
 	// lvisit := func() []int {
 	// 	solution := make([]int, nOrig)
@@ -89,7 +130,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// L1 [Initialize.]
 	//
 
-	// Convert the input to SAT3, if it isn't already
+	// Convert the input to 3SAT, if it isn't already
 	nOrig = n
 	_, n, clauses = Sat3(n, clauses)
 
@@ -103,7 +144,64 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	// Record all binary clauses in the BIMP array
 
+	//
 	// Record all ternary clauses in the TIMP array
+	//
+	timp = make([]int, 2*n+2)
+	tsize = make([]int, 2*n+2)
+
+	// Get the values of TIMP[l] and TSIZE[l] for each l
+	for l := 2; l <= 2*n+1; l++ {
+		// Look for clauses containing this literal
+		for _, clause := range clauses {
+			// Check for clause of length 3
+			if len(clause) == 3 {
+				if l == k2l(-1*clause[0]) || l == k2l(-1*clause[1]) || l == k2l(-1*clause[2]) {
+					// Found l in this clause
+					if timp[l] == 0 {
+						// This is the first clause in the list for l
+						timp[l] = len(timp)
+					}
+					timp = append(timp, 0, 0)
+					tsize[l] += 1
+				}
+			}
+		}
+	}
+
+	// Add each clause to TIMP and set their LINK values
+	link = make([]int, len(timp))
+	tindex := make([]int, 2*n+2) // tindex[l] is the index for next insertion point in TIMP[l]
+
+	for _, clause := range clauses {
+		// Check for clause of length 3
+		if len(clause) == 3 {
+			u, v, w := k2l(clause[0]), k2l(clause[1]), k2l(clause[2])
+
+			p = timp[u^1] + tindex[u^1]
+			timp[p] = v
+			timp[p+1] = w
+			tindex[u^1] += 2
+
+			pp = timp[v^1] + tindex[v^1]
+			timp[pp] = u
+			timp[pp+1] = w
+			tindex[v^1] += 2
+
+			ppp = timp[w^1] + tindex[w^1]
+			timp[ppp] = u
+			timp[ppp+1] = v
+			tindex[w^1] += 2
+
+			link[p] = pp
+			link[pp] = ppp
+			link[ppp] = p
+		}
+	}
+
+	log.Println(timp)
+	log.Println(tsize)
+	log.Print(link)
 
 	// Let U be the number of distinct variable in unit clauses
 
