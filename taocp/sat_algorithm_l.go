@@ -20,23 +20,25 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
 	var (
-		nOrig      int   // original value of n, before conversion to 3SAT
-		m          int   // total number of clauses
-		varx       []int // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
-		inx        []int // INX
-		d          int   // depth of the implicit search tree
-		f          int   // number of fixed variables
-		timp       []int // TIMP ternary clauses
-		tsize      []int // TSIZE number of clauses for each l
-		link       []int // LINK circular list of the three literals in each clause in TIMP
-		p, pp, ppp int   // index into TIMP
-		units      int   // U - number of distinct variables in unit clauses
-		force      []int // FORCE - stack of U unit variables which have a forced value
-		istackSize int   // size of istack
-		istamp     int   // stamp to make downdating BIMP tables easier
-		k          int   // indices
-		debug      bool  // debugging is enabled
-		progress   bool  // progress tracking is enabled
+		nOrig      int     // original value of n, before conversion to 3SAT
+		m          int     // total number of clauses
+		varx       []int   // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
+		inx        []int   // INX
+		d          int     // depth of the implicit search tree
+		f          int     // number of fixed variables
+		timp       []int   // TIMP - ternary clauses
+		tsize      []int   // TSIZE - number of clauses for each l in TIMP
+		link       []int   // LINK - circular list of the three literals in each clause in TIMP
+		bimp       [][]int // BIMP - instead of the buddy system, trying using built-in slices
+		bsize      []int   // BSIZE - number of clauses for each l in BIMP
+		p, pp, ppp int     // index into TIMP
+		units      int     // U - number of distinct variables in unit clauses
+		force      []int   // FORCE - stack of U unit variables which have a forced value
+		istackSize int     // size of istack
+		istamp     int     // stamp to make downdating BIMP tables easier
+		k          int     // indices
+		debug      bool    // debugging is enabled
+		progress   bool    // progress tracking is enabled
 	)
 
 	fmt.Println(nOrig, d, m, f, istackSize, istamp)
@@ -57,6 +59,20 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			b.WriteString(fmt.Sprintf("{%d}", force[i]))
 		}
 		b.WriteString("\n\n")
+
+		// BIMP
+		b.WriteString("BIMP\n")
+		for l := 2; l <= 2*n+1; l++ {
+			b.WriteString(fmt.Sprintf("%d: ", l))
+			for i := 0; i < bsize[l]; i++ {
+				if i > 0 {
+					b.WriteString(", ")
+				}
+				b.WriteString(fmt.Sprintf("%d", bimp[l][i]))
+			}
+			b.WriteString("\n")
+		}
+		b.WriteString("\n")
 
 		// TIMP
 		b.WriteString("TIMP\n")
@@ -185,6 +201,33 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	//
 	// Record all binary clauses in the BIMP array
 	//
+	bimp = make([][]int, 2*n+2)
+	for l := 2; l <= 2*n+1; l++ {
+		bimp[l] = make([]int, 4)
+	}
+	bsize = make([]int, 2*n+2)
+
+	// Insert binary clauses into BIMP
+	for _, clause := range clauses {
+		// Check for clause of length 2
+		if len(clause) == 2 {
+			u, v := k2l(clause[0]), k2l(clause[1])
+
+			if bsize[u^1] == len(bimp[u^1]) {
+				bimp[u^1] = append(bimp[u^1], v)
+			} else {
+				bimp[u^1][bsize[u^1]] = v
+			}
+			bsize[u^1] += 1
+
+			if bsize[v^1] == len(bimp[v^1]) {
+				bimp[v^1] = append(bimp[v^1], u)
+			} else {
+				bimp[v^1][bsize[v^1]] = u
+			}
+			bsize[v^1] += 1
+		}
+	}
 
 	//
 	// Record all ternary clauses in the TIMP array
@@ -240,10 +283,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			link[ppp] = p
 		}
 	}
-
-	log.Println(timp)
-	log.Println(tsize)
-	log.Print(link)
 
 	// Let U be the number of distinct variable in unit clauses
 
