@@ -6,7 +6,14 @@ import (
 	"strings"
 )
 
-// SatAlgorithmL implements Algorithm D (7.2.2.2), satisfiability by DPLL with lookahead.
+const (
+	MaxInt = int(^uint(0) >> 1)
+	rt     = MaxInt - 2 // RT - real truth
+	nt     = MaxInt - 4 // NT - near truth
+	pt     = MaxInt - 6 // PT - proto truth
+)
+
+// SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
 // The task is to determine if the clause set is satisfiable, and if it is return
 // one satisfying assignment of the clauses.
 //
@@ -20,28 +27,43 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
 	var (
-		nOrig      int     // original value of n, before conversion to 3SAT
-		m          int     // total number of clauses
-		varx       []int   // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
-		inx        []int   // INX
-		d          int     // depth of the implicit search tree
-		f          int     // number of fixed variables
-		timp       []int   // TIMP - ternary clauses
-		tsize      []int   // TSIZE - number of clauses for each l in TIMP
-		link       []int   // LINK - circular list of the three literals in each clause in TIMP
-		bimp       [][]int // BIMP - instead of the buddy system, trying using built-in slices
-		bsize      []int   // BSIZE - number of clauses for each l in BIMP
-		p, pp, ppp int     // index into TIMP
-		units      int     // U - number of distinct variables in unit clauses
-		force      []int   // FORCE - stack of U unit variables which have a forced value
-		istackSize int     // size of istack
-		istamp     int     // stamp to make downdating BIMP tables easier
-		k          int     // indices
-		debug      bool    // debugging is enabled
-		progress   bool    // progress tracking is enabled
+		nOrig      int      // original value of n, before conversion to 3SAT
+		m          int      // total number of clauses
+		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
+		inx        []int    // INX
+		varN       int      // N - number of free variables  in VAR
+		d          int      // depth of the implicit search tree
+		f          int      // number of fixed variables
+		timp       []int    // TIMP - ternary clauses
+		tsize      []int    // TSIZE - number of clauses for each l in TIMP
+		link       []int    // LINK - circular list of the three literals in each clause in TIMP
+		bimp       [][]int  // BIMP - instead of the buddy system, trying using built-in slices
+		bsize      []int    // BSIZE - number of clauses for each l in BIMP
+		p, pp, ppp int      // index into TIMP
+		units      int      // U - number of distinct variables in unit clauses
+		force      []int    // FORCE - stack of U unit variables which have a forced value
+		istamp     int      // ISTAMP - stamp to make downdating BIMP tables easier
+		ist        []int    // IST - private stamp for literal l
+		istack     [][2]int // ISTACK - stack of previous values of (l, BSIZE[l])
+		istackI    int      // I - size of ISTACK
+		branch     []int    // BRANCH - record each branching decision
+		dec        []int    // DEC - ??
+		backf      []int    // BACKF - ??
+		backi      []int    // BACKI - ??
+		t          int      // T - truth context
+		val        []int    // VAL - track if literal l is fixed in context T
+		r          []int    // R - record the names of literals that have received values
+		e          int      // E - current stack size of R; 0 <= E <= n
+		g          int      // G - ??
+		h          int      // H - ??
+		conflict   int      // CONFLICT - algorithm L step to goto in case of conflict
+		l          int      // literal l
+		k          int      // indices
+		debug      bool     // debugging is enabled
+		progress   bool     // progress tracking is enabled
 	)
 
-	fmt.Println(nOrig, d, m, f, istackSize, istamp)
+	fmt.Println(m, ist, istack, istackI, istamp, t, nt, rt, pt, r, e, g, val, conflict, h)
 
 	// dump
 	dump := func() {
@@ -51,12 +73,34 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// FORCE
 		b.WriteString("FORCE\n")
-		b.WriteString(fmt.Sprintf("units=%d: ", units))
+		b.WriteString(fmt.Sprintf("U=%d: ", units))
 		for i := 0; i < units; i++ {
 			if i > 0 {
 				b.WriteString(", ")
 			}
 			b.WriteString(fmt.Sprintf("{%d}", force[i]))
+		}
+		b.WriteString("\n\n")
+
+		// VAR
+		b.WriteString("VAR\n")
+		b.WriteString(fmt.Sprintf("N=%d: ", varN))
+		for k := 0; k < varN; k++ {
+			if k > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(fmt.Sprintf("{%d}", varx[k]))
+		}
+		b.WriteString("\n\n")
+
+		// VAL and R
+		b.WriteString("VAL and R\n")
+		b.WriteString(fmt.Sprintf("E=%d: ", e))
+		for k := 0; k < e; k++ {
+			if k > 0 {
+				b.WriteString(", ")
+			}
+			b.WriteString(fmt.Sprintf("{%d}=%d", r[k], val[k]))
 		}
 		b.WriteString("\n\n")
 
@@ -131,7 +175,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
-	// // l2k
+	// l2k
 	// l2k := func(l int) int {
 	// 	if l%2 == 0 {
 	// 		return l >> 2
@@ -140,20 +184,19 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// 	}
 	// }
 
-	// // lvisit prepares the solution
-	// lvisit := func() []int {
-	// 	solution := make([]int, nOrig)
-	// 	// for i := 1; i < n+1; i++ {
-	// 	// 	if h[i] > 0 {
-	// 	// 		solution[h[i]-1] = (moves[i] % 2) ^ 1
-	// 	// 	}
-	// 	// }
-	// 	if debug {
-	// 		log.Printf("visit solution=%v", solution)
-	// 	}
+	// lvisit prepares the solution
+	lvisit := func() []int {
+		solution := make([]int, nOrig)
+		for i := 0; i < n; i++ {
+			l := force[i]
+			solution[(l>>2)-1] = (l & 1) ^ 1
+		}
+		if debug {
+			log.Printf("visit solution=%v", solution)
+		}
 
-	// 	return solution
-	// }
+		return solution
+	}
 
 	//
 	// L1 [Initialize.]
@@ -284,24 +327,33 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
-	// Let U be the number of distinct variable in unit clauses
-
-	// Terminate unsuccessfully if two unit clauses contradict each other
-
-	// Record all distinct unit literals in FORCE[k] for 0 <= k < U
-
-	// Configure initial permutation
+	// Configure initial permutation of the "free variable" list, that is,
+	// not fixed in context RT. A variable becomes fixed by swapping it to the
+	// end of the free list and decreasing N; then we can free it later by
+	// simply increasing N, without swapping.
 	varx = make([]int, n)
 	inx = make([]int, n+1)
 	for k = 0; k < n; k++ {
 		varx[k] = k + 1
 		inx[k+1] = k
 	}
+	varN = n
 
 	d = 0
 	f = 0
-	istackSize = 0
+
 	istamp = 0
+	ist = make([]int, 2*n+2)
+	istack = make([][2]int, 2*n+2)
+	istackI = 0
+
+	dec = make([]int, n)
+	backf = make([]int, n)
+	backi = make([]int, n)
+	branch = make([]int, n)
+
+	val = make([]int, n+1)
+	r = make([]int, n+1)
 
 	if debug {
 		dump()
@@ -309,6 +361,218 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	if progress {
 		showProgress()
+	}
+
+	//
+	// L2 [New node.]
+	//
+L2:
+	if debug {
+		log.Printf("L2. New node")
+	}
+
+	branch[d] = -1
+
+	if units == 0 {
+		//
+		// Algorithm X
+		//
+		if f == n {
+			// No variables are free, visit the solution
+
+			if debug {
+				log.Println("L2. [Success!]")
+			}
+
+			if stats != nil {
+				stats.Solutions++
+			}
+
+			return true, lvisit()
+		}
+
+		// TODO: Goto L15 if Algorithm X discovers a conflict
+	}
+
+	if units > 0 {
+		goto L5
+	}
+
+	//
+	// L3 [Choose l.]
+	//
+
+	if debug {
+		log.Printf("L3. Choose l")
+	}
+
+	// Choose whatever literal happens to be first in the current list
+	// of free variables.
+	l = varx[0]
+
+	if l == 0 {
+		d += 1
+		goto L2
+	}
+
+	if debug {
+		log.Printf("  d=%d, l=%d", d, l)
+	}
+
+	dec[d] = l
+	backf[d] = f
+	backi[d] = istackI
+	branch[d] = 0
+
+	//
+	// L4 [Try l.]
+	//
+
+	if debug {
+		log.Printf("L4. Try l")
+	}
+
+	units = 1
+	force[0] = l
+
+	//
+	// L5 [Accept near truths.]
+	//
+L5:
+	if debug {
+		log.Printf("L5. Accept near truths")
+	}
+
+	t = nt
+	g, e = f, f
+	istamp += 1
+	conflict = 11 // L11
+
+	// Iterate over each l in the FORCE stack
+	for i := 0; i < units; i++ {
+		// Perform the binary propogation routine (62) for l
+		l = force[i]
+
+		h = e
+
+		// Take account of l
+
+		if val[l>>1] >= t {
+			// l is fixed in context t
+			if val[l>>1]&1 == l&1 {
+				// l is fixed true, do nothing
+
+			} else if val[l>>1] == (l^1)&1 {
+				// l is fixed false, goto CONFLICT
+				switch conflict {
+				case 11:
+					goto L11
+				default:
+					log.Panicf("Unknown value of CONFLICT: %d", conflict)
+				}
+			}
+		} else {
+			val[l>>1] = t + (l & 1)
+			r[e] = l
+			e += 1
+		}
+
+		for h < e {
+			l = r[h]
+			h += 1
+			// For each l' in BIMP(l)
+			for j := 0; j < bsize[l]; j++ {
+				//lp := bimp[l][j]
+
+				// Take account of l'
+			}
+		}
+	}
+	units = 0
+
+	if debug {
+		dump()
+	}
+
+	//
+	// L6 [Choose a nearly true L.]
+	//
+
+	if debug {
+		log.Printf("L6. Choose a nearly true L")
+	}
+
+	//
+	// L7 [Promote L to real truth.]
+	//
+
+	if debug {
+		log.Printf("L7. Promote L to real truth")
+	}
+
+	//
+	// L8 [Consider u or v.]
+	//
+
+	if debug {
+		log.Printf("L8. Consider u or v")
+	}
+
+	//
+	// L9 [Exploit u or v.]
+	//
+
+	if debug {
+		log.Printf("L9. Exploit u or v")
+	}
+
+	//
+	// L10 [Accept real truths.]
+	//
+
+	if debug {
+		log.Printf("L10. Accept real truths")
+	}
+
+	//
+	// L11 [Unfix near truths.]
+	//
+L11:
+
+	if debug {
+		log.Printf("L11. Unfix near truths")
+	}
+
+	//
+	// L12 [Unfix real truths.]
+	//
+
+	if debug {
+		log.Printf("L12. Unfix real truths")
+	}
+
+	//
+	// L13 [Downdate BIMPs.]
+	//
+
+	if debug {
+		log.Printf("L13. Downdate BIMPs")
+	}
+
+	//
+	// L14 [Try again?]
+	//
+
+	if debug {
+		log.Printf("L14. Try again?")
+	}
+
+	//
+	// L15 [Backtrack.]
+	//
+
+	if debug {
+		log.Printf("L15. Backtrack")
 	}
 
 	return false, nil
