@@ -31,7 +31,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		m          int      // total number of clauses
 		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		inx        []int    // INX
-		varN       int      // N - number of free variables  in VAR
+		varN       int      // N - number of free variables in VAR
 		d          int      // depth of the implicit search tree
 		f          int      // number of fixed variables
 		timp       []int    // TIMP - ternary clauses
@@ -58,7 +58,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		h          int      // H - ??
 		conflict   int      // CONFLICT - algorithm L step to goto in case of conflict
 		l          int      // literal l
-		k          int      // indices
+		x          int      // X - variable
+		ntL        int      // L - "nearly true" literal l
+		j, k       int      // indices
 		debug      bool     // debugging is enabled
 		progress   bool     // progress tracking is enabled
 	)
@@ -183,6 +185,56 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// 		return (l >> 2) * -1
 	// 	}
 	// }
+
+	// binary_propogation uses a siimsple breadth-first search procedure
+	// to propagate the binarary consequences of a literal l inn context T
+	// returns. Returns false if no conflict, true if there is conflict.
+	// Formula (62)
+	binary_propagation := func(l int) bool {
+		h = e
+
+		// Take account of l
+		if val[l>>1] >= t {
+			// l is fixed in context t
+			if val[l>>1]&1 == l&1 {
+				// l is fixed true, do nothing
+
+			} else if val[l>>1] == (l^1)&1 {
+				// l is fixed false, goto CONFLICT
+				return true
+			}
+		} else {
+			val[l>>1] = t + (l & 1)
+			r[e] = l
+			e += 1
+		}
+
+		for h < e {
+			l = r[h]
+			h += 1
+			// For each l' in BIMP(l)
+			for j := 0; j < bsize[l]; j++ {
+				lp := bimp[l][j]
+
+				// Take account of l'
+				if val[lp>>1] >= t {
+					// l' is fixed in context t
+					if val[lp>>1]&1 == lp&1 {
+						// l' is fixed true, do nothing
+
+					} else if val[lp>>1] == (lp^1)&1 {
+						// l' is fixed false, goto CONFLICT
+						return true
+					}
+				} else {
+					val[lp>>1] = t + (lp & 1)
+					r[e] = lp
+					e += 1
+				}
+			}
+		}
+		return false
+	}
 
 	// lvisit prepares the solution
 	lvisit := func() []int {
@@ -450,44 +502,21 @@ L5:
 
 	// Iterate over each l in the FORCE stack
 	for i := 0; i < units; i++ {
-		// Perform the binary propogation routine (62) for l
-		l = force[i]
+		l := force[i]
 
-		h = e
-
-		// Take account of l
-
-		if val[l>>1] >= t {
-			// l is fixed in context t
-			if val[l>>1]&1 == l&1 {
-				// l is fixed true, do nothing
-
-			} else if val[l>>1] == (l^1)&1 {
-				// l is fixed false, goto CONFLICT
-				switch conflict {
-				case 11:
-					goto L11
-				default:
-					log.Panicf("Unknown value of CONFLICT: %d", conflict)
-				}
+		// Perform the binary propogation routine
+		if binary_propagation(l) {
+			// There was a conflict
+			switch conflict {
+			case 11:
+				goto L11
+			default:
+				log.Panicf("Unknown value of CONFLICT: %d", conflict)
 			}
-		} else {
-			val[l>>1] = t + (l & 1)
-			r[e] = l
-			e += 1
-		}
 
-		for h < e {
-			l = r[h]
-			h += 1
-			// For each l' in BIMP(l)
-			for j := 0; j < bsize[l]; j++ {
-				//lp := bimp[l][j]
-
-				// Take account of l'
-			}
 		}
 	}
+
 	units = 0
 
 	if debug {
@@ -497,39 +526,167 @@ L5:
 	//
 	// L6 [Choose a nearly true L.]
 	//
-
+L6:
 	if debug {
 		log.Printf("L6. Choose a nearly true L")
 	}
+
+	// At this point the stacked literals R_k are "really true" for 0 <= k < G,
+	// and "nearly true" for G <= k < E. We want them all to be really true.
+	if g == e {
+		goto L10
+	}
+
+	ntL = r[g]
+	g += 1
 
 	//
 	// L7 [Promote L to real truth.]
 	//
 
 	if debug {
-		log.Printf("L7. Promote L to real truth")
+		log.Printf("L7. Promote L=%d to real truth", ntL)
 	}
 
-	//
-	// L8 [Consider u or v.]
-	//
+	x = ntL >> 1
+	val[x] = rt + ntL&1
 
-	if debug {
-		log.Printf("L8. Consider u or v")
+	// Remove variable X from the free list and from all TIMP pairs (Exercise 137)
+	varN = n - g
+	x = varx[varN]
+	j = inx[x]
+	varx[j] = x
+	inx[x] = j
+	varx[varN] = x
+	inx[x] = varN
+
+	for _, l := range []int{2 * x, 2*x + 1} {
+		for i := 0; i < tsize[l]; i++ {
+			p := timp[l] + 2*i
+			u, v := timp[p], timp[p+1]
+
+			pp = link[p]
+			ppp = link[pp]
+
+			s := tsize[u^1] - 1
+			tsize[u^1] = s
+			t := timp[u^1] + 2*s // local t, not T
+
+			if pp != t {
+				// Swap pairs
+				up, vp := timp[t], timp[t+1]
+				q := link[t]
+				qp := link[q]
+				link[qp], link[p] = pp, t
+				timp[pp], timp[pp+1] = up, vp
+				link[pp] = q
+				timp[t], timp[t+1] = v, l^1
+				link[t] = ppp
+				pp = t
+			}
+
+			s = tsize[v^1] - 1
+			tsize[v^1] = s
+			t = timp[v^1] + 2*s // local t, not T
+
+			if ppp != t {
+				// Swap pairs
+				up, vp := timp[t], timp[t+1]
+				q := link[t]
+				qp := link[q]
+				link[qp], link[pp] = ppp, t
+				timp[ppp], timp[ppp+1] = up, vp
+				link[ppp] = q
+				timp[t], timp[t+1] = l^1, u
+				link[t] = p
+				pp = t
+			}
+		}
 	}
 
-	//
-	// L9 [Exploit u or v.]
-	//
+	for i := 0; i < tsize[ntL]; i++ {
+		p := timp[ntL] + 2*i
+		u, v := timp[p], timp[p+1]
 
-	if debug {
-		log.Printf("L9. Exploit u or v")
+		//
+		// L8 [Consider u or v.]
+		//
+
+		if debug {
+			log.Printf("L8. Consider u or v")
+		}
+
+		// We have deduced that u or v must be true; five cases arise.
+		// TODO: don't calculate these values until necessary
+
+		uFixed := val[u>>1] >= t
+		uFixedTrue := uFixed && val[u>>1]&1 == u&1
+		uFixedFalse := uFixed && val[(u^1)>>1]&1 == (u^1)&1
+
+		vFixed := val[v>>1] >= t
+		vFixedTrue := vFixed && val[v>>1]&1 == v&1
+		vFixedFalse := vFixed && val[(v^1)>>1]&1 == (v^1)&1
+
+		if uFixedTrue || vFixedTrue {
+
+			// Case 1. u or v is fixed true, do nothing
+
+		} else if uFixedFalse && vFixedFalse {
+
+			// Case 2. u and v are fixed false
+			switch conflict {
+			case 11:
+				goto L11
+			default:
+				log.Panicf("Unknown value of CONFLICT: %d", conflict)
+			}
+
+		} else if uFixedFalse && !vFixed {
+
+			// Case 3. u is fixed false but v isn't fixed
+			if binary_propagation(v) {
+				switch conflict {
+				case 11:
+					goto L11
+				default:
+					log.Panicf("Unknown value of CONFLICT: %d", conflict)
+				}
+			}
+
+		} else if vFixedFalse && !uFixed {
+
+			// Case 4. v is fixed false but u isn't fixed
+			if binary_propagation(u) {
+				switch conflict {
+				case 11:
+					goto L11
+				default:
+					log.Panicf("Unknown value of CONFLICT: %d", conflict)
+				}
+			}
+
+		} else {
+
+			// Case 5. Neither u nor v is fixed
+
+			//
+			// L9 [Exploit u or v.]
+			//
+
+			if debug {
+				log.Printf("L9. Exploit u or v")
+			}
+
+		}
+
 	}
+
+	goto L6
 
 	//
 	// L10 [Accept real truths.]
 	//
-
+L10:
 	if debug {
 		log.Printf("L10. Accept real truths")
 	}
