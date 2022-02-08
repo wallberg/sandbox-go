@@ -250,6 +250,26 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		return solution
 	}
 
+	// appendBimp adds x to BIMP[l]
+	appendBimp := func(l, x int) {
+
+		// Update private stamp IST, if necessary. Formula (63)
+		if ist[l] != istamp {
+			ist[l] = istamp
+			istack[istackI][0] = l
+			istack[istackI][1] = bsize[l]
+			istackI += 1
+		}
+
+		// Append x to l
+		if bsize[l] == len(bimp[l]) {
+			bimp[l] = append(bimp[l], x)
+		} else {
+			bimp[l][bsize[l]] = x
+		}
+		bsize[l] += 1
+	}
+
 	//
 	// L1 [Initialize.]
 	//
@@ -673,8 +693,58 @@ L6:
 			// L9 [Exploit u or v.]
 			//
 
+			// TODO: Use Exercise 139 to improve this step by deducing
+			// further implications called "compensation resolvents".
+
 			if debug {
 				log.Printf("L9. Exploit u or v")
+			}
+
+			var vInBimp, notvInBimp bool
+			for i := 0; i < bsize[u^1]; i++ {
+				if bimp[u^1][i] == v {
+					vInBimp = true
+				}
+				if bimp[u^1][i] == v^1 {
+					notvInBimp = true
+				}
+			}
+
+			if notvInBimp {
+				if binary_propagation(u) {
+					switch conflict {
+					case 11:
+						goto L11
+					default:
+						log.Panicf("Unknown value of CONFLICT: %d", conflict)
+					}
+				}
+			} else if vInBimp {
+				// do nothing, we already have the clause u or v
+			} else {
+
+				var notuInBimp bool
+				for i := 0; i < bsize[v^1]; i++ {
+					if bimp[v^1][i] == u^1 {
+						notuInBimp = true
+					}
+				}
+
+				if notuInBimp {
+					if binary_propagation(v) {
+						switch conflict {
+						case 11:
+							goto L11
+						default:
+							log.Panicf("Unknown value of CONFLICT: %d", conflict)
+						}
+					}
+				} else {
+					// append v to BIMP[^u] and u to BIMP[^v]
+					appendBimp(u^1, v)
+					appendBimp(v^1, u)
+				}
+
 			}
 
 		}
