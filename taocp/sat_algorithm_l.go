@@ -32,8 +32,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		inx        []int    // INX
 		varN       int      // N - number of free variables in VAR
-		d          int      // depth of the implicit search tree
-		f          int      // number of fixed variables
+		d          int      // d - depth of the implicit search tree
+		f          int      // F - number of fixed variables
 		timp       []int    // TIMP - ternary clauses
 		tsize      []int    // TSIZE - number of clauses for each l in TIMP
 		link       []int    // LINK - circular list of the three literals in each clause in TIMP
@@ -191,6 +191,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// returns. Returns false if no conflict, true if there is conflict.
 	// Formula (62)
 	binary_propagation := func(l int) bool {
+
+		if debug {
+			log.Printf("  binary_propagation l=%d", l)
+		}
 		h = e
 
 		// Take account of l
@@ -238,16 +242,17 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	// lvisit prepares the solution
 	lvisit := func() []int {
-		solution := make([]int, nOrig)
+		solution := make([]int, n)
+
 		for i := 0; i < n; i++ {
-			l := force[i]
-			solution[(l>>2)-1] = (l & 1) ^ 1
+			l := r[i]
+			solution[(l>>1)-1] = (l & 1) ^ 1
 		}
 		if debug {
-			log.Printf("visit solution=%v", solution)
+			log.Printf("visit solution=%v (%v)", solution[:nOrig], solution[nOrig:])
 		}
 
-		return solution
+		return solution[:nOrig]
 	}
 
 	// appendBimp adds x to BIMP[l]
@@ -445,6 +450,10 @@ L2:
 
 	branch[d] = -1
 
+	if debug {
+		log.Printf("  d=%d, branch=%v, units=%d, f=%d, n=%d", d, branch[:d+1], units, f, n)
+	}
+
 	if units == 0 {
 		//
 		// Algorithm X
@@ -473,7 +482,7 @@ L2:
 	//
 	// L3 [Choose l.]
 	//
-
+L3:
 	if debug {
 		log.Printf("L3. Choose l")
 	}
@@ -499,6 +508,7 @@ L2:
 	//
 	// L4 [Try l.]
 	//
+L4:
 
 	if debug {
 		log.Printf("L4. Try l")
@@ -539,9 +549,7 @@ L5:
 
 	units = 0
 
-	if debug {
-		dump()
-	}
+	// ()
 
 	//
 	// L6 [Choose a nearly true L.]
@@ -761,6 +769,17 @@ L10:
 		log.Printf("L10. Accept real truths")
 	}
 
+	f = e
+
+	if branch[d] >= 0 {
+		d += 1
+		goto L2
+	} else if d > 0 {
+		goto L3
+	} else { // d == 0
+		goto L2
+	}
+
 	//
 	// L11 [Unfix near truths.]
 	//
@@ -770,12 +789,34 @@ L11:
 		log.Printf("L11. Unfix near truths")
 	}
 
+	for e > g {
+		e -= 1
+		val[r[e]>>1] = 0
+	}
+
 	//
 	// L12 [Unfix real truths.]
 	//
-
+L12:
 	if debug {
 		log.Printf("L12. Unfix real truths")
+	}
+
+	for e > f {
+		e -= 1
+		x = r[e] >> 1
+
+		// Reactivate the TIMP pairs that involve X and restore X to the free list (Exercise 137)
+		for _, l := range []int{2 * x, 2*x + 1} {
+			for i := tsize[l] - 1; i >= 0; i-- {
+				p := timp[l] + 2*i
+				u, v := timp[p], timp[p+1]
+
+				tsize[v^1] += 1
+				tsize[u^1] += 1
+			}
+		}
+		val[x] = 0
 	}
 
 	//
@@ -786,12 +827,29 @@ L11:
 		log.Printf("L13. Downdate BIMPs")
 	}
 
+	if branch[d] >= 0 {
+		for istackI > backi[d] {
+			istackI -= 1
+			l, s := istack[istackI][0], istack[istackI][1]
+			bsize[l] = s
+		}
+	}
+
 	//
 	// L14 [Try again?]
 	//
 
 	if debug {
 		log.Printf("L14. Try again?")
+	}
+
+	// We've discovered that DEC[d] doesn't work
+	if branch[d] == 0 {
+		l = dec[d]
+		dec[d] = l ^ 1
+		l = l ^ 1
+		branch[d] = 1
+		goto L4
 	}
 
 	//
@@ -802,209 +860,13 @@ L11:
 		log.Printf("L15. Backtrack")
 	}
 
-	return false, nil
+	if d == 0 {
+		// Terminate unsuccessfully
+		return false, nil
+	}
 
-	// 	//
-	// 	// L2. [Success?]
-	// 	//
-	// L2:
-	// 	if tail == 0 {
-	// 		// visit the solution
-	// 		if debug {
-	// 			log.Println("L2. [Success!]")
-	// 		}
-	// 		if stats != nil {
-	// 			stats.Solutions++
-	// 		}
-
-	// 		return true, lvisit()
-	// 	}
-
-	// 	k = tail
-
-	// 	//
-	// 	// L3. [Look for unit clauses.]
-	// 	//
-	// L3:
-	// 	head = next[k]
-
-	// 	if debug {
-	// 		log.Printf("L3. [Look for unit clauses.] active=%s, k=%d, head=%d", activeRing(), k, head)
-	// 	}
-
-	// 	// Compute f = [2h is a unit] + 2[2h + 1 is a unit]
-	// 	f = isUnit(2*head) + 2*isUnit(2*head+1)
-	// 	if debug {
-	// 		log.Printf("L3. f=%d", f)
-	// 	}
-
-	// 	if f == 3 {
-	// 		goto L7 // [Backtrack.]
-	// 	}
-
-	// 	if f == 1 || f == 2 {
-	// 		moves[d+1] = f + 3
-	// 		tail = k
-	// 		goto L5 // [Move on.]
-	// 	}
-
-	// 	if head != tail {
-	// 		k = head
-	// 		goto L3 // [Look for unit clauses.]
-	// 	}
-
-	// 	//
-	// 	// L4. [Two-way branch.]
-	// 	//
-
-	// 	head = next[tail]
-	// 	if watch[2*head] == 0 || watch[2*head+1] != 0 {
-	// 		moves[d+1] = 1
-	// 	} else {
-	// 		moves[d+1] = 0
-	// 	}
-
-	// 	if debug {
-	// 		log.Printf("L4. [Two-way branch.] d=%d, x=%v, moves=%v", d, x[1:], moves[1:d+1])
-	// 	}
-
-	// L5:
-	// 	//
-	// 	// L5. [Move on.]
-	// 	//
-	// 	if debug {
-	// 		log.Printf("L5. [Move on.]")
-	// 	}
-
-	// 	d += 1
-	// 	h[d] = head
-	// 	k = head
-
-	// 	if stats != nil {
-	// 		stats.Levels[d-1]++
-	// 		stats.Nodes++
-
-	// 		if progress {
-	// 			if d > stats.MaxLevel {
-	// 				stats.MaxLevel = d
-	// 			}
-	// 			if stats.Nodes >= stats.Theta {
-	// 				showProgress()
-	// 				stats.Theta += stats.Delta
-	// 			}
-	// 		}
-	// 	}
-
-	// 	if tail == k {
-	// 		tail = 0
-	// 	} else {
-	// 		// delete variable k from the ring
-	// 		next[tail] = next[k]
-	// 		head = next[k]
-	// 	}
-
-	// 	//
-	// 	// L6. [Update watches.]
-	// 	//
-	// L6:
-	// 	if debug {
-	// 		log.Printf("L6. [Update watches.]")
-	// 	}
-
-	// 	b = (moves[d] + 1) % 2
-	// 	x[k] = b
-
-	// 	// Clear the watch list for ^(x_k)
-	// 	l = 2*k + b
-	// 	j = watch[l]
-	// 	watch[l] = 0
-
-	// 	for j != 0 {
-
-	// 		// step (i)
-	// 		jp = link[j]
-	// 		i = start[j]
-	// 		p = i + 1
-
-	// 		// step (ii) - loop while L(p) is false
-	// 		// will end before p == start[j-1]
-	// 		for x[state[p].L>>1] == state[p].L&1 {
-	// 			p += 1
-	// 		}
-
-	// 		// step (iii)
-	// 		lp = state[p].L
-	// 		state[p].L = l
-	// 		state[i].L = lp
-
-	// 		// step (iv)
-	// 		p = watch[lp]
-	// 		q = watch[lp^1]
-	// 		if p != 0 || q != 0 || x[lp>>1] >= 0 {
-	// 			goto L6vi
-	// 		}
-
-	// 		// step (v) - Insert |l'| into the ring as its new head
-	// 		if tail == 0 {
-	// 			tail = lp >> 1
-	// 			head = lp >> 1
-	// 			next[tail] = head
-	// 		} else {
-	// 			next[lp>>1] = head
-	// 			head = lp >> 1
-	// 			next[tail] = head
-	// 		}
-
-	// 		// step (vi)
-	// 	L6vi:
-	// 		// Insert j into the watch list of l'
-	// 		link[j] = p
-	// 		watch[lp] = j
-
-	// 		// step (vii)
-	// 		j = jp
-	// 	}
-
-	// 	if debug {
-	// 		log.Printf("L6. d=%d, l=%d, active=%s, x=%v, moves=%v", d, l, activeRing(), x[1:], moves[1:d+1])
-	// 	}
-
-	// 	goto L2
-
-	// 	//
-	// 	// L7. [Backtrack.]
-	// 	//
-	// L7:
-	// 	if debug {
-	// 		log.Printf("L7. [Backtrack.]")
-	// 	}
-
-	// 	tail = k
-
-	// 	for moves[d] >= 2 {
-	// 		k = h[d]
-	// 		x[k] = -1
-	// 		if watch[2*k] != 0 || watch[2*k+1] != 0 {
-	// 			next[k] = head
-	// 			head = k
-	// 			next[tail] = head
-	// 		}
-	// 		d -= 1
-	// 	}
-
-	// 	//
-	// 	// L8. [Failure?]
-	// 	//
-	// 	if debug {
-	// 		log.Printf("L8. [Failure?]")
-	// 	}
-
-	// 	if d > 0 {
-	// 		moves[d] = 3 - moves[d]
-	// 		k = h[d]
-	// 		goto L6
-	// 	}
-
-	// 	// Terminate, the clauses aren't satisfiable
-	// 	return false, nil
+	d -= 1
+	e = f
+	f = backf[d]
+	goto L12
 }
