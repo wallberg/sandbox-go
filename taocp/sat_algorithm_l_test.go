@@ -19,7 +19,7 @@ func TestSatAlgorithmL(t *testing.T) {
 		{1, true, SatClauses{{-1}}},
 		{1, false, SatClauses{{1}, {-1}}},
 		{2, true, SatClauses{{1}, {2}}},
-		{2, true, SatClauses{{1}, {-1, 2}}},
+		{2, true, SatClauses{{1, -2}, {-1, 2}}},
 		// {3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
 		// {3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
 		// {4, true, ClausesRPrime},

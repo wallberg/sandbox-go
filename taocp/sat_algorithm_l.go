@@ -28,7 +28,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	var (
 		nOrig      int      // original value of n, before conversion to 3SAT
-		m          int      // total number of clauses
 		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		inx        []int    // INX
 		varN       int      // N - number of free variables in VAR
@@ -64,8 +63,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		debug      bool     // debugging is enabled
 		progress   bool     // progress tracking is enabled
 	)
-
-	fmt.Println(m, ist, istack, istackI, istamp, t, nt, rt, pt, r, e, g, val, conflict, h)
 
 	// dump
 	dump := func() {
@@ -288,8 +285,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	if debug {
 		log.Printf("L1. Initialize")
 	}
-
-	m = len(clauses)
 
 	//
 	// Record all unit clauses with forced variable values
