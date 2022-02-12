@@ -31,6 +31,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		inx        []int    // INX
 		varN       int      // N - number of free variables in VAR
+		varX       int      // X - variable of L promoted to real truth
 		d          int      // d - depth of the implicit search tree
 		f          int      // F - number of fixed variables
 		timp       []int    // TIMP - ternary clauses
@@ -419,10 +420,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	istack = make([][2]int, 2*n+2)
 	istackI = 0
 
-	dec = make([]int, n)
-	backf = make([]int, n)
-	backi = make([]int, n)
-	branch = make([]int, n)
+	dec = make([]int, n+1)
+	backf = make([]int, n+1)
+	backi = make([]int, n+1)
+	branch = make([]int, n+1)
 
 	val = make([]int, n+1)
 	r = make([]int, n+1)
@@ -468,9 +469,8 @@ L2:
 		}
 
 		// TODO: Goto L15 if Algorithm X discovers a conflict
-	}
 
-	if units > 0 {
+	} else { // units > 0
 		goto L5
 	}
 
@@ -484,7 +484,7 @@ L3:
 
 	// Choose whatever literal happens to be first in the current list
 	// of free variables.
-	l = varx[0]
+	l = 2 * varx[0]
 
 	if l == 0 {
 		d += 1
@@ -557,6 +557,7 @@ L6:
 	// At this point the stacked literals R_k are "really true" for 0 <= k < G,
 	// and "nearly true" for G <= k < E. We want them all to be really true.
 	if g == e {
+		// No nearly true literals
 		goto L10
 	}
 
@@ -571,18 +572,19 @@ L6:
 		log.Printf("L7. Promote L=%d to real truth", ntL)
 	}
 
-	x = ntL >> 1
-	val[x] = rt + ntL&1
+	varX = ntL >> 1
+	val[varX] = rt + ntL&1
 
-	// Remove variable X from the free list and from all TIMP pairs (Exercise 137)
+	// Remove variable X from the free list (Exercise 137)
 	varN = n - g
 	x = varx[varN]
-	j = inx[x]
+	j = inx[varX]
 	varx[j] = x
 	inx[x] = j
-	varx[varN] = x
-	inx[x] = varN
+	varx[varN] = varX
+	inx[varX] = varN
 
+	// Remove variable X from all TIMP pairs (Exercise 137)
 	for _, l := range []int{2 * x, 2*x + 1} {
 		for i := 0; i < tsize[l]; i++ {
 			p := timp[l] + 2*i
