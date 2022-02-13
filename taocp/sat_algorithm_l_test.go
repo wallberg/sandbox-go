@@ -15,17 +15,21 @@ func TestSatAlgorithmL(t *testing.T) {
 		sat     bool       // is satisfiable
 		clauses SatClauses // clauses to satisfy
 	}{
-		{1, true, SatClauses{{1}}},
-		{1, true, SatClauses{{-1}}},
-		{1, false, SatClauses{{1}, {-1}}},
-		{2, true, SatClauses{{1}, {2}}},
-		{3, true, SatClauses{{1}, {2}, {1}, {2}, {-3}}},
-		{2, true, SatClauses{{1, 2}}},
-		{2, true, SatClauses{{1, 2}, {1, -2}}},
-		{2, true, SatClauses{{-1, -2}}},
-		{2, true, SatClauses{{-1, 2}, {1, -2}}},
-		{2, true, SatClauses{{1, -2}, {-1, 2}}},
-		{5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
+		// {1, true, SatClauses{{1}}},
+		// {1, true, SatClauses{{-1}}},
+		// {1, false, SatClauses{{1}, {-1}}},
+		// {2, true, SatClauses{{1}, {2}}},
+		// {3, true, SatClauses{{1}, {2}, {1}, {2}, {-3}}},
+		// {2, true, SatClauses{{1, 2}}},
+		// {2, true, SatClauses{{1, 2}, {1, -2}}},
+		{2, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
+		// {2, true, SatClauses{{-1, -2}}},
+		// {2, true, SatClauses{{-1, 2}, {1, -2}}},
+		// {2, true, SatClauses{{1, -2}, {-1, 2}}},
+		// {5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
+		// {5, false, SatClauses{
+		// 	{1, 2}, {2, 3}, {3, 4}, {4, 5},
+		// 	{-1, -2}, {-1, -3}, {-1, -4}, {-1, -5}}},
 		// {3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
 		// {3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
 		// {4, true, ClausesRPrime},
@@ -45,11 +49,11 @@ func TestSatAlgorithmL(t *testing.T) {
 
 		if sat != c.sat {
 			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
-			continue
-		} else if sat {
+		}
+		if sat {
 			validSolution := SatTest(c.n, c.clauses, solution)
 			if !validSolution {
-				t.Errorf("expected a valid solution for n=%d, clauses=%v; did not get one", c.n, c.clauses)
+				t.Errorf("expected a valid solution for n=%d, clauses=%v; did not get one (solution=%v)", c.n, c.clauses, solution)
 			}
 		}
 

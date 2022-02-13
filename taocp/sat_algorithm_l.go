@@ -50,6 +50,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		dec        []int    // DEC - ??
 		backf      []int    // BACKF - ??
 		backi      []int    // BACKI - ??
+		backl      []int    // BACKL - ?? (for showProgress(), Exercise 142)
 		t          int      // T - truth context
 		val        []int    // VAL - track if literal l is fixed in context T
 		r          []int    // R - record the names of literals that have received values
@@ -58,13 +59,32 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		h          int      // H - ??
 		conflict   int      // CONFLICT - algorithm L step to goto in case of conflict
 		l          int      // literal l
-		x          int      // X - variable
+		k, x       int      // variables
 		ntL        int      // L - "nearly true" literal l
-		j, k       int      // indices
+		j          int      // indices
 		debug      bool     // debugging is enabled
 		progress   bool     // progress tracking is enabled
 	)
 
+	// truth returns a string description of truth values
+	truth := func(t int) string {
+		switch t {
+		case rt + 1:
+			return "RF"
+		case rt:
+			return "RT"
+		case nt + 1:
+			return "NF"
+		case nt:
+			return "NT"
+		case pt + 1:
+			return "PF"
+		case pt:
+			return "PT"
+		default:
+			return fmt.Sprintf("%d", t)
+		}
+	}
 	// dump
 	dump := func() {
 
@@ -93,14 +113,25 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 		b.WriteString("\n\n")
 
-		// VAL and R
-		b.WriteString("VAL and R\n")
+		// R
+		b.WriteString("R\n")
 		b.WriteString(fmt.Sprintf("E=%d: ", e))
 		for k := 0; k < e; k++ {
 			if k > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(fmt.Sprintf("{%d}=%d", r[k], val[k]))
+			b.WriteString(fmt.Sprintf("{%d}=%s", r[k], truth(val[r[k]>>1])))
+		}
+		b.WriteString("\n\n")
+
+		// VAR
+		b.WriteString("VAR\n")
+		b.WriteString(fmt.Sprintf("E=%d: ", e))
+		for x := 1; x <= n; x++ {
+			if x > 1 {
+				b.WriteString(", ")
+			}
+			b.WriteString(fmt.Sprintf("{%d}=%s", x, truth(val[x])))
 		}
 		b.WriteString("\n\n")
 
@@ -140,10 +171,31 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		log.Print(b.String())
 	}
 
-	// showProgress
+	// showProgress - Exercise 142
 	showProgress := func() {
 		var b strings.Builder
-		// b.WriteString(fmt.Sprintf("Nodes=%d, d=%d, l=%d, moves=%v\n", stats.Nodes, d, l, moves[1:d+1]))
+		b.WriteString("  Progress: ")
+		backl[d] = f
+		localr := 0
+		k := 0
+
+		for k < d {
+			for localr < backf[k] {
+				b.WriteString(fmt.Sprintf("%d ", 6+(r[localr]&1)))
+				localr += 1
+			}
+			if branch[k] < 0 {
+				b.WriteString("| ")
+			} else {
+				b.WriteString(fmt.Sprintf("%d ", (2*branch[k])+r[localr]&1))
+				localr += 1
+			}
+			for localr < backl[k+1] {
+				b.WriteString(fmt.Sprintf("%d ", 4+(r[localr]&1)))
+				localr += 1
+			}
+			k += 1
+		}
 
 		log.Print(b.String())
 	}
@@ -259,8 +311,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// Update private stamp IST, if necessary. Formula (63)
 		if ist[l] != istamp {
 			ist[l] = istamp
-			istack[istackI][0] = l
-			istack[istackI][1] = bsize[l]
+			if istackI == len(ist) {
+				istack = append(istack, [2]int{l, bsize[l]})
+			} else {
+				istack[istackI][0] = l
+				istack[istackI][1] = bsize[l]
+			}
 			istackI += 1
 		}
 
@@ -406,9 +462,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// simply increasing N, without swapping.
 	varx = make([]int, n)
 	inx = make([]int, n+1)
-	for k = 0; k < n; k++ {
-		varx[k] = k + 1
-		inx[k+1] = k
+	for k = 1; k <= n; k++ {
+		varx[k-1] = k
+		inx[k] = k - 1
 	}
 	varN = n
 
@@ -417,12 +473,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	istamp = 0
 	ist = make([]int, 2*n+2)
-	istack = make([][2]int, 2*n+2)
+	istack = make([][2]int, 1024) // Grow dynamically, when needed
 	istackI = 0
 
 	dec = make([]int, n+1)
 	backf = make([]int, n+1)
 	backi = make([]int, n+1)
+	backl = make([]int, n+1)
 	branch = make([]int, n+1)
 
 	val = make([]int, n+1)
@@ -430,10 +487,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	if debug {
 		dump()
-	}
-
-	if progress {
-		showProgress()
 	}
 
 	//
@@ -445,6 +498,10 @@ L2:
 	}
 
 	branch[d] = -1
+
+	if progress {
+		showProgress()
+	}
 
 	if debug {
 		log.Printf("  d=%d, branch=%v, units=%d, f=%d, n=%d", d, branch[:d+1], units, f, n)
@@ -627,6 +684,10 @@ L6:
 				pp = t
 			}
 		}
+	}
+
+	if debug {
+		dump()
 	}
 
 	for i := 0; i < tsize[ntL]; i++ {
