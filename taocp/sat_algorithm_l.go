@@ -46,8 +46,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		ist        []int    // IST - private stamp for literal l
 		istack     [][2]int // ISTACK - stack of previous values of (l, BSIZE[l])
 		istackI    int      // I - size of ISTACK
-		branch     []int    // BRANCH - record each branching decision
-		dec        []int    // DEC - ??
+		branch     []int    // BRANCH - where are we in decision making (-1, 0, 1)
+		dec        []int    // DEC - decision on l at each branch
 		backf      []int    // BACKF - ??
 		backi      []int    // BACKI - ??
 		backl      []int    // BACKL - ?? (for showProgress(), Exercise 142)
@@ -346,6 +346,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	//
 	// Record all unit clauses with forced variable values
 	//
+	// TODO: Determine why L4 and L5 seem to wipe out what we've
+	// done here without any restoration. Maybe instead of adding
+	// to the force stack, we should add to the fixed stack or R stack.
 	force = make([]int, 2*n+2)
 	units = 0
 	for _, clause := range clauses {
@@ -363,7 +366,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				}
 			}
 
-			// Add l to the stack of distinct unit clauses
 			force[units] = l
 			units += 1
 
@@ -497,14 +499,10 @@ L2:
 		log.Printf("L2. New node")
 	}
 
-	branch[d] = -1
+	branch[d] = -1 // No decision yet
 
-	if progress {
+	if debug || progress {
 		showProgress()
-	}
-
-	if debug {
-		log.Printf("  d=%d, branch=%v, units=%d, f=%d, n=%d", d, branch[:d+1], units, f, n)
 	}
 
 	if units == 0 {
@@ -555,7 +553,7 @@ L3:
 	dec[d] = l
 	backf[d] = f
 	backi[d] = istackI
-	branch[d] = 0
+	branch[d] = 0 // We are trying l
 
 	//
 	// L4 [Try l.]
@@ -861,11 +859,14 @@ L12:
 	}
 
 	for e > f {
+		// Implicitly restore X to the free list because N + E = n
+		// (Exercise 137)
 		e -= 1
-		x = r[e] >> 1
+		varX = r[e] >> 1
 
-		// Reactivate the TIMP pairs that involve X and restore X to the free list (Exercise 137)
-		for _, l := range []int{2 * x, 2*x + 1} {
+		// Reactivate the TIMP pairs that involve X
+		// (Exercise 137)
+		for _, l := range []int{2 * varX, 2*varX + 1} {
 			for i := tsize[l] - 1; i >= 0; i-- {
 				p := timp[l] + 2*i
 				u, v := timp[p], timp[p+1]
@@ -906,7 +907,7 @@ L12:
 		l = dec[d]
 		dec[d] = l ^ 1
 		l = l ^ 1
-		branch[d] = 1
+		branch[d] = 1 // l didn't work out, so try ^l
 		goto L4
 	}
 
