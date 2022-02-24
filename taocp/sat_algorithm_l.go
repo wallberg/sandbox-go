@@ -236,7 +236,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// 	}
 	// }
 
-	// binary_propogation uses a siimsple breadth-first search procedure
+	// binary_propogation uses a simple breadth-first search procedure
 	// to propagate the binarary consequences of a literal l inn context T
 	// returns. Returns false if no conflict, true if there is conflict.
 	// Formula (62)
@@ -524,6 +524,72 @@ L2:
 		}
 
 		// TODO: Goto L15 if Algorithm X discovers a conflict
+		// Choose whatever literal happens to be first in the current list
+		// of free variables.
+		x = varx[0]
+		l = 2 * x
+		branch[d] = 0
+
+		if debug {
+			log.Printf("  Trying d=%d, branch=%v, x=%d, l=%d from free variable list", d, branch[0:d+1], x, l)
+		}
+
+		contradiction := false
+
+		// Record the forced values, looking for a contradiction
+		for i := 0; !contradiction && i < bsize[l]; i++ {
+			lp := bimp[l][i]
+
+			// Look for a contradiction
+			for k := 0; !contradiction && k < units; k++ {
+				if lp^1 == force[k] {
+					// A contradiction
+					contradiction = true
+				}
+			}
+
+			if !contradiction {
+				// No contradiction, add it to the force stack
+				force[units] = lp
+				units += 1
+			}
+		}
+
+		if contradiction {
+			// Try again with l^1
+			l = l ^ 1
+			branch[d] = 1
+			units = 0
+
+			if debug {
+				log.Printf("  Trying d=%d, branch=%v, x=%d, l=%d from free variable list", d, branch[0:d+1], x, l)
+			}
+
+			// Record the forced values, looking for a contradiction
+			for i := 0; i < bsize[l]; i++ {
+				lp := bimp[l][i]
+
+				// Look for a contradiction
+				for k := 0; k < units; k++ {
+					if lp^1 == force[k] {
+						// A contradiction
+						if debug {
+							dump()
+							log.Printf("L2. Found unit clause contradictions; neither %d nor %d will work", l^1, l)
+						}
+						goto L15
+					}
+				}
+
+				// No contradiction, add it to the force stack
+				force[units] = lp
+				units += 1
+			}
+		}
+
+		if debug {
+			log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, branch[0:d], l)
+		}
 
 	} else { // units > 0
 		goto L5
@@ -536,10 +602,6 @@ L3:
 	if debug {
 		log.Printf("L3. Choose l")
 	}
-
-	// Choose whatever literal happens to be first in the current list
-	// of free variables.
-	l = 2 * varx[0]
 
 	if l == 0 {
 		d += 1
@@ -598,8 +660,6 @@ L5:
 	}
 
 	units = 0
-
-	// ()
 
 	//
 	// L6 [Choose a nearly true L.]
@@ -908,13 +968,18 @@ L12:
 		dec[d] = l ^ 1
 		l = l ^ 1
 		branch[d] = 1 // l didn't work out, so try ^l
+
+		if debug {
+			log.Printf("  Trying again, d=%d, branch=%v, l=%d", d, branch[0:d], l)
+		}
+
 		goto L4
 	}
 
 	//
 	// L15 [Backtrack.]
 	//
-
+L15:
 	if debug {
 		log.Printf("L15. Backtrack")
 	}

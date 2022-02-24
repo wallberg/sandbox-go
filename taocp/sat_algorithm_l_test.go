@@ -15,17 +15,18 @@ func TestSatAlgorithmL(t *testing.T) {
 		sat     bool       // is satisfiable
 		clauses SatClauses // clauses to satisfy
 	}{
-		// {1, true, SatClauses{{1}}},
-		// {1, true, SatClauses{{-1}}},
-		// {1, false, SatClauses{{1}, {-1}}},
-		// {2, true, SatClauses{{1}, {2}}},
-		// {3, true, SatClauses{{1}, {2}, {1}, {2}, {-3}}},
-		// {2, true, SatClauses{{1, 2}}},
-		// {2, true, SatClauses{{1, 2}, {1, -2}}},
+		{1, true, SatClauses{{1}}},
+		{1, true, SatClauses{{-1}}},
+		{1, false, SatClauses{{1}, {-1}}},
+		{2, true, SatClauses{{1}, {2}}},
+		{3, true, SatClauses{{1}, {2}, {-3}}},
+		{3, true, SatClauses{{1}, {2}, {1}, {2}, {-3}}},
+		{2, true, SatClauses{{1, 2}}},
+		{2, true, SatClauses{{1, 2}, {1, -2}}},
 		{2, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
-		// {2, true, SatClauses{{-1, -2}}},
-		// {2, true, SatClauses{{-1, 2}, {1, -2}}},
-		// {2, true, SatClauses{{1, -2}, {-1, 2}}},
+		{2, true, SatClauses{{-1, -2}}},
+		{2, true, SatClauses{{-1, 2}, {1, -2}}},
+		{2, true, SatClauses{{1, -2}, {-1, 2}}},
 		// {5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
 		// {5, false, SatClauses{
 		// 	{1, 2}, {2, 3}, {3, 4}, {4, 5},
@@ -40,8 +41,8 @@ func TestSatAlgorithmL(t *testing.T) {
 	for _, c := range cases {
 
 		stats := SatStats{
-			// Debug: true,
-			// Progress: true,
+			Debug:    true,
+			Progress: true,
 		}
 		options := SatOptions{}
 
