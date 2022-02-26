@@ -330,7 +330,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	}
 
 	//
-	// L1 [Initialize.]
+	// @note L1 [Initialize.]
 	//
 
 	// Convert the input to 3SAT, if it isn't already
@@ -487,12 +487,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	val = make([]int, n+1)
 	r = make([]int, n+1)
 
-	if debug {
+	if debug && stats.Verbosity > 0 {
 		dump()
 	}
 
 	//
-	// L2 [New node.]
+	// @note L2 [New node.]
 	//
 L2:
 	if debug {
@@ -528,7 +528,6 @@ L2:
 		// of free variables.
 		x = varx[0]
 		l = 2 * x
-		branch[d] = 0
 
 		if debug {
 			log.Printf("  Trying d=%d, branch=%v, x=%d, l=%d from free variable list", d, branch[0:d+1], x, l)
@@ -552,6 +551,8 @@ L2:
 				// No contradiction, add it to the force stack
 				force[units] = lp
 				units += 1
+
+				val[lp>>1] = rt + lp&1
 			}
 		}
 
@@ -573,7 +574,7 @@ L2:
 				for k := 0; k < units; k++ {
 					if lp^1 == force[k] {
 						// A contradiction
-						if debug {
+						if debug && stats.Verbosity > 0 {
 							dump()
 							log.Printf("L2. Found unit clause contradictions; neither %d nor %d will work", l^1, l)
 						}
@@ -584,6 +585,8 @@ L2:
 				// No contradiction, add it to the force stack
 				force[units] = lp
 				units += 1
+
+				val[lp>>1] = rt + lp&1
 			}
 		}
 
@@ -596,7 +599,7 @@ L2:
 	}
 
 	//
-	// L3 [Choose l.]
+	// @note L3 [Choose l.]
 	//
 L3:
 	if debug {
@@ -618,7 +621,7 @@ L3:
 	branch[d] = 0 // We are trying l
 
 	//
-	// L4 [Try l.]
+	// @note L4 [Try l.]
 	//
 L4:
 
@@ -630,7 +633,7 @@ L4:
 	force[0] = l
 
 	//
-	// L5 [Accept near truths.]
+	// @note L5 [Accept near truths.]
 	//
 L5:
 	if debug {
@@ -661,8 +664,11 @@ L5:
 
 	units = 0
 
+	if debug && stats.Verbosity > 0 {
+		dump()
+	}
 	//
-	// L6 [Choose a nearly true L.]
+	// @note L6 [Choose a nearly true L.]
 	//
 L6:
 	if debug {
@@ -680,7 +686,7 @@ L6:
 	g += 1
 
 	//
-	// L7 [Promote L to real truth.]
+	// @note L7 [Promote L to real truth.]
 	//
 
 	if debug {
@@ -744,7 +750,7 @@ L6:
 		}
 	}
 
-	if debug {
+	if debug && stats.Verbosity > 0 {
 		dump()
 	}
 
@@ -753,7 +759,7 @@ L6:
 		u, v := timp[p], timp[p+1]
 
 		//
-		// L8 [Consider u or v.]
+		// @note L8 [Consider u or v.]
 		//
 
 		if debug {
@@ -814,7 +820,7 @@ L6:
 			// Case 5. Neither u nor v is fixed
 
 			//
-			// L9 [Exploit u or v.]
+			// @note L9 [Exploit u or v.]
 			//
 
 			// TODO: Use Exercise 139 to improve this step by deducing
@@ -878,7 +884,7 @@ L6:
 	goto L6
 
 	//
-	// L10 [Accept real truths.]
+	// @note L10 [Accept real truths.]
 	//
 L10:
 	if debug {
@@ -889,15 +895,24 @@ L10:
 
 	if branch[d] >= 0 {
 		d += 1
+		if debug {
+			log.Printf("  branch[%d]=%d, incremented d to %d, going to L2", d-1, branch[d-1], d)
+		}
 		goto L2
 	} else if d > 0 {
+		if debug {
+			log.Printf("  branch[%d]=%d and d=%d > 0, going to L3", d, branch[d], d)
+		}
 		goto L3
 	} else { // d == 0
+		if debug {
+			log.Printf("  branch[%d]=%d and d=0, going to L2", d, branch[d])
+		}
 		goto L2
 	}
 
 	//
-	// L11 [Unfix near truths.]
+	// @note L11 [Unfix near truths.]
 	//
 L11:
 
@@ -911,7 +926,7 @@ L11:
 	}
 
 	//
-	// L12 [Unfix real truths.]
+	// @note L12 [Unfix real truths.]
 	//
 L12:
 	if debug {
@@ -939,7 +954,7 @@ L12:
 	}
 
 	//
-	// L13 [Downdate BIMPs.]
+	// @note L13 [Downdate BIMPs.]
 	//
 
 	if debug {
@@ -955,7 +970,7 @@ L12:
 	}
 
 	//
-	// L14 [Try again?]
+	// @note L14 [Try again?]
 	//
 
 	if debug {
@@ -977,7 +992,7 @@ L12:
 	}
 
 	//
-	// L15 [Backtrack.]
+	// @note L15 [Backtrack.]
 	//
 L15:
 	if debug {
