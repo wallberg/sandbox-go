@@ -5,7 +5,7 @@ digraph G {
     L4 [label="L4. Try l"]
     L5 [label="L5. Accept NTs"]
     L6 [label="L6. Choose NT L"]
-    L7 [label="L7. Promote L to NT"]
+    L7 [label="L7. Promote L to RT"]
     L8 [label="L8. Consider u or v"]
     L9 [label="L9. Exploit u or v"]
     L10 [label="L10. Accept RT"]
@@ -35,7 +35,7 @@ digraph G {
     L10 -> L3 [label="else if d>0"]
     L10 -> L2 [label="else if d=0"]
     L11 -> L12 -> L13 -> L14
-    L14 -> L4 [label="BRANCH[d]=0"]
+    L14 -> L4 [label="BRANCH[d]==0 <- 1"]
     L14 -> L15 [label="else"]
     L15 -> Terminate [label="d=0; unsatisfiable"]
     L15 -> L12

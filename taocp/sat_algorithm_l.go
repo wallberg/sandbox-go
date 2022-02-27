@@ -52,16 +52,16 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		backi      []int    // BACKI - ??
 		backl      []int    // BACKL - ?? (for showProgress(), Exercise 142)
 		t          int      // T - truth context
-		val        []int    // VAL - track if literal l is fixed in context T
+		val        []int    // VAL - track if variable x is fixed in context T
 		r          []int    // R - record the names of literals that have received values
 		e          int      // E - current stack size of R; 0 <= E <= n
-		g          int      // G - ??
+		g          int      // G - number of really true literals in R (starting from 0)		// and "nearly true" for G <= k < E
 		h          int      // H - ??
 		conflict   int      // CONFLICT - algorithm L step to goto in case of conflict
 		l          int      // literal l
-		k, x       int      // variables
+		x          int      // variable x
 		ntL        int      // L - "nearly true" literal l
-		j          int      // indices
+		k, j       int      // indices
 		debug      bool     // debugging is enabled
 		progress   bool     // progress tracking is enabled
 	)
@@ -85,10 +85,45 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			return fmt.Sprintf("%d", t)
 		}
 	}
+
+	// showProgress - Exercise 142
+	showProgress := func() {
+		var b strings.Builder
+		b.WriteString("  Progress: ")
+		backl[d] = f
+		localr := 0
+		k := 0
+
+		for k < d {
+			for localr < backf[k] {
+				b.WriteString(fmt.Sprintf("%d ", 6+(r[localr]&1)))
+				localr += 1
+			}
+			if branch[k] < 0 {
+				b.WriteString("| ")
+			} else {
+				b.WriteString(fmt.Sprintf("%d ", (2*branch[k])+r[localr]&1))
+				localr += 1
+			}
+			for localr < backl[k+1] {
+				b.WriteString(fmt.Sprintf("%d ", 4+(r[localr]&1)))
+				localr += 1
+			}
+			k += 1
+		}
+
+		log.Print(b.String())
+	}
+
 	// dump
 	dump := func() {
 
 		var b strings.Builder
+		b.WriteString("\n")
+
+		showProgress()
+
+		b.WriteString(fmt.Sprintf("n=%d, d=%d, f=%d, h=%d\n", n, d, f, h))
 		b.WriteString("\n")
 
 		// FORCE
@@ -115,18 +150,19 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// R
 		b.WriteString("R\n")
-		b.WriteString(fmt.Sprintf("E=%d: ", e))
+		b.WriteString(fmt.Sprintf("E=%d, G=%d: ", e, g))
 		for k := 0; k < e; k++ {
 			if k > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(fmt.Sprintf("{%d}=%s", r[k], truth(val[r[k]>>1])))
+			l := r[k]
+			x := l >> 1
+			b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(val[x])))
 		}
 		b.WriteString("\n\n")
 
-		// VAR
-		b.WriteString("VAR\n")
-		b.WriteString(fmt.Sprintf("E=%d: ", e))
+		// VAL
+		b.WriteString("VAL\n")
 		for x := 1; x <= n; x++ {
 			if x > 1 {
 				b.WriteString(", ")
@@ -167,35 +203,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			b.WriteString("\n")
 		}
 		b.WriteString("\n")
-
-		log.Print(b.String())
-	}
-
-	// showProgress - Exercise 142
-	showProgress := func() {
-		var b strings.Builder
-		b.WriteString("  Progress: ")
-		backl[d] = f
-		localr := 0
-		k := 0
-
-		for k < d {
-			for localr < backf[k] {
-				b.WriteString(fmt.Sprintf("%d ", 6+(r[localr]&1)))
-				localr += 1
-			}
-			if branch[k] < 0 {
-				b.WriteString("| ")
-			} else {
-				b.WriteString(fmt.Sprintf("%d ", (2*branch[k])+r[localr]&1))
-				localr += 1
-			}
-			for localr < backl[k+1] {
-				b.WriteString(fmt.Sprintf("%d ", 4+(r[localr]&1)))
-				localr += 1
-			}
-			k += 1
-		}
 
 		log.Print(b.String())
 	}
@@ -541,7 +548,7 @@ L2:
 
 			// Look for a contradiction
 			for k := 0; !contradiction && k < units; k++ {
-				if lp^1 == force[k] {
+				if lp^1 == force[k] || lp^1 == l {
 					// A contradiction
 					contradiction = true
 				}
@@ -552,7 +559,7 @@ L2:
 				force[units] = lp
 				units += 1
 
-				val[lp>>1] = rt + lp&1
+				val[lp>>1] = rt
 			}
 		}
 
@@ -572,7 +579,7 @@ L2:
 
 				// Look for a contradiction
 				for k := 0; k < units; k++ {
-					if lp^1 == force[k] {
+					if lp^1 == force[k] || lp^1 == l {
 						// A contradiction
 						if debug && stats.Verbosity > 0 {
 							dump()
@@ -592,6 +599,7 @@ L2:
 
 		if debug {
 			log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, branch[0:d], l)
+			dump()
 		}
 
 	} else { // units > 0
@@ -677,6 +685,18 @@ L6:
 
 	// At this point the stacked literals R_k are "really true" for 0 <= k < G,
 	// and "nearly true" for G <= k < E. We want them all to be really true.
+
+	if debug {
+		// assertion
+		for k := 0; k < g; k++ {
+			l := r[k]
+			x := l >> 1
+			if val[x] != rt {
+				log.Panicf("assertion failed: variable {%d}=%s", x, truth(val[x]))
+			}
+		}
+	}
+
 	if g == e {
 		// No nearly true literals
 		goto L10
