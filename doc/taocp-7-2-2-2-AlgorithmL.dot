@@ -1,9 +1,9 @@
 digraph G {
     L1 [label="L1. Initialize"]
-    L2 [label="L2. New node"]
+    L2 [label="L2. New node\nBRANCH[d]←-1\nAlgorithm X"]
     L3 [label="L3. Choose l"]
     L4 [label="L4. Try l"]
-    L5 [label="L5. Accept NTs"]
+    L5 [label="L5. Accept NTs\nbp(l) ∀ FORCE[0...U-1]"]
     L6 [label="L6. Choose NT L"]
     L7 [label="L7. Promote L to RT"]
     L8 [label="L8. Consider u or v"]
@@ -16,13 +16,15 @@ digraph G {
     L15 [label="L15. Backtrack"]
 
     L1 -> L2
-    L2 -> Terminate [label="U=0; satisfied"]
-    L2 -> L15 [label="U=0; conflict"]
-    L2 -> L3 [label="U=0"]
+    L2 -> Terminate [label="U=0 and\nX satisfied"]
+    L2 -> L15 [label="U=0 and\nX conflict"]
+    L2 -> L3 [label="U=0 and\nX proceed"]
     L2 -> L5 [label="U>0"]
     L3 -> L2 [label="l=0 (fixed)"]
-    L3 -> L4 -> L5 -> L6
-    L5 -> L11 [label="b.p. conflict"]
+    L3 -> L4 [label="BRANCH[d]←0"]
+    L4 -> L5 [label="U←1\nFORCE[0]←l"]
+    L5 -> L6 [label="U←0"]
+    L5 -> L11 [label="bp() conflict"]
     L6 -> L10 [label="R is all RT"]
     L6 -> L7 [label="Choose NT"]
     L7 -> L6
@@ -30,13 +32,16 @@ digraph G {
     L8 -> L7
     L8 -> L9
     L9 -> L7
-    L9 -> L11 [label="b.p. conflict"]
-    L10 -> L2 [label="BRANCH[d]>=0"]
+    L9 -> L11 [label="bp() conflict"]
+    L10 -> L2 [label="BRANCH[d]>=0\n d←d+1"]
     L10 -> L3 [label="else if d>0"]
     L10 -> L2 [label="else if d=0"]
     L11 -> L12 -> L13 -> L14
-    L14 -> L4 [label="BRANCH[d]==0 <- 1"]
+    L14 -> L4 [label="BRANCH[d]=0\nBRANCH[d]←1\nl←^l"]
     L14 -> L15 [label="else"]
     L15 -> Terminate [label="d=0; unsatisfiable"]
-    L15 -> L12
+    L15 -> L12 [label="d←d-1"]
+
+    // {rank = same; L1; L2;}
+    // {rank = same; L15; Terminate;}
 }

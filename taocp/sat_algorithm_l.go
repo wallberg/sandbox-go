@@ -251,7 +251,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	binary_propagation := func(l int) bool {
 
 		if debug {
-			log.Printf("  binary_propagation l=%d, t=%d", l, t)
+			log.Printf("  binary_propagation l=%d, t=%s", l, truth(t))
 		}
 
 		h = e
