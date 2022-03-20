@@ -225,7 +225,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
-	// k2l converts variable k to literal 2k if positive, 2k+1 if negative
+	// k2l converts the value of variable k to literal 2k if positive, 2k+1 if negative
 	k2l := func(k int) int {
 		if k < 0 {
 			return -2*k + 1
@@ -247,11 +247,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// to propagate the binarary consequences of a literal l inn context T
 	// returns. Returns false if no conflict, true if there is conflict.
 	// Formula (62)
+	// @note binary_propogation()
 	binary_propagation := func(l int) bool {
 
 		if debug {
-			log.Printf("  binary_propagation l=%d", l)
+			log.Printf("  binary_propagation l=%d, t=%d", l, t)
 		}
+
 		h = e
 
 		// Take account of l
@@ -260,7 +262,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			if val[l>>1]&1 == l&1 {
 				// l is fixed true, do nothing
 
-			} else if val[l>>1] == (l^1)&1 {
+			} else if val[(l^1)>>1]&1 == (l^1)&1 { // TODO: change to 'else' ?
 				// l is fixed false, goto CONFLICT
 				return true
 			}
@@ -283,7 +285,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 					if val[lp>>1]&1 == lp&1 {
 						// l' is fixed true, do nothing
 
-					} else if val[lp>>1] == (lp^1)&1 {
+					} else if val[(lp^1)>>1] == (lp^1)&1 { // TODO: change to 'else' ?
 						// l' is fixed false, goto CONFLICT
 						return true
 					}
