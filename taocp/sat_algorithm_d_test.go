@@ -35,14 +35,12 @@ func TestSatAlgorithmD(t *testing.T) {
 
 		if sat != c.sat {
 			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
-			continue
 		} else if sat {
 			validSolution := SatTest(c.n, c.clauses, solution)
 			if !validSolution {
 				t.Errorf("expected a valid solution for n=%d, clauses=%v; did not get one", c.n, c.clauses)
 			}
 		}
-
 	}
 }
 
