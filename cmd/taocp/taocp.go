@@ -6,9 +6,11 @@ import (
 	flags "github.com/jessevdk/go-flags"
 )
 
-var options Options
-
-var parser = flags.NewParser(&options, flags.Default)
+var (
+	options Options
+	err     error
+	parser  = flags.NewParser(&options, flags.Default)
+)
 
 // Options provides the top-level usage for this program
 type Options struct {
