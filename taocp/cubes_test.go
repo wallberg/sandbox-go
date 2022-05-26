@@ -86,3 +86,40 @@ func TestCubes(t *testing.T) {
 		}
 	}
 }
+
+func TestBrick(t *testing.T) {
+
+	cases := []struct {
+		l, m, n int
+		count   int
+	}{
+		{1, 1, 1, 720},
+	}
+
+	for i, c := range cases {
+
+		stats := &ExactCoverStats{
+			// Progress: true,
+			// Delta:    50000000,
+			// Debug:    true,
+			// Verbosity:    2,
+			// SuppressDump: true,
+		}
+
+		xccOptions := &XCCOptions{}
+
+		items, options, sitems := Brick(c.l, c.m, c.n)
+
+		count := 0
+		XCC(items, options, sitems, stats, xccOptions,
+			func(solution [][]string) bool {
+				count++
+				return true
+			})
+
+		if count != c.count {
+			t.Errorf("Got %d solutions for case #%d, l=%d, m=%d, n=%d; want %d",
+				count, i, c.l, c.m, c.n, c.count)
+		}
+	}
+}
