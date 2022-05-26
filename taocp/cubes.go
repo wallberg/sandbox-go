@@ -141,15 +141,15 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 
 					// For each rotation of the cube
 					for _, rotation := range cube.Rotations() {
-						option := []string{cubePosition, (string)(rotation)}
+						option := []string{cubePosition, (string)(cube)}
 
 						// For each face of the cube
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+0, 2*j+1, 2*k+1, cube[0:1])) // top
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+0, 2*k+1, cube[2:3])) // front
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+0, cube[5:6])) // right
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+2, cube[4:5])) // left
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+2, 2*k+1, cube[3:4])) // back
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+2, 2*j+1, 2*k+1, cube[1:2])) // bottom
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+0, 2*j+1, 2*k+1, rotation[0:1])) // top
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+0, 2*k+1, rotation[2:3])) // front
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+0, rotation[5:6])) // right
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+2, rotation[4:5])) // left
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+2, 2*k+1, rotation[3:4])) // back
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+2, 2*j+1, 2*k+1, rotation[1:2])) // bottom
 
 						options = append(options, option)
 					}
