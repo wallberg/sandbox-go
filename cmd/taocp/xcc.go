@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/wallberg/sandbox/taocp"
 	"gopkg.in/yaml.v2"
@@ -102,6 +103,13 @@ func (command xccCommand) Execute(args []string) error {
 		Exercise83:            command.Exercise83,
 		EnableSharpPreference: !command.DisableSharp,
 	}
+
+	start := time.Now()
+	defer func() {
+		stop := time.Now()
+		elapsed := stop.Sub(start)
+		log.Printf("Elapsed Time: %v", elapsed)
+	}()
 
 	if !command.Compact {
 		output.WriteString("solutions:\n")

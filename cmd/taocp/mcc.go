@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/wallberg/sandbox/taocp"
 	"gopkg.in/yaml.v2"
@@ -111,6 +112,13 @@ func (command mccCommand) Execute(args []string) error {
 		Verbosity: command.Verbosity - 2,
 		Delta:     command.Delta,
 	}
+
+	start := time.Now()
+	defer func() {
+		stop := time.Now()
+		elapsed := stop.Sub(start)
+		log.Printf("Elapsed Time: %v", elapsed)
+	}()
 
 	if !command.Compact {
 		output.WriteString("solutions:\n")
