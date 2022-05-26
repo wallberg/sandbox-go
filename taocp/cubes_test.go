@@ -1,7 +1,6 @@
 package taocp
 
 import (
-	"fmt"
 	"testing"
 
 	mapset "github.com/deckarep/golang-set/v2"
@@ -25,7 +24,6 @@ func TestRotations(t *testing.T) {
 		got := mapset.NewSet[Cube]()
 		for _, cube := range cubes {
 			got.Add(cube)
-			fmt.Println(cube)
 		}
 
 		if got.Cardinality() != 24 {
