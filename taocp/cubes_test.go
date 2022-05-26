@@ -92,11 +92,22 @@ func TestBrick(t *testing.T) {
 	cases := []struct {
 		l, m, n int
 		count   int
+		long    bool // is this test long running?
 	}{
-		{1, 1, 1, 720},
+		{1, 1, 1, 1, false},
+		{1, 1, 2, 1, false},
+		{1, 1, 3, 0, false},
+		{1, 2, 2, 3, false},
+		{1, 2, 3, 1, false},
+		{1, 2, 4, 0, false},
+		{2, 3, 5, 8, true},
 	}
 
 	for i, c := range cases {
+
+		if c.long && testing.Short() {
+			continue
+		}
 
 		stats := &ExactCoverStats{
 			// Progress: true,

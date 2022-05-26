@@ -130,7 +130,7 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 	}
 
 	// Secondary Items - cubes
-	for _, cube := range Cubes() {
+	for cubeI, cube := range Cubes() {
 		sitems = append(sitems, (string)(cube))
 
 		// Cube placement options, for each cube position
@@ -140,7 +140,13 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 					cubePosition := fmt.Sprintf("%d-%d-%d", 2*i+1, 2*j+1, 2*k+1)
 
 					// For each rotation of the cube
-					for _, rotation := range cube.Rotations() {
+					for rotationI, rotation := range cube.Rotations() {
+
+						// in position 1-1-1: only place the first rotation of the first cube, to reduce symmetries
+						if i == 0 && j == 0 && k == 0 && (cubeI > 0 || (cubeI == 0 && rotationI > 0)) {
+							continue
+						}
+
 						option := []string{cubePosition, (string)(cube)}
 
 						// For each face of the cube
