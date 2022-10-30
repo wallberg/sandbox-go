@@ -6,7 +6,7 @@ import (
 	"math"
 	"strings"
 
-	smath "github.com/wallberg/sandbox/math"
+	smath "github.com/wallberg/sandbox-go/math"
 )
 
 // MCC implements Algorithm M (7.2.2.1), covering with multiplicities and

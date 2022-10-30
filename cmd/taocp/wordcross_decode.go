@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	graphx "github.com/wallberg/sandbox/graph"
-	"github.com/wallberg/sandbox/taocp"
+	graphx "github.com/wallberg/sandbox-go/graph"
+	"github.com/wallberg/sandbox-go/taocp"
 	"github.com/yourbasic/graph"
 	"gopkg.in/yaml.v2"
 )

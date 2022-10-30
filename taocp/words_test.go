@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/wallberg/sandbox/sgb"
-	"github.com/wallberg/sandbox/slice"
+	"github.com/wallberg/sandbox-go/sgb"
+	"github.com/wallberg/sandbox-go/slice"
 )
 
 func TestDoubleWordSquare(t *testing.T) {
