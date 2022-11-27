@@ -1,4 +1,4 @@
-module github.com/wallberg/sandbox
+module github.com/wallberg/sandbox-go
 
 go 1.18
 

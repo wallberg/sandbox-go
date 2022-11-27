@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"codeberg.org/ac/base62"
-	"github.com/wallberg/sandbox/slice"
+	"github.com/wallberg/sandbox-go/slice"
 )
 
 // DoubleWordSquare finds n x n arrays whose rows and columns contain 2n

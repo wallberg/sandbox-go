@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/packr"
-	"github.com/wallberg/sandbox/sgb"
+	"github.com/wallberg/sandbox-go/sgb"
 )
 
 // Trie represents a trie for words of all the same size

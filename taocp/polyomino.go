@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gobuffalo/packr"
-	"github.com/wallberg/sandbox/graph"
+	"github.com/wallberg/sandbox-go/graph"
 	"gopkg.in/yaml.v2"
 )
 

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/wallberg/sandbox/taocp"
+	"github.com/wallberg/sandbox-go/taocp"
 	"gopkg.in/yaml.v2"
 )
 
