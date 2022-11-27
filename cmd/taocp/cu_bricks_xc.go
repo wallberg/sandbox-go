@@ -22,15 +22,16 @@ func init() {
 }
 
 type cuBricksXcCommandDataType struct {
-	L int `short:"l" description:"l dimension size of the brick" default:"1"`
-	M int `short:"m" description:"m dimension size of the brick" default:"1"`
-	N int `short:"n" description:"n dimension size of the brick" default:"1"`
+	L        int  `short:"l" description:"l dimension size of the brick" default:"1"`
+	M        int  `short:"m" description:"m dimension size of the brick" default:"1"`
+	N        int  `short:"n" description:"n dimension size of the brick" default:"1"`
+	FixFirst bool `short:"f" long:"fix" description:"fix first cube, reduces solutions by factor of 720" default:"true"`
 }
 
 func (command cuBricksXcCommandDataType) Execute(args []string) error {
 
 	// Generate XCC input
-	items, options, sitems := taocp.Brick(command.L, command.M, command.N)
+	items, options, sitems := taocp.Bricks(command.L, command.M, command.N, command.FixFirst)
 
 	// Build YAML struct
 	xcYaml := taocp.NewExactCoverYaml(items, sitems, options)

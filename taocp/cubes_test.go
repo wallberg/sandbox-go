@@ -1,6 +1,7 @@
 package taocp
 
 import (
+	"fmt"
 	"testing"
 
 	mapset "github.com/deckarep/golang-set/v2"
@@ -88,17 +89,20 @@ func TestCubes(t *testing.T) {
 func TestBrick(t *testing.T) {
 
 	cases := []struct {
-		l, m, n int
-		count   int
-		long    bool // is this test long running?
+		l, m, n  int
+		count    int
+		fixFirst bool
+		long     bool // is this test long running?
 	}{
-		{1, 1, 1, 1, false},
-		{1, 1, 2, 1, false},
-		{1, 1, 3, 0, false},
-		{1, 2, 2, 3, false},
-		{1, 2, 3, 1, false},
-		{1, 2, 4, 0, false},
-		{2, 3, 5, 8, true},
+		{1, 1, 1, 1, true, false},
+		{1, 1, 2, 1, true, false},
+		{1, 1, 3, 0, true, false},
+		{1, 2, 2, 3, true, false},
+		{1, 2, 3, 1, true, false},
+		{1, 2, 4, 0, true, false},
+		{2, 2, 2, 26, true, false},
+		{2, 3, 5, 8, true, true},
+		{3, 3, 3, 0, true, false},
 	}
 
 	for i, c := range cases {
@@ -117,11 +121,14 @@ func TestBrick(t *testing.T) {
 
 		xccOptions := &XCCOptions{}
 
-		items, options, sitems := Brick(c.l, c.m, c.n)
+		items, options, sitems := Bricks(c.l, c.m, c.n, c.fixFirst)
 
 		count := 0
 		XCC(items, options, sitems, stats, xccOptions,
 			func(solution [][]string) bool {
+				brick := ExtractBrick(solution)
+				fmt.Printf("case=%d, l=%d, m=%d, n=%d, count=%d; brick=%v\n", i, c.l, c.m, c.n, count, brick)
+
 				count++
 				return true
 			})

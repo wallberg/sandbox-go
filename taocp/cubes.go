@@ -3,6 +3,7 @@ package taocp
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 // Explore Dancing Links from The Art of Computer Programming, Volume 4,
@@ -11,9 +12,13 @@ import (
 //
 // §7.2.2.1 Dancing Links - Cubes (Exercise 145-148)
 
+// Cube represents a cube with a unique color (a-f) on each face
 type Cube string
 
-// Cubes generates cubes with six colors, one per each face
+// Brick represents a brick with a unique color (a-f) on each face
+type Brick string
+
+// Cubes generates every possible cube
 //
 // Exercise 7.2.2.1-146
 func Cubes() (cubes []Cube) {
@@ -65,10 +70,13 @@ func (c Cube) Rotations() (rotations []Cube) {
 	return rotations
 }
 
-// Brick generates the items, options, and secondary items to assemble
+// Bricks generates the items, options, and secondary items to assemble
 // cubes into an l x m x n size brick, with each brick face having
-// a single color, using XCC.
-func Brick(l, m, n int) ([]string, [][]string, []string) {
+// a single color, using XCC. cube positions and faces are named
+// according to Exercise 7.2.2.1-144. fixFirst=true means we should
+// fix position 1-1-1 with the first rotation of the first cube, to
+// reduce the number of (symmetric) solutions by 720.
+func Bricks(l, m, n int, fixFirst bool) ([]string, [][]string, []string) {
 
 	var (
 		items   []string
@@ -109,12 +117,12 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 				for y := 0; y <= 2*m; y++ {
 					for z := 0; z <= 2*n; z++ {
 						if x%2+y%2+z%2 == 2 {
-							if (brickFace == "top" && y == 0) ||
-								(brickFace == "bottom" && y == 2*m) ||
-								(brickFace == "left" && z == 0) ||
-								(brickFace == "right" && z == 2*n) ||
-								(brickFace == "front" && x == 0) ||
-								(brickFace == "back" && x == 2*l) {
+							if (brickFace == "top" && x == 0) ||
+								(brickFace == "bottom" && x == 2*l) ||
+								(brickFace == "left" && y == 0) ||
+								(brickFace == "right" && y == 2*m) ||
+								(brickFace == "front" && z == 0) ||
+								(brickFace == "back" && z == 2*n) {
 
 								cubeFace := fmt.Sprintf("%d-%d-%d", x, y, z)
 								option = append(option, fmt.Sprintf("%s:%s", cubeFace, color))
@@ -143,7 +151,7 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 					for rotationI, rotation := range cube.Rotations() {
 
 						// in position 1-1-1: only place the first rotation of the first cube, to reduce symmetries
-						if i == 0 && j == 0 && k == 0 && (cubeI > 0 || (cubeI == 0 && rotationI > 0)) {
+						if fixFirst && i == 0 && j == 0 && k == 0 && (cubeI > 0 || (cubeI == 0 && rotationI > 0)) {
 							continue
 						}
 
@@ -151,11 +159,13 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 
 						// For each face of the cube
 						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+0, 2*j+1, 2*k+1, rotation[0:1])) // top
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+0, 2*k+1, rotation[2:3])) // front
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+0, rotation[5:6])) // right
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+2, rotation[4:5])) // left
-						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+2, 2*k+1, rotation[3:4])) // back
 						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+2, 2*j+1, 2*k+1, rotation[1:2])) // bottom
+
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+0, rotation[2:3])) // front
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+1, 2*k+2, rotation[3:4])) // back
+
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+0, 2*k+1, rotation[4:5])) // left
+						option = append(option, fmt.Sprintf("%d-%d-%d:%s", 2*i+1, 2*j+2, 2*k+1, rotation[5:6])) // right
 
 						options = append(options, option)
 					}
@@ -178,4 +188,30 @@ func Brick(l, m, n int) ([]string, [][]string, []string) {
 
 	return items, options, sitems
 
+}
+
+// ExtractBrick extracts the colors for the brick faces from
+// the XCC solution, representing the brick colors
+// ala the cube representation.
+func ExtractBrick(solutions [][]string) Brick {
+	brick := []string{"-", "-", "-", "-", "-", "-"}
+
+	for _, solution := range solutions {
+		switch solution[0] {
+		case "top":
+			brick[0] = solution[1][len(solution[1])-1 : len(solution[1])]
+		case "bottom":
+			brick[1] = solution[1][len(solution[1])-1 : len(solution[1])]
+		case "front":
+			brick[2] = solution[1][len(solution[1])-1 : len(solution[1])]
+		case "back":
+			brick[3] = solution[1][len(solution[1])-1 : len(solution[1])]
+		case "left":
+			brick[4] = solution[1][len(solution[1])-1 : len(solution[1])]
+		case "right":
+			brick[5] = solution[1][len(solution[1])-1 : len(solution[1])]
+		}
+	}
+
+	return (Brick)(strings.Join(brick, ""))
 }
