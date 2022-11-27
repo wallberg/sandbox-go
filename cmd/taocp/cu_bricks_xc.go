@@ -25,7 +25,7 @@ type cuBricksXcCommandDataType struct {
 	L        int  `short:"l" description:"l dimension size of the brick" default:"1"`
 	M        int  `short:"m" description:"m dimension size of the brick" default:"1"`
 	N        int  `short:"n" description:"n dimension size of the brick" default:"1"`
-	FixFirst bool `short:"f" long:"fix" description:"fix first cube, reduces solutions by factor of 720" default:"true"`
+	FixFirst bool `short:"f" long:"fix" description:"fix first cube, reduces solutions by factor of 720"`
 }
 
 func (command cuBricksXcCommandDataType) Execute(args []string) error {
