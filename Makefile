@@ -8,3 +8,8 @@ install:
 
 test:
 	go test -v ${GOPACKAGES}
+
+doc: doc/taocp-7-2-2-2-AlgorithmL.pdf
+
+%.pdf: %.dot
+	dot -Tpdf $< -o $@
