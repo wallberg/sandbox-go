@@ -22,7 +22,6 @@ const (
 // clauses -- list of clauses to satisfy
 // stats   -- SAT processing statistics
 // options -- runtime options
-//
 func SatAlgorithmL(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
@@ -56,7 +55,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		r          []int    // R - record the names of literals that have received values
 		e          int      // E - current stack size of R; 0 <= E <= n
 		g          int      // G - number of really true literals in R (starting from 0)		// and "nearly true" for G <= k < E
-		h          int      // H - ??
 		conflict   int      // CONFLICT - algorithm L step to goto in case of conflict
 		l          int      // literal l
 		x          int      // variable x
@@ -123,7 +121,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		showProgress()
 
-		b.WriteString(fmt.Sprintf("n=%d, d=%d, f=%d, h=%d\n", n, d, f, h))
+		b.WriteString(fmt.Sprintf("n=%d, d=%d, f=%d\n", n, d, f))
 		b.WriteString("\n")
 
 		// FORCE
@@ -254,7 +252,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			log.Printf("  binary_propagation l=%d, t=%s", l, truth(t))
 		}
 
-		h = e
+		h := e
 
 		// Take account of l
 		if val[l>>1] >= t {
