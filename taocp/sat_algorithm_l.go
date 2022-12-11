@@ -205,7 +205,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		log.Print(b.String())
 	}
 
-	// initialize
+	// @note initialize()
 	initialize := func() {
 
 		if stats != nil {
@@ -222,24 +222,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			progress = stats.Progress
 		}
 	}
-
-	// k2l converts the value of variable k to literal 2k if positive, 2k+1 if negative
-	k2l := func(k int) int {
-		if k < 0 {
-			return -2*k + 1
-		} else {
-			return 2 * k
-		}
-	}
-
-	// l2k
-	// l2k := func(l int) int {
-	// 	if l%2 == 0 {
-	// 		return l >> 2
-	// 	} else {
-	// 		return (l >> 2) * -1
-	// 	}
-	// }
 
 	// binary_propogation uses a simple breadth-first search procedure
 	// to propagate the binarary consequences of a literal l inn context T
@@ -301,12 +283,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	lvisit := func() []int {
 		solution := make([]int, n)
 
+		// Convert the literals from internal back to external format
 		for i := 0; i < n; i++ {
 			l := r[i]
 			solution[(l>>1)-1] = (l & 1) ^ 1
 		}
 		if debug {
-			log.Printf("visit solution=%v (%v)", solution[:nOrig], solution[nOrig:])
+			log.Printf("visit solution=%v (%v)", solution[:nOrig], solution)
 		}
 
 		return solution[:nOrig]
@@ -350,6 +333,20 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		log.Printf("L1. Initialize")
 	}
 
+	// Convert the literals in each clause from external to internal format
+	clausesInternal := make(SatClauses, len(clauses))
+	for i, clause := range clauses {
+		clausesInternal[i] = make(SatClause, len(clause))
+		for j, k := range clause {
+			if k < 0 {
+				clausesInternal[i][j] = -2*k + 1
+			} else {
+				clausesInternal[i][j] = 2 * k
+			}
+		}
+	}
+	clauses = clausesInternal
+
 	//
 	// Record all unit clauses with forced variable values
 	//
@@ -360,7 +357,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	units = 0
 	for _, clause := range clauses {
 		if len(clause) == 1 {
-			l := k2l(clause[0])
+			l := clause[0]
 
 			// Look for a contradiction
 			for k := 0; k < units; k++ {
@@ -392,7 +389,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	for _, clause := range clauses {
 		// Check for clause of length 2
 		if len(clause) == 2 {
-			u, v := k2l(clause[0]), k2l(clause[1])
+			u, v := clause[0], clause[1]
 
 			if bsize[u^1] == len(bimp[u^1]) {
 				bimp[u^1] = append(bimp[u^1], v)
@@ -422,7 +419,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		for _, clause := range clauses {
 			// Check for clause of length 3
 			if len(clause) == 3 {
-				if l == k2l(-1*clause[0]) || l == k2l(-1*clause[1]) || l == k2l(-1*clause[2]) {
+				u, v, w := clause[0], clause[1], clause[2]
+
+				if l == u^1 || l == v^1 || l == w^1 {
 					// Found l in this clause
 					if timp[l] == 0 {
 						// This is the first clause in the list for l
@@ -442,7 +441,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	for _, clause := range clauses {
 		// Check for clause of length 3
 		if len(clause) == 3 {
-			u, v, w := k2l(clause[0]), k2l(clause[1]), k2l(clause[2])
+			u, v, w := clause[0], clause[1], clause[2]
 
 			p = timp[u^1] + tindex[u^1]
 			timp[p] = v
