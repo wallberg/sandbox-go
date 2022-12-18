@@ -1,4 +1,8 @@
 digraph G {
+    graph [fontname = "verdana"];
+    node [fontname = "verdana"];
+    edge [fontname = "verdana"];
+
     L1 [label="L1. Initialize"]
     L2 [label="L2. New node\nBRANCH[d]←-1\nAlgorithm X"]
     L3 [label="L3. Choose l"]
@@ -25,7 +29,7 @@ digraph G {
     L4 -> L5 [label="U←1\nFORCE[0]←l"]
     L5 -> L6 [label="U←0"]
     L5 -> L11 [label="bp() conflict"]
-    L6 -> L10 [label="R is all RT"]
+    L6 -> L10 [label="∀ R: R is RT"]
     L6 -> L7 [label="Choose NT"]
     L7 -> L6
     L7 -> L8

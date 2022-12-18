@@ -25,6 +25,7 @@ const (
 func SatAlgorithmL(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
+	// @note Global variables
 	var (
 		nOrig      int      // original value of n, before conversion to 3SAT
 		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
@@ -39,13 +40,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		bimp       [][]int  // BIMP - instead of the buddy system, trying using built-in slices
 		bsize      []int    // BSIZE - number of clauses for each l in BIMP
 		p, pp, ppp int      // index into TIMP
-		units      int      // U - number of distinct variables in unit clauses
-		force      []int    // FORCE - stack of U unit variables which have a forced value
+		units      int      // U - number of distinct variables in unit clauses (at the current depth)
+		force      []int    // FORCE - stack of U unit variables which have a forced value at the current depth
 		istamp     int      // ISTAMP - stamp to make downdating BIMP tables easier
 		ist        []int    // IST - private stamp for literal l
 		istack     [][2]int // ISTACK - stack of previous values of (l, BSIZE[l])
 		istackI    int      // I - size of ISTACK
-		branch     []int    // BRANCH - where are we in decision making (-1, 0, 1)
+		branch     []int    // BRANCH - decision making at depth d; {-1: no decision yet, 0: trying l, 1: trying ^l)}
 		dec        []int    // DEC - decision on l at each branch
 		backf      []int    // BACKF - ??
 		backi      []int    // BACKI - ??
@@ -348,11 +349,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	clauses = clausesInternal
 
 	//
-	// Record all unit clauses with forced variable values
+	// Record all unit clauses as forced variable values at depth 0
 	//
-	// TODO: Determine why L4 and L5 seem to wipe out what we've
-	// done here without any restoration. Maybe instead of adding
-	// to the force stack, we should add to the fixed stack or R stack.
 	force = make([]int, 2*n+2)
 	units = 0
 	for _, clause := range clauses {
@@ -529,7 +527,6 @@ L2:
 			return true, lvisit()
 		}
 
-		// TODO: Goto L15 if Algorithm X discovers a conflict
 		// Choose whatever literal happens to be first in the current list
 		// of free variables.
 		x = varx[0]
