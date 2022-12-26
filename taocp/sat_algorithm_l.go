@@ -224,15 +224,27 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
+	// assertRStackInvariant checks for the R stack invariant, that truth degrees never increase
+	// as we move from the bottom to the top, using Formula (71), p. 227
+	assertRStackInvariant := func() {
+		for j := 1; j < e; j++ {
+			if val[r[j-1]>>1]|1 < val[r[j]>>1] {
+				dump()
+				log.Fatal("assertion failed: violation of the R stack invariant")
+			}
+		}
+	}
+
 	// binary_propogation uses a simple breadth-first search procedure
 	// to propagate the binarary consequences of a literal l inn context T
 	// returns. Returns false if no conflict, true if there is conflict.
-	// Formula (62)
+	// Formula (62), p. 221
 	// @note binary_propogation()
 	binary_propagation := func(l int) bool {
 
 		if debug {
 			log.Printf("  binary_propagation l=%d, t=%s", l, truth(t))
+			assertRStackInvariant()
 		}
 
 		h := e
@@ -277,6 +289,11 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				}
 			}
 		}
+
+		if debug {
+			assertRStackInvariant()
+		}
+
 		return false
 	}
 
@@ -651,6 +668,11 @@ L5:
 
 	// Iterate over each l in the FORCE stack
 	for i := 0; i < units; i++ {
+		if debug && stats.Verbosity > 0 && i == 0 {
+			log.Printf("State before beginning binary_propagation")
+			dump()
+		}
+
 		l := force[i]
 
 		// Perform the binary propogation routine
@@ -684,11 +706,15 @@ L6:
 
 	if debug {
 		// assertion
-		for k := 0; k < g; k++ {
+		for k := 0; k < e; k++ {
 			l := r[k]
 			x := l >> 1
-			if val[x] != rt {
-				log.Panicf("assertion failed: variable {%d}=%s", x, truth(val[x]))
+
+			if k < g && val[x]&(^1) != rt {
+				log.Panicf("assertion failed: variable {%d}=%s is not RT at L6", x, truth(val[x]))
+
+			} else if k >= g && val[x]&(^1) != nt {
+				log.Panicf("assertion failed: variable {%d}=%s is not NT at L6", x, truth(val[x]))
 			}
 		}
 	}

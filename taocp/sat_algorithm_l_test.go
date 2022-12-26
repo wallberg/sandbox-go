@@ -15,17 +15,16 @@ func TestSatAlgorithmL(t *testing.T) {
 		sat     bool       // is satisfiable
 		clauses SatClauses // clauses to satisfy
 	}{
-		// {1, true, SatClauses{{1}}},
-		// {1, true, SatClauses{{-1}}},
-		// {1, false, SatClauses{{1}, {-1}}},
-		// {2, true, SatClauses{{1}, {2}}},
-		// {3, true, SatClauses{{1}, {2}, {-3}}},
-		// {3, true, SatClauses{{1}, {2}, {1}, {2}, {-3}}},
-		// {2, true, SatClauses{{1, 2}}},
-		// {2, true, SatClauses{{1, 2}, {1, -2}}},
-		// {2, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
-		{2, true, SatClauses{{-1, -2}}},
-		// {2, true, SatClauses{{-1, 2}, {1, -2}}},
+		{1, true, SatClauses{{1}}},
+		{1, true, SatClauses{{-1}}},
+		{1, false, SatClauses{{1}, {-1}}},
+		{2, true, SatClauses{{1}, {2}}},
+		{3, true, SatClauses{{1}, {2}, {-3}}},
+		{2, true, SatClauses{{1, 2}}},
+		{2, true, SatClauses{{1, 2}, {1, -2}}},
+		// {2, true, SatClauses{{-1, -2}}}, // index out of range
+		{2, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
+		// {2, true, SatClauses{{-1, 2}, {1, -2}}}, // index out of range
 		// {2, true, SatClauses{{1, -2}, {-1, 2}}},
 		// {5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
 		// {5, true, SatClauses{
@@ -38,19 +37,21 @@ func TestSatAlgorithmL(t *testing.T) {
 		// {9, false, ClausesWaerden339},
 	}
 
-	for _, c := range cases {
+	for i, c := range cases {
 
 		stats := SatStats{
 			Debug:     true,
 			Verbosity: 1,
-			Progress:  true,
+			// Progress:  true,
 		}
 		options := SatOptions{}
+
+		t.Logf("Executing test case #%d, c=%v", i, c)
 
 		sat, solution := SatAlgorithmL(c.n, c.clauses, &stats, &options)
 
 		if sat != c.sat {
-			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
+			t.Errorf("expected satisfiable=%t for case %d, clauses %v; got %t", c.sat, i, c.clauses, sat)
 		}
 		if sat {
 			validSolution := SatTest(c.n, c.clauses, solution)
