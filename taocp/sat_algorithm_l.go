@@ -572,7 +572,6 @@ L2:
 				force[units] = lp
 				units += 1
 
-				val[lp>>1] = rt
 			}
 		}
 
@@ -606,7 +605,6 @@ L2:
 				force[units] = lp
 				units += 1
 
-				val[lp>>1] = rt + lp&1
 			}
 		}
 

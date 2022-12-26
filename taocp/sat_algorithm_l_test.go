@@ -20,13 +20,14 @@ func TestSatAlgorithmL(t *testing.T) {
 		{1, false, SatClauses{{1}, {-1}}},
 		{2, true, SatClauses{{1}, {2}}},
 		{3, true, SatClauses{{1}, {2}, {-3}}},
+		{3, true, SatClauses{{-1}, {2}, {3}}},
 		{2, true, SatClauses{{1, 2}}},
 		{2, true, SatClauses{{1, 2}, {1, -2}}},
-		// {2, true, SatClauses{{-1, -2}}}, // index out of range
+		{2, true, SatClauses{{-1, -2}}},
 		{2, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
-		// {2, true, SatClauses{{-1, 2}, {1, -2}}}, // index out of range
-		// {2, true, SatClauses{{1, -2}, {-1, 2}}},
-		// {5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
+		{2, true, SatClauses{{-1, 2}, {1, -2}}},
+		{2, true, SatClauses{{1, -2}, {-1, 2}}},
+		{5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
 		// {5, true, SatClauses{
 		// 	{1, 2}, {2, 3}, {3, 4}, {4, 5},
 		// 	{-1, -2}, {-1, -3}, {-1, -4}, {-1, -5}}},
