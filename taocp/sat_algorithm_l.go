@@ -8,9 +8,9 @@ import (
 
 const (
 	MaxInt = int(^uint(0) >> 1)
-	rt     = MaxInt - 2 // RT - real truth
-	nt     = MaxInt - 4 // NT - near truth
-	pt     = MaxInt - 6 // PT - proto truth
+	rt     = MaxInt - 1 // RT - real truth
+	nt     = MaxInt - 3 // NT - near truth
+	pt     = MaxInt - 5 // PT - proto truth
 )
 
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
