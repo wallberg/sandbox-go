@@ -31,7 +31,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		inx        []int    // INX
 		varN       int      // N - number of free variables in VAR
-		varX       int      // X - variable of L promoted to real truth
+		varX       int      // X - variable of L promoted to real truth (TODO: does varX need to exist separately from x ?)
 		d          int      // d - depth of the implicit search tree
 		f          int      // F - number of fixed variables
 		timp       []int    // TIMP - ternary clauses
@@ -526,95 +526,60 @@ L2:
 		showProgress()
 	}
 
-	if units == 0 {
-		//
-		// Algorithm X
-		//
-		if f == n {
-			// No variables are free, visit the solution
-
-			if debug {
-				log.Println("L2. [Success!]")
-			}
-
-			if stats != nil {
-				stats.Solutions++
-			}
-
-			return true, lvisit()
-		}
-
-		// Choose whatever literal happens to be first in the current list
-		// of free variables.
-		x = varx[0]
-		l = 2 * x
-
-		if debug {
-			log.Printf("  Trying d=%d, branch=%v, x=%d, l=%d from free variable list", d, branch[0:d+1], x, l)
-		}
-
-		contradiction := false
-
-		// Record the forced values, looking for a contradiction
-		for i := 0; !contradiction && i < bsize[l]; i++ {
-			lp := bimp[l][i]
-
-			// Look for a contradiction
-			for k := 0; !contradiction && k < units; k++ {
-				if lp^1 == force[k] || lp^1 == l {
-					// A contradiction
-					contradiction = true
-				}
-			}
-
-			if !contradiction {
-				// No contradiction, add it to the force stack
-				force[units] = lp
-				units += 1
-
-			}
-		}
-
-		if contradiction {
-			// Try again with l^1
-			l = l ^ 1
-			branch[d] = 1
-			units = 0
-
-			if debug {
-				log.Printf("  Trying d=%d, branch=%v, x=%d, l=%d from free variable list", d, branch[0:d+1], x, l)
-			}
-
-			// Record the forced values, looking for a contradiction
-			for i := 0; i < bsize[l]; i++ {
-				lp := bimp[l][i]
-
-				// Look for a contradiction
-				for k := 0; k < units; k++ {
-					if lp^1 == force[k] || lp^1 == l {
-						// A contradiction
-						if debug && stats.Verbosity > 0 {
-							dump()
-							log.Printf("L2. Found unit clause contradictions; neither %d nor %d will work", l^1, l)
-						}
-						goto L15
-					}
-				}
-
-				// No contradiction, add it to the force stack
-				force[units] = lp
-				units += 1
-
-			}
-		}
-
-		if debug {
-			log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, branch[0:d], l)
-			dump()
-		}
-
-	} else { // units > 0
+	if units > 0 {
 		goto L5
+	}
+
+	//
+	// Algorithm X
+	//
+
+	// Iterate over each R stack entry, checking for contradictions
+	for i := 0; i < e; i++ {
+		l := r[i]
+
+		// Iterate over l's BIMP table
+		for j := 0; j < bsize[l]; j++ {
+			lp := bimp[l][j]
+
+			// Look for a conflict between the BIMP table entry and an R stack entry
+			for k := 0; k < e; k++ {
+				lpp := r[k]
+
+				if lp^1 == lpp {
+					// A contradiction
+					if debug && stats.Verbosity > 0 {
+						dump()
+						log.Printf("L2. BIMP table for %d in R contains %d, which contradicts %d in R", l, lp, lpp)
+					}
+					goto L15
+				}
+			}
+		}
+	}
+
+	if f == n {
+		// All variables are fixed, visit the solution
+
+		if debug {
+			log.Println("L2. [Success!]")
+		}
+
+		if stats != nil {
+			stats.Solutions++
+		}
+
+		return true, lvisit()
+	}
+
+	// Choose whatever literal happens to be first in the current list
+	// of free variables.
+	x = varx[0]
+	l = 2 * x
+
+	if debug {
+		log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, branch[0:d], l)
+		dump()
 	}
 
 	//
@@ -973,6 +938,10 @@ L12:
 		log.Printf("L12. Unfix real truths")
 	}
 
+	if debug && stats.Verbosity > 0 {
+		dump()
+	}
+
 	for e > f {
 		// Implicitly restore X to the free list because N + E = n
 		// (Exercise 137)
@@ -990,7 +959,7 @@ L12:
 				tsize[u^1] += 1
 			}
 		}
-		val[x] = 0
+		val[varX] = 0
 	}
 
 	//
