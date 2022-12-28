@@ -16,6 +16,12 @@ func TestSatAlgorithmD(t *testing.T) {
 		sat     bool       // is satisfiable
 		clauses SatClauses // clauses to satisfy
 	}{
+		{100, true, SatRand(2, 80, 100, 0)},
+		{100, true, SatRand(2, 100, 100, 0)},
+		{100, false, SatRand(2, 400, 100, 0)},
+		{1000, true, SatRand(2, 1000, 1000, 0)},
+		{1000, true, SatRand(2, 1100, 1000, 0)},
+		{1000, false, SatRand(2, 2000, 1000, 0)},
 		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
 		{3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
 		{4, true, ClausesRPrime},

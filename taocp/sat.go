@@ -3,7 +3,11 @@ package taocp
 import (
 	"bufio"
 	"fmt"
+	"log"
+	"math/rand"
 	"os"
+	"reflect"
+	"sort"
 	"strings"
 )
 
@@ -378,4 +382,75 @@ func SatTest(n int, clauses SatClauses, solution []int) bool {
 	}
 
 	return true
+}
+
+// binomial efficiently computes the binomial coefficient (n pick k)
+func binomial(n, k int64) int64 {
+	if k == 0 {
+		return 1
+	} else if k > n/2 {
+		return binomial(n, n-k)
+	} else {
+		return n * binomial(n-1, k-1) / k
+	}
+}
+
+// SatRand returns m pseudorandom k-SAT clauses on n variables,
+// sampled without replacement (distinct).
+// TODO: improve the algorithm by never generating duplicates
+func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
+
+	// Assert n >= k
+	if n < k {
+		log.Panicf("n=%d must be >= k=%d", n, k)
+	}
+
+	// Assert that we aren't asking for too many clauses, which
+	// would cause an infinite loop
+	m_max := binomial(int64(n), int64(k))
+	for i := 0; i < k; i++ {
+		m_max *= 2
+	}
+	if int64(m) > m_max {
+		log.Panicf("m=%d is too many clauses for n=%d, k=%d", m, n, k)
+	}
+
+	// Seed the pseudorandom generator
+	rand.Seed(seed)
+
+	// Generate m clauses
+	clauses = make(SatClauses, m)
+
+	for i := 0; i < m; {
+
+		// Generate a single clause
+		clauses[i] = SatClause(rand.Perm(n)[0:k])
+
+		// Sort the clause
+		sort.IntSlice(clauses[i]).Sort()
+
+		// Shift variables to begin at 1, and
+		// determine which variables are negated
+		for j := 0; j < k; j++ {
+			clauses[i][j] += 1
+			if rand.Intn(2) == 1 {
+				clauses[i][j] *= -1
+			}
+		}
+
+		// Determine if this clause has already been created
+		duplicate := false
+		for j := 0; j < i; j++ {
+			if reflect.DeepEqual(clauses[i], clauses[j]) {
+				duplicate = true
+				break
+			}
+		}
+
+		if !duplicate {
+			// Advance to the next clause; otherwise create again
+			i += 1
+		}
+	}
+	return clauses
 }

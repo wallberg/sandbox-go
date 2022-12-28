@@ -31,6 +31,12 @@ func TestSatAlgorithmL(t *testing.T) {
 		{5, true, SatClauses{
 			{1, 2}, {2, 3}, {3, 4}, {4, 5},
 			{-1, -2}, {-1, -3}, {-1, -4}, {-1, -5}}},
+		{100, true, SatRand(2, 80, 100, 0)},
+		{100, true, SatRand(2, 100, 100, 0)},
+		{100, false, SatRand(2, 400, 100, 0)},
+		{1000, true, SatRand(2, 1000, 1000, 0)},
+		{1000, true, SatRand(2, 1100, 1000, 0)},
+		{1000, false, SatRand(2, 2000, 1000, 0)},
 		// {3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
 		// {3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
 		// {4, true, ClausesRPrime},
@@ -41,13 +47,13 @@ func TestSatAlgorithmL(t *testing.T) {
 	for i, c := range cases {
 
 		stats := SatStats{
-			Debug:     true,
-			Verbosity: 1,
+			// Debug:     true,
+			// Verbosity: 1,
 			// Progress:  true,
 		}
 		options := SatOptions{}
 
-		t.Logf("Executing test case #%d, c=%v", i, c)
+		t.Logf("Executing test case #%d, n=%d, sat=%t, clauses=%d", i, c.n, c.sat, len(c.clauses))
 
 		sat, solution := SatAlgorithmL(c.n, c.clauses, &stats, &options)
 
