@@ -227,3 +227,42 @@ func BenchmarkSatAlgorithmLLangford(b *testing.B) {
 		})
 	}
 }
+
+func BenchmarkSatAlgorithmLSatRandom(b *testing.B) {
+
+	cases := []struct {
+		k int // clause length (k-SAT)
+		m int // number of clauses
+		n int // number of strictly distinct literals
+	}{
+		{2, 80, 100},
+		{2, 100, 100},
+		{2, 400, 100},
+		{2, 1000, 1000},
+		{2, 1100, 1000},
+		{2, 2000, 1000},
+	}
+
+	for _, c := range cases {
+
+		firstExecution := true
+
+		clauses := SatRand(c.k, c.m, c.n, 0)
+
+		b.Run(fmt.Sprintf("k=%d,m=%d,n=%d", c.k, c.m, c.n), func(b *testing.B) {
+
+			for i := 0; i < b.N; i++ {
+				stats := SatStats{}
+				options := SatOptions{}
+
+				sat, _ := SatAlgorithmL(c.n, clauses, &stats, &options)
+
+				if firstExecution {
+					b.Logf("SAT=%t, m=%d, n=%d, nodes=%d", sat, c.m, c.n, stats.Nodes)
+					firstExecution = false
+				}
+			}
+
+		})
+	}
+}
