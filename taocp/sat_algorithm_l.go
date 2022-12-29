@@ -27,42 +27,113 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	// @note Global variables
 	var (
-		nOrig      int      // original value of n, before conversion to 3SAT
-		varx       []int    // VAR - permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
-		inx        []int    // INX
-		varN       int      // N - number of free variables in VAR
-		varX       int      // X - variable of L promoted to real truth (TODO: does varX need to exist separately from x ?)
-		d          int      // d - depth of the implicit search tree
-		f          int      // F - number of fixed variables
-		timp       []int    // TIMP - ternary clauses
-		tsize      []int    // TSIZE - number of clauses for each l in TIMP
-		link       []int    // LINK - circular list of the three literals in each clause in TIMP
-		bimp       [][]int  // BIMP - instead of the buddy system, trying using built-in slices
-		bsize      []int    // BSIZE - number of clauses for each l in BIMP
-		p, pp, ppp int      // index into TIMP
-		units      int      // U - number of distinct variables in unit clauses (at the current depth)
-		force      []int    // FORCE - stack of U unit variables which have a forced value at the current depth
-		istamp     int      // ISTAMP - stamp to make downdating BIMP tables easier
-		ist        []int    // IST - private stamp for literal l
-		istack     [][2]int // ISTACK - stack of previous values of (l, BSIZE[l])
-		istackI    int      // I - size of ISTACK
-		branch     []int    // BRANCH - decision making at depth d; {-1: no decision yet, 0: trying l, 1: trying ^l)}
-		dec        []int    // DEC - decision on l at each branch
-		backf      []int    // BACKF - ??
-		backi      []int    // BACKI - ??
-		backl      []int    // BACKL - ?? (for showProgress(), Exercise 142)
-		t          int      // T - truth context
-		val        []int    // VAL - track if variable x is fixed in context T
-		r          []int    // R - record the names of literals that have received values
-		e          int      // E - current stack size of R; 0 <= E <= n
-		g          int      // G - number of really true literals in R (starting from 0)		// and "nearly true" for G <= k < E
-		conflict   int      // CONFLICT - algorithm L step to goto in case of conflict
-		l          int      // literal l
-		x          int      // variable x
-		ntL        int      // L - "nearly true" literal l
-		k, j       int      // indices
-		debug      bool     // debugging is enabled
-		progress   bool     // progress tracking is enabled
+		// original value of n, before conversion to 3SAT
+		nOrig int
+
+		// N - number of free variables in VAR (F + N = n)
+		N int
+
+		// F - number of fixed variables (F + N = n)
+		F int
+
+		// VAR - free list; permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
+		VAR []int
+
+		// INX - index partner of VAR (free list)
+		INX []int
+
+		// X - variable of L promoted to real truth
+		X int
+
+		// d - depth of the implicit search tree
+		d int
+
+		// TIMP - ternary clauses
+		TIMP []int
+
+		// TSIZE - number of clauses for each l in TIMP
+		TSIZE []int
+
+		// LINK - circular list of the three literals in each clause in TIMP
+		LINK []int
+
+		// BIMP - binary clauses; instead of the buddy system, we are using built-in slices
+		BIMP [][]int
+
+		// BSIZE - number of clauses for each l in BIMP
+		BSIZE []int
+
+		// index into TIMP
+		p, pp, ppp int
+
+		// U - number of distinct variables in unit clauses (at the current depth)
+		U int
+
+		// FORCE - stack of U unit variables which have a forced value at the current depth
+		FORCE []int
+
+		// ISTAMP - stamp to make downdating BIMP tables easier
+		ISTAMP int
+
+		// IST - private stamp for literal l
+		IST []int
+
+		// ISTACK - stack of previous values of (l, BSIZE[l])
+		ISTACK [][2]int
+
+		// I - size of ISTACK
+		I int
+
+		// BRANCH - decision making at depth d; {-1: no decision yet, 0: trying l, 1: trying ^l)}
+		BRANCH []int
+
+		// DEC - decision on l at each branch
+		DEC []int
+
+		// BACKI - ??
+		BACKI []int
+
+		// BACKF - ?? (for showProgress(), Exercise 142)
+		BACKF []int
+
+		// BACKL - ?? (for showProgress(), Exercise 142)
+		BACKL []int
+
+		// T - truth context
+		T int
+
+		// L - nearly true literal l
+		L int
+
+		// VAL - track if variable x is fixed in context T
+		VAL []int
+
+		// R - record the names of literals that have received values
+		R []int
+
+		// E - current stack size of R; 0 <= E <= n
+		E int
+
+		// G - number of really true literals in R (starting from 0), and nearly true for G <= k < E
+		G int
+
+		// CONFLICT - algorithm L step to goto in case of CONFLICT
+		CONFLICT int
+
+		// literal l
+		l int
+
+		// variable x
+		x int
+
+		// index
+		k, j int
+
+		// is debugging enabled?
+		debug bool
+
+		// is progress tracking enabled?
+		progress bool
 	)
 
 	// truth returns a string description of truth values
@@ -89,23 +160,23 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	showProgress := func() {
 		var b strings.Builder
 		b.WriteString("  Progress: ")
-		backl[d] = f
+		BACKL[d] = F
 		localr := 0
 		k := 0
 
 		for k < d {
-			for localr < backf[k] {
-				b.WriteString(fmt.Sprintf("%d ", 6+(r[localr]&1)))
+			for localr < BACKF[k] {
+				b.WriteString(fmt.Sprintf("%d ", 6+(R[localr]&1)))
 				localr += 1
 			}
-			if branch[k] < 0 {
+			if BRANCH[k] < 0 {
 				b.WriteString("| ")
 			} else {
-				b.WriteString(fmt.Sprintf("%d ", (2*branch[k])+r[localr]&1))
+				b.WriteString(fmt.Sprintf("%d ", (2*BRANCH[k])+R[localr]&1))
 				localr += 1
 			}
-			for localr < backl[k+1] {
-				b.WriteString(fmt.Sprintf("%d ", 4+(r[localr]&1)))
+			for localr < BACKL[k+1] {
+				b.WriteString(fmt.Sprintf("%d ", 4+(R[localr]&1)))
 				localr += 1
 			}
 			k += 1
@@ -122,41 +193,41 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		showProgress()
 
-		b.WriteString(fmt.Sprintf("n=%d, d=%d, f=%d\n", n, d, f))
+		b.WriteString(fmt.Sprintf("n=%d, d=%d, f=%d\n", n, d, F))
 		b.WriteString("\n")
 
 		// FORCE
 		b.WriteString("FORCE\n")
-		b.WriteString(fmt.Sprintf("U=%d: ", units))
-		for i := 0; i < units; i++ {
+		b.WriteString(fmt.Sprintf("U=%d: ", U))
+		for i := 0; i < U; i++ {
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(fmt.Sprintf("{%d}", force[i]))
+			b.WriteString(fmt.Sprintf("{%d}", FORCE[i]))
 		}
 		b.WriteString("\n\n")
 
 		// VAR
 		b.WriteString("VAR\n")
-		b.WriteString(fmt.Sprintf("N=%d: ", varN))
-		for k := 0; k < varN; k++ {
+		b.WriteString(fmt.Sprintf("N=%d: ", N))
+		for k := 0; k < N; k++ {
 			if k > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(fmt.Sprintf("{%d}", varx[k]))
+			b.WriteString(fmt.Sprintf("{%d}", VAR[k]))
 		}
 		b.WriteString("\n\n")
 
 		// R
 		b.WriteString("R\n")
-		b.WriteString(fmt.Sprintf("E=%d, G=%d: ", e, g))
-		for k := 0; k < e; k++ {
+		b.WriteString(fmt.Sprintf("E=%d, G=%d: ", E, G))
+		for k := 0; k < E; k++ {
 			if k > 0 {
 				b.WriteString(", ")
 			}
-			l := r[k]
+			l := R[k]
 			x := l >> 1
-			b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(val[x])))
+			b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(VAL[x])))
 		}
 		b.WriteString("\n\n")
 
@@ -166,7 +237,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			if x > 1 {
 				b.WriteString(", ")
 			}
-			b.WriteString(fmt.Sprintf("{%d}=%s", x, truth(val[x])))
+			b.WriteString(fmt.Sprintf("{%d}=%s", x, truth(VAL[x])))
 		}
 		b.WriteString("\n\n")
 
@@ -174,11 +245,11 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		b.WriteString("BIMP\n")
 		for l := 2; l <= 2*n+1; l++ {
 			b.WriteString(fmt.Sprintf("%d: ", l))
-			for i := 0; i < bsize[l]; i++ {
+			for i := 0; i < BSIZE[l]; i++ {
 				if i > 0 {
 					b.WriteString(", ")
 				}
-				b.WriteString(fmt.Sprintf("%d", bimp[l][i]))
+				b.WriteString(fmt.Sprintf("%d", BIMP[l][i]))
 			}
 			b.WriteString("\n")
 		}
@@ -188,16 +259,16 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		b.WriteString("TIMP\n")
 		for l := 2; l <= 2*n+1; l++ {
 			b.WriteString(fmt.Sprintf("%d: ", l))
-			for i := 0; i < tsize[l]; i++ {
+			for i := 0; i < TSIZE[l]; i++ {
 				if i > 0 {
 					b.WriteString(", ")
 				}
-				p := timp[l] + 2*i
-				b.WriteString(fmt.Sprintf("{%d,%d}->", timp[p], timp[p+1]))
-				p = link[p]
-				b.WriteString(fmt.Sprintf("{%d,%d}->", timp[p], timp[p+1]))
-				p = link[p]
-				b.WriteString(fmt.Sprintf("{%d,%d}", timp[p], timp[p+1]))
+				p := TIMP[l] + 2*i
+				b.WriteString(fmt.Sprintf("{%d,%d}->", TIMP[p], TIMP[p+1]))
+				p = LINK[p]
+				b.WriteString(fmt.Sprintf("{%d,%d}->", TIMP[p], TIMP[p+1]))
+				p = LINK[p]
+				b.WriteString(fmt.Sprintf("{%d,%d}", TIMP[p], TIMP[p+1]))
 			}
 			b.WriteString("\n")
 		}
@@ -227,8 +298,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// assertRStackInvariant checks for the R stack invariant, that truth degrees never increase
 	// as we move from the bottom to the top, using Formula (71), p. 227
 	assertRStackInvariant := func() {
-		for j := 1; j < e; j++ {
-			if val[r[j-1]>>1]|1 < val[r[j]>>1] {
+		for j := 1; j < E; j++ {
+			if VAL[R[j-1]>>1]|1 < VAL[R[j]>>1] {
 				dump()
 				log.Fatal("assertion failed: violation of the R stack invariant")
 			}
@@ -243,49 +314,49 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	binary_propagation := func(l int) bool {
 
 		if debug {
-			log.Printf("  binary_propagation l=%d, t=%s", l, truth(t))
+			log.Printf("  binary_propagation l=%d, t=%s", l, truth(T))
 			assertRStackInvariant()
 		}
 
-		h := e
+		h := E
 
 		// Take account of l
-		if val[l>>1] >= t {
+		if VAL[l>>1] >= T {
 			// l is fixed in context t
-			if val[l>>1]&1 == l&1 {
+			if VAL[l>>1]&1 == l&1 {
 				// l is fixed true, do nothing
 
-			} else if val[(l^1)>>1]&1 == (l^1)&1 { // TODO: change to 'else' ?
+			} else if VAL[(l^1)>>1]&1 == (l^1)&1 { // TODO: change to 'else' ?
 				// l is fixed false, goto CONFLICT
 				return true
 			}
 		} else {
-			val[l>>1] = t + (l & 1)
-			r[e] = l
-			e += 1
+			VAL[l>>1] = T + (l & 1)
+			R[E] = l
+			E += 1
 		}
 
-		for h < e {
-			l = r[h]
+		for h < E {
+			l = R[h]
 			h += 1
 			// For each l' in BIMP(l)
-			for j := 0; j < bsize[l]; j++ {
-				lp := bimp[l][j]
+			for j := 0; j < BSIZE[l]; j++ {
+				lp := BIMP[l][j]
 
 				// Take account of l'
-				if val[lp>>1] >= t {
+				if VAL[lp>>1] >= T {
 					// l' is fixed in context t
-					if val[lp>>1]&1 == lp&1 {
+					if VAL[lp>>1]&1 == lp&1 {
 						// l' is fixed true, do nothing
 
-					} else if val[(lp^1)>>1] == (lp^1)&1 { // TODO: change to 'else' ?
+					} else if VAL[(lp^1)>>1] == (lp^1)&1 { // TODO: change to 'else' ?
 						// l' is fixed false, goto CONFLICT
 						return true
 					}
 				} else {
-					val[lp>>1] = t + (lp & 1)
-					r[e] = lp
-					e += 1
+					VAL[lp>>1] = T + (lp & 1)
+					R[E] = lp
+					E += 1
 				}
 			}
 		}
@@ -303,7 +374,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// Convert the literals from internal back to external format
 		for i := 0; i < n; i++ {
-			l := r[i]
+			l := R[i]
 			solution[(l>>1)-1] = (l & 1) ^ 1
 		}
 		if debug {
@@ -317,24 +388,24 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	appendBimp := func(l, x int) {
 
 		// Update private stamp IST, if necessary. Formula (63)
-		if ist[l] != istamp {
-			ist[l] = istamp
-			if istackI == len(ist) {
-				istack = append(istack, [2]int{l, bsize[l]})
+		if IST[l] != ISTAMP {
+			IST[l] = ISTAMP
+			if I == len(IST) {
+				ISTACK = append(ISTACK, [2]int{l, BSIZE[l]})
 			} else {
-				istack[istackI][0] = l
-				istack[istackI][1] = bsize[l]
+				ISTACK[I][0] = l
+				ISTACK[I][1] = BSIZE[l]
 			}
-			istackI += 1
+			I += 1
 		}
 
 		// Append x to l
-		if bsize[l] == len(bimp[l]) {
-			bimp[l] = append(bimp[l], x)
+		if BSIZE[l] == len(BIMP[l]) {
+			BIMP[l] = append(BIMP[l], x)
 		} else {
-			bimp[l][bsize[l]] = x
+			BIMP[l][BSIZE[l]] = x
 		}
-		bsize[l] += 1
+		BSIZE[l] += 1
 	}
 
 	//
@@ -368,15 +439,15 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	//
 	// Record all unit clauses as forced variable values at depth 0
 	//
-	force = make([]int, 2*n+2)
-	units = 0
+	FORCE = make([]int, 2*n+2)
+	U = 0
 	for _, clause := range clauses {
 		if len(clause) == 1 {
 			l := clause[0]
 
 			// Look for a contradiction
-			for k := 0; k < units; k++ {
-				if l^1 == force[k] {
+			for k := 0; k < U; k++ {
+				if l^1 == FORCE[k] {
 					// A contradiction
 					if debug {
 						log.Printf("L1. Found a unit clause contradiction")
@@ -385,8 +456,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				}
 			}
 
-			force[units] = l
-			units += 1
+			FORCE[U] = l
+			U += 1
 
 		}
 	}
@@ -394,11 +465,11 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	//
 	// Record all binary clauses in the BIMP array
 	//
-	bimp = make([][]int, 2*n+2)
+	BIMP = make([][]int, 2*n+2)
 	for l := 2; l <= 2*n+1; l++ {
-		bimp[l] = make([]int, 4)
+		BIMP[l] = make([]int, 4)
 	}
-	bsize = make([]int, 2*n+2)
+	BSIZE = make([]int, 2*n+2)
 
 	// Insert binary clauses into BIMP
 	for _, clause := range clauses {
@@ -406,27 +477,27 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		if len(clause) == 2 {
 			u, v := clause[0], clause[1]
 
-			if bsize[u^1] == len(bimp[u^1]) {
-				bimp[u^1] = append(bimp[u^1], v)
+			if BSIZE[u^1] == len(BIMP[u^1]) {
+				BIMP[u^1] = append(BIMP[u^1], v)
 			} else {
-				bimp[u^1][bsize[u^1]] = v
+				BIMP[u^1][BSIZE[u^1]] = v
 			}
-			bsize[u^1] += 1
+			BSIZE[u^1] += 1
 
-			if bsize[v^1] == len(bimp[v^1]) {
-				bimp[v^1] = append(bimp[v^1], u)
+			if BSIZE[v^1] == len(BIMP[v^1]) {
+				BIMP[v^1] = append(BIMP[v^1], u)
 			} else {
-				bimp[v^1][bsize[v^1]] = u
+				BIMP[v^1][BSIZE[v^1]] = u
 			}
-			bsize[v^1] += 1
+			BSIZE[v^1] += 1
 		}
 	}
 
 	//
 	// Record all ternary clauses in the TIMP array
 	//
-	timp = make([]int, 2*n+2)
-	tsize = make([]int, 2*n+2)
+	TIMP = make([]int, 2*n+2)
+	TSIZE = make([]int, 2*n+2)
 
 	// Get the values of TIMP[l] and TSIZE[l] for each l
 	for l := 2; l <= 2*n+1; l++ {
@@ -438,19 +509,19 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 				if l == u^1 || l == v^1 || l == w^1 {
 					// Found l in this clause
-					if timp[l] == 0 {
+					if TIMP[l] == 0 {
 						// This is the first clause in the list for l
-						timp[l] = len(timp)
+						TIMP[l] = len(TIMP)
 					}
-					timp = append(timp, 0, 0)
-					tsize[l] += 1
+					TIMP = append(TIMP, 0, 0)
+					TSIZE[l] += 1
 				}
 			}
 		}
 	}
 
 	// Add each clause to TIMP and set their LINK values
-	link = make([]int, len(timp))
+	LINK = make([]int, len(TIMP))
 	tindex := make([]int, 2*n+2) // tindex[l] is the index for next insertion point in TIMP[l]
 
 	for _, clause := range clauses {
@@ -458,24 +529,24 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		if len(clause) == 3 {
 			u, v, w := clause[0], clause[1], clause[2]
 
-			p = timp[u^1] + tindex[u^1]
-			timp[p] = v
-			timp[p+1] = w
+			p = TIMP[u^1] + tindex[u^1]
+			TIMP[p] = v
+			TIMP[p+1] = w
 			tindex[u^1] += 2
 
-			pp = timp[v^1] + tindex[v^1]
-			timp[pp] = u
-			timp[pp+1] = w
+			pp = TIMP[v^1] + tindex[v^1]
+			TIMP[pp] = u
+			TIMP[pp+1] = w
 			tindex[v^1] += 2
 
-			ppp = timp[w^1] + tindex[w^1]
-			timp[ppp] = u
-			timp[ppp+1] = v
+			ppp = TIMP[w^1] + tindex[w^1]
+			TIMP[ppp] = u
+			TIMP[ppp+1] = v
 			tindex[w^1] += 2
 
-			link[p] = pp
-			link[pp] = ppp
-			link[ppp] = p
+			LINK[p] = pp
+			LINK[pp] = ppp
+			LINK[ppp] = p
 		}
 	}
 
@@ -483,30 +554,30 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// not fixed in context RT. A variable becomes fixed by swapping it to the
 	// end of the free list and decreasing N; then we can free it later by
 	// simply increasing N, without swapping.
-	varx = make([]int, n)
-	inx = make([]int, n+1)
+	VAR = make([]int, n)
+	INX = make([]int, n+1)
 	for k = 1; k <= n; k++ {
-		varx[k-1] = k
-		inx[k] = k - 1
+		VAR[k-1] = k
+		INX[k] = k - 1
 	}
-	varN = n
+	N = n
 
 	d = 0
-	f = 0
+	F = 0
 
-	istamp = 0
-	ist = make([]int, 2*n+2)
-	istack = make([][2]int, 1024) // Grow dynamically, when needed
-	istackI = 0
+	ISTAMP = 0
+	IST = make([]int, 2*n+2)
+	ISTACK = make([][2]int, 1024) // Grow dynamically, when needed
+	I = 0
 
-	dec = make([]int, n+1)
-	backf = make([]int, n+1)
-	backi = make([]int, n+1)
-	backl = make([]int, n+1)
-	branch = make([]int, n+1)
+	DEC = make([]int, n+1)
+	BACKF = make([]int, n+1)
+	BACKI = make([]int, n+1)
+	BACKL = make([]int, n+1)
+	BRANCH = make([]int, n+1)
 
-	val = make([]int, n+1)
-	r = make([]int, n+1)
+	VAL = make([]int, n+1)
+	R = make([]int, n+1)
 
 	if debug && stats.Verbosity > 0 {
 		dump()
@@ -520,13 +591,13 @@ L2:
 		log.Printf("L2. New node")
 	}
 
-	branch[d] = -1 // No decision yet
+	BRANCH[d] = -1 // No decision yet
 
 	if debug || progress {
 		showProgress()
 	}
 
-	if units > 0 {
+	if U > 0 {
 		goto L5
 	}
 
@@ -535,16 +606,16 @@ L2:
 	//
 
 	// Iterate over each R stack entry, checking for contradictions
-	for i := 0; i < e; i++ {
-		l := r[i]
+	for i := 0; i < E; i++ {
+		l := R[i]
 
 		// Iterate over l's BIMP table
-		for j := 0; j < bsize[l]; j++ {
-			lp := bimp[l][j]
+		for j := 0; j < BSIZE[l]; j++ {
+			lp := BIMP[l][j]
 
 			// Look for a conflict between the BIMP table entry and an R stack entry
-			for k := 0; k < e; k++ {
-				lpp := r[k]
+			for k := 0; k < E; k++ {
+				lpp := R[k]
 
 				if lp^1 == lpp {
 					// A contradiction
@@ -558,7 +629,7 @@ L2:
 		}
 	}
 
-	if f == n {
+	if F == n {
 		// All variables are fixed, visit the solution
 
 		if debug {
@@ -574,11 +645,11 @@ L2:
 
 	// Choose whatever literal happens to be first in the current list
 	// of free variables.
-	x = varx[0]
+	x = VAR[0]
 	l = 2 * x
 
 	if debug {
-		log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, branch[0:d], l)
+		log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, BRANCH[0:d], l)
 		dump()
 	}
 
@@ -599,10 +670,10 @@ L3:
 		log.Printf("  d=%d, l=%d", d, l)
 	}
 
-	dec[d] = l
-	backf[d] = f
-	backi[d] = istackI
-	branch[d] = 0 // We are trying l
+	DEC[d] = l
+	BACKF[d] = F
+	BACKI[d] = I
+	BRANCH[d] = 0 // We are trying l
 
 	//
 	// @note L4 [Try l.]
@@ -613,8 +684,8 @@ L4:
 		log.Printf("L4. Try l")
 	}
 
-	units = 1
-	force[0] = l
+	U = 1
+	FORCE[0] = l
 
 	//
 	// @note L5 [Accept near truths.]
@@ -624,34 +695,34 @@ L5:
 		log.Printf("L5. Accept near truths")
 	}
 
-	t = nt
-	g, e = f, f
-	istamp += 1
-	conflict = 11 // L11
+	T = nt
+	G, E = F, F
+	ISTAMP += 1
+	CONFLICT = 11 // L11
 
 	// Iterate over each l in the FORCE stack
-	for i := 0; i < units; i++ {
+	for i := 0; i < U; i++ {
 		if debug && stats.Verbosity > 0 && i == 0 {
 			log.Printf("State before beginning binary_propagation")
 			dump()
 		}
 
-		l := force[i]
+		l := FORCE[i]
 
 		// Perform the binary propogation routine
 		if binary_propagation(l) {
 			// There was a conflict
-			switch conflict {
+			switch CONFLICT {
 			case 11:
 				goto L11
 			default:
-				log.Panicf("Unknown value of CONFLICT: %d", conflict)
+				log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
 			}
 
 		}
 	}
 
-	units = 0
+	U = 0
 
 	if debug && stats.Verbosity > 0 {
 		dump()
@@ -669,90 +740,89 @@ L6:
 
 	if debug {
 		// assertion
-		for k := 0; k < e; k++ {
-			l := r[k]
+		for k := 0; k < E; k++ {
+			l := R[k]
 			x := l >> 1
 
-			if k < g && val[x]&(^1) != rt {
-				log.Panicf("assertion failed: variable {%d}=%s is not RT at L6", x, truth(val[x]))
+			if k < G && VAL[x]&(^1) != rt {
+				log.Panicf("assertion failed: variable {%d}=%s is not RT at L6", x, truth(VAL[x]))
 
-			} else if k >= g && val[x]&(^1) != nt {
-				log.Panicf("assertion failed: variable {%d}=%s is not NT at L6", x, truth(val[x]))
+			} else if k >= G && VAL[x]&(^1) != nt {
+				log.Panicf("assertion failed: variable {%d}=%s is not NT at L6", x, truth(VAL[x]))
 			}
 		}
 	}
 
-	if g == e {
+	if G == E {
 		// No nearly true literals
 		goto L10
 	}
 
-	ntL = r[g]
-	g += 1
+	L = R[G]
+	G += 1
 
 	//
 	// @note L7 [Promote L to real truth.]
 	//
 
 	if debug {
-		log.Printf("L7. Promote L=%d to real truth", ntL)
+		log.Printf("L7. Promote L=%d to real truth", L)
 	}
 
-	varX = ntL >> 1
-	val[varX] = rt + ntL&1
+	X = L >> 1
+	VAL[X] = rt + L&1
 
 	// Remove variable X from the free list (Exercise 137 (a))
-	varN = n - g
-	x = varx[varN]
-	j = inx[varX]
-	varx[j] = x
-	inx[x] = j
-	varx[varN] = varX
-	inx[varX] = varN
+	N = n - G
+	x = VAR[N]
+	j = INX[X]
+	VAR[j] = x
+	INX[x] = j
+	VAR[N] = X
+	INX[X] = N
 
 	// Remove variable X from all TIMP pairs (Exercise 137 (a))
-	for _, l := range []int{2 * varX, 2*varX + 1} {
+	for _, l := range []int{2 * X, 2*X + 1} {
 
 		// For each pair in TIMP[l]
-		for i := 0; i < tsize[l]; i++ {
-			p := timp[l] + 2*i
-			u, v := timp[p], timp[p+1]
+		for i := 0; i < TSIZE[l]; i++ {
+			p = TIMP[l] + 2*i
+			u, v := TIMP[p], TIMP[p+1]
 
-			pp = link[p]
-			ppp = link[pp]
+			pp = LINK[p]
+			ppp = LINK[pp]
 
-			s := tsize[u^1] - 1
-			tsize[u^1] = s
-			t := timp[u^1] + 2*s // local t, not T
+			s := TSIZE[u^1] - 1
+			TSIZE[u^1] = s
+			t := TIMP[u^1] + 2*s // local t, not T
 
 			if pp != t {
 				// Swap pairs
-				up, vp := timp[t], timp[t+1]
-				q := link[t]
-				qp := link[q]
-				link[qp], link[p] = pp, t
-				timp[pp], timp[pp+1] = up, vp
-				link[pp] = q
-				timp[t], timp[t+1] = v, l^1
-				link[t] = ppp
+				up, vp := TIMP[t], TIMP[t+1]
+				q := LINK[t]
+				qp := LINK[q]
+				LINK[qp], LINK[p] = pp, t
+				TIMP[pp], TIMP[pp+1] = up, vp
+				LINK[pp] = q
+				TIMP[t], TIMP[t+1] = v, l^1
+				LINK[t] = ppp
 				pp = t
 			}
 
-			s = tsize[v^1] - 1
-			tsize[v^1] = s
-			t = timp[v^1] + 2*s // local t, not T
+			s = TSIZE[v^1] - 1
+			TSIZE[v^1] = s
+			t = TIMP[v^1] + 2*s
 
 			if ppp != t {
 				// Swap pairs
-				up, vp := timp[t], timp[t+1]
-				q := link[t]
-				qp := link[q]
-				link[qp], link[pp] = ppp, t
-				timp[ppp], timp[ppp+1] = up, vp
-				link[ppp] = q
-				timp[t], timp[t+1] = l^1, u
-				link[t] = p
-				pp = t
+				up, vp := TIMP[t], TIMP[t+1]
+				q := LINK[t]
+				qp := LINK[q]
+				LINK[qp], LINK[pp] = ppp, t
+				TIMP[ppp], TIMP[ppp+1] = up, vp
+				LINK[ppp] = q
+				TIMP[t], TIMP[t+1] = l^1, u
+				LINK[t] = p
 			}
 		}
 	}
@@ -761,9 +831,9 @@ L6:
 		dump()
 	}
 
-	for i := 0; i < tsize[ntL]; i++ {
-		p := timp[ntL] + 2*i
-		u, v := timp[p], timp[p+1]
+	for i := 0; i < TSIZE[L]; i++ {
+		p := TIMP[L] + 2*i
+		u, v := TIMP[p], TIMP[p+1]
 
 		//
 		// @note L8 [Consider u or v.]
@@ -776,13 +846,13 @@ L6:
 		// We have deduced that u or v must be true; five cases arise.
 		// TODO: don't calculate these values until necessary
 
-		uFixed := val[u>>1] >= t
-		uFixedTrue := uFixed && val[u>>1]&1 == u&1
-		uFixedFalse := uFixed && val[(u^1)>>1]&1 == (u^1)&1
+		uFixed := VAL[u>>1] >= T
+		uFixedTrue := uFixed && VAL[u>>1]&1 == u&1
+		uFixedFalse := uFixed && VAL[(u^1)>>1]&1 == (u^1)&1
 
-		vFixed := val[v>>1] >= t
-		vFixedTrue := vFixed && val[v>>1]&1 == v&1
-		vFixedFalse := vFixed && val[(v^1)>>1]&1 == (v^1)&1
+		vFixed := VAL[v>>1] >= T
+		vFixedTrue := vFixed && VAL[v>>1]&1 == v&1
+		vFixedFalse := vFixed && VAL[(v^1)>>1]&1 == (v^1)&1
 
 		if uFixedTrue || vFixedTrue {
 
@@ -791,22 +861,22 @@ L6:
 		} else if uFixedFalse && vFixedFalse {
 
 			// Case 2. u and v are fixed false
-			switch conflict {
+			switch CONFLICT {
 			case 11:
 				goto L11
 			default:
-				log.Panicf("Unknown value of CONFLICT: %d", conflict)
+				log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
 			}
 
 		} else if uFixedFalse && !vFixed {
 
 			// Case 3. u is fixed false but v isn't fixed
 			if binary_propagation(v) {
-				switch conflict {
+				switch CONFLICT {
 				case 11:
 					goto L11
 				default:
-					log.Panicf("Unknown value of CONFLICT: %d", conflict)
+					log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
 				}
 			}
 
@@ -814,11 +884,11 @@ L6:
 
 			// Case 4. v is fixed false but u isn't fixed
 			if binary_propagation(u) {
-				switch conflict {
+				switch CONFLICT {
 				case 11:
 					goto L11
 				default:
-					log.Panicf("Unknown value of CONFLICT: %d", conflict)
+					log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
 				}
 			}
 
@@ -838,22 +908,22 @@ L6:
 			}
 
 			var vInBimp, notvInBimp bool
-			for i := 0; i < bsize[u^1]; i++ {
-				if bimp[u^1][i] == v {
+			for i := 0; i < BSIZE[u^1]; i++ {
+				if BIMP[u^1][i] == v {
 					vInBimp = true
 				}
-				if bimp[u^1][i] == v^1 {
+				if BIMP[u^1][i] == v^1 {
 					notvInBimp = true
 				}
 			}
 
 			if notvInBimp {
 				if binary_propagation(u) {
-					switch conflict {
+					switch CONFLICT {
 					case 11:
 						goto L11
 					default:
-						log.Panicf("Unknown value of CONFLICT: %d", conflict)
+						log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
 					}
 				}
 			} else if vInBimp {
@@ -861,19 +931,19 @@ L6:
 			} else {
 
 				var notuInBimp bool
-				for i := 0; i < bsize[v^1]; i++ {
-					if bimp[v^1][i] == u^1 {
+				for i := 0; i < BSIZE[v^1]; i++ {
+					if BIMP[v^1][i] == u^1 {
 						notuInBimp = true
 					}
 				}
 
 				if notuInBimp {
 					if binary_propagation(v) {
-						switch conflict {
+						switch CONFLICT {
 						case 11:
 							goto L11
 						default:
-							log.Panicf("Unknown value of CONFLICT: %d", conflict)
+							log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
 						}
 					}
 				} else {
@@ -898,22 +968,22 @@ L10:
 		log.Printf("L10. Accept real truths")
 	}
 
-	f = e
+	F = E
 
-	if branch[d] >= 0 {
+	if BRANCH[d] >= 0 {
 		d += 1
 		if debug {
-			log.Printf("  branch[%d]=%d, incremented d to %d, going to L2", d-1, branch[d-1], d)
+			log.Printf("  branch[%d]=%d, incremented d to %d, going to L2", d-1, BRANCH[d-1], d)
 		}
 		goto L2
 	} else if d > 0 {
 		if debug {
-			log.Printf("  branch[%d]=%d and d=%d > 0, going to L3", d, branch[d], d)
+			log.Printf("  branch[%d]=%d and d=%d > 0, going to L3", d, BRANCH[d], d)
 		}
 		goto L3
 	} else { // d == 0
 		if debug {
-			log.Printf("  branch[%d]=%d and d=0, going to L2", d, branch[d])
+			log.Printf("  branch[%d]=%d and d=0, going to L2", d, BRANCH[d])
 		}
 		goto L2
 	}
@@ -927,9 +997,9 @@ L11:
 		log.Printf("L11. Unfix near truths")
 	}
 
-	for e > g {
-		e -= 1
-		val[r[e]>>1] = 0
+	for E > G {
+		E -= 1
+		VAL[R[E]>>1] = 0
 	}
 
 	//
@@ -944,24 +1014,24 @@ L12:
 		dump()
 	}
 
-	for e > f {
+	for E > F {
 		// Implicitly restore X to the free list because N + E = n
 		// (Exercise 137)
-		e -= 1
-		varX = r[e] >> 1
+		E -= 1
+		X = R[E] >> 1
 
 		// Reactivate the TIMP pairs that involve X
 		// (Exercise 137)
-		for _, l := range []int{2 * varX, 2*varX + 1} {
-			for i := tsize[l] - 1; i >= 0; i-- {
-				p := timp[l] + 2*i
-				u, v := timp[p], timp[p+1]
+		for _, l := range []int{2 * X, 2*X + 1} {
+			for i := TSIZE[l] - 1; i >= 0; i-- {
+				p := TIMP[l] + 2*i
+				u, v := TIMP[p], TIMP[p+1]
 
-				tsize[v^1] += 1
-				tsize[u^1] += 1
+				TSIZE[v^1] += 1
+				TSIZE[u^1] += 1
 			}
 		}
-		val[varX] = 0
+		VAL[X] = 0
 	}
 
 	//
@@ -972,11 +1042,11 @@ L12:
 		log.Printf("L13. Downdate BIMPs")
 	}
 
-	if branch[d] >= 0 {
-		for istackI > backi[d] {
-			istackI -= 1
-			l, s := istack[istackI][0], istack[istackI][1]
-			bsize[l] = s
+	if BRANCH[d] >= 0 {
+		for I > BACKI[d] {
+			I -= 1
+			l, s := ISTACK[I][0], ISTACK[I][1]
+			BSIZE[l] = s
 		}
 	}
 
@@ -989,14 +1059,14 @@ L12:
 	}
 
 	// We've discovered that DEC[d] doesn't work
-	if branch[d] == 0 {
-		l = dec[d]
-		dec[d] = l ^ 1
+	if BRANCH[d] == 0 {
+		l = DEC[d]
+		DEC[d] = l ^ 1
 		l = l ^ 1
-		branch[d] = 1 // l didn't work out, so try ^l
+		BRANCH[d] = 1 // l didn't work out, so try ^l
 
 		if debug {
-			log.Printf("  Trying again, d=%d, branch=%v, l=%d", d, branch[0:d], l)
+			log.Printf("  Trying again, d=%d, branch=%v, l=%d", d, BRANCH[0:d], l)
 		}
 
 		goto L4
@@ -1016,7 +1086,7 @@ L15:
 	}
 
 	d -= 1
-	e = f
-	f = backf[d]
+	E = F
+	F = BACKF[d]
 	goto L12
 }
