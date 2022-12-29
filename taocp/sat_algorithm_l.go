@@ -161,23 +161,23 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		var b strings.Builder
 		b.WriteString("  Progress: ")
 		BACKL[d] = F
-		localr := 0
+		r := 0
 		k := 0
 
 		for k < d {
-			for localr < BACKF[k] {
-				b.WriteString(fmt.Sprintf("%d ", 6+(R[localr]&1)))
-				localr += 1
+			for r < BACKF[k] {
+				b.WriteString(fmt.Sprintf("%d ", 6+(R[r]&1)))
+				r += 1
 			}
 			if BRANCH[k] < 0 {
 				b.WriteString("| ")
 			} else {
-				b.WriteString(fmt.Sprintf("%d ", (2*BRANCH[k])+R[localr]&1))
-				localr += 1
+				b.WriteString(fmt.Sprintf("%d ", (2*BRANCH[k])+R[r]&1))
+				r += 1
 			}
-			for localr < BACKL[k+1] {
-				b.WriteString(fmt.Sprintf("%d ", 4+(R[localr]&1)))
-				localr += 1
+			for r < BACKL[k+1] {
+				b.WriteString(fmt.Sprintf("%d ", 4+(R[r]&1)))
+				r += 1
 			}
 			k += 1
 		}
