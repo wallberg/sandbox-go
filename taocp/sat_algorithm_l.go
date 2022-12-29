@@ -701,7 +701,7 @@ L6:
 	varX = ntL >> 1
 	val[varX] = rt + ntL&1
 
-	// Remove variable X from the free list (Exercise 137)
+	// Remove variable X from the free list (Exercise 137 (a))
 	varN = n - g
 	x = varx[varN]
 	j = inx[varX]
@@ -710,8 +710,10 @@ L6:
 	varx[varN] = varX
 	inx[varX] = varN
 
-	// Remove variable X from all TIMP pairs (Exercise 137)
-	for _, l := range []int{2 * x, 2*x + 1} {
+	// Remove variable X from all TIMP pairs (Exercise 137 (a))
+	for _, l := range []int{2 * varX, 2*varX + 1} {
+
+		// For each pair in TIMP[l]
 		for i := 0; i < tsize[l]; i++ {
 			p := timp[l] + 2*i
 			u, v := timp[p], timp[p+1]
