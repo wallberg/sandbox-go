@@ -182,6 +182,24 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			k += 1
 		}
 
+		// misc variables and the R stack
+		b.WriteString("\n")
+		b.WriteString(fmt.Sprintf("            n=%d, d=%d, F=%d, E=%d, G=%d\n", n, d, F, E, G))
+		b.WriteString("            ")
+		for k := 0; k < E; k++ {
+			if k > 0 {
+				b.WriteString(", ")
+			}
+			l := R[k]
+			x := l >> 1
+			b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(VAL[x])))
+		}
+		b.WriteString("\n")
+
+		// Statistics
+		b.WriteString(fmt.Sprintf("            Nodes=%d, Levels=%v\n", stats.Nodes, stats.Levels))
+
+		b.WriteString("\n")
 		log.Print(b.String())
 	}
 
@@ -593,9 +611,12 @@ L2:
 
 	BRANCH[d] = -1 // No decision yet
 
-	if debug || progress {
+	if debug || (progress && stats.Delta != 0 && stats.Nodes%stats.Delta == 0) {
 		showProgress()
 	}
+
+	stats.Levels[d]++
+	stats.Nodes++
 
 	if U > 0 {
 		goto L5
