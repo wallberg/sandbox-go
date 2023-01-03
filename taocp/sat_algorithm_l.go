@@ -553,8 +553,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			tindex[u^1] += 2
 
 			pp = TIMP[v^1] + tindex[v^1]
-			TIMP[pp] = u
-			TIMP[pp+1] = w
+			TIMP[pp] = w
+			TIMP[pp+1] = u
 			tindex[v^1] += 2
 
 			ppp = TIMP[w^1] + tindex[w^1]
