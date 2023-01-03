@@ -1043,7 +1043,7 @@ L12:
 
 		// Reactivate the TIMP pairs that involve X
 		// (Exercise 137)
-		for _, l := range []int{2 * X, 2*X + 1} {
+		for _, l = range []int{2*X + 1, 2 * X} {
 			for i := TSIZE[l] - 1; i >= 0; i-- {
 				p := TIMP[l] + 2*i
 				u, v := TIMP[p], TIMP[p+1]
