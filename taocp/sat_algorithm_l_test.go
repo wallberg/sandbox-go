@@ -34,14 +34,19 @@ func TestSatAlgorithmL(t *testing.T) {
 		{100, true, SatRand(2, 80, 100, 0)},
 		{100, true, SatRand(2, 100, 100, 0)},
 		{100, false, SatRand(2, 400, 100, 0)},
-		{1000, true, SatRand(2, 1000, 1000, 0)},
-		{1000, true, SatRand(2, 1100, 1000, 0)},
-		{1000, false, SatRand(2, 2000, 1000, 0)},
-		// {3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
-		// {3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
-		// {4, true, ClausesRPrime},
-		// {4, false, ClausesR},
-		// {9, false, ClausesWaerden339},
+		// {1000, true, SatRand(2, 1000, 1000, 0)},
+		// {1000, true, SatRand(2, 1100, 1000, 0)},
+		// {1000, false, SatRand(2, 2000, 1000, 0)},
+		{3, true, SatClauses{{1, 2, 3}}},
+		{3, true, SatClauses{{-1, -2, 3}}},
+		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -2, 3}}},
+		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
+		{3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{4, true, ClausesRPrime},
+		{4, false, ClausesR},
+		{8, true, SatWaerdan(3, 3, 8)},
+		{9, false, SatWaerdan(3, 3, 9)},
+		{10, false, SatWaerdan(3, 3, 10)},
 	}
 
 	for i, c := range cases {
@@ -53,7 +58,14 @@ func TestSatAlgorithmL(t *testing.T) {
 		}
 		options := SatOptions{}
 
-		t.Logf("Executing test case #%d, n=%d, sat=%t, clauses=%d", i, c.n, c.sat, len(c.clauses))
+		var clausesStr string
+		if len(c.clauses) < 10 {
+			clausesStr = fmt.Sprintf("%v", c.clauses)
+		} else {
+			clausesStr = fmt.Sprintf("#%d", len(c.clauses))
+		}
+
+		t.Logf("Executing test case #%d, n=%d, sat=%t, clauses=%s", i, c.n, c.sat, clausesStr)
 
 		sat, solution := SatAlgorithmL(c.n, c.clauses, &stats, &options)
 
@@ -63,7 +75,7 @@ func TestSatAlgorithmL(t *testing.T) {
 		if sat {
 			validSolution := SatTest(c.n, c.clauses, solution)
 			if !validSolution {
-				t.Errorf("expected a valid solution for n=%d, clauses=%v; did not get one (solution=%v)", c.n, c.clauses, solution)
+				t.Errorf("expected a valid solution for case %d, n=%d, clauses=%v; did not get one (solution=%v)", i, c.n, c.clauses, solution)
 			}
 		}
 
