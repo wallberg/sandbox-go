@@ -661,6 +661,10 @@ L2:
 			stats.Solutions++
 		}
 
+		if progress {
+			showProgress()
+		}
+
 		return true, lvisit()
 	}
 
@@ -815,10 +819,10 @@ L6:
 
 			s := TSIZE[u^1] - 1
 			TSIZE[u^1] = s
-			t := TIMP[u^1] + 2*s // local t, not T
+			t := TIMP[u^1] + 2*s
 
 			if pp != t {
-				// Swap pairs
+				// Swap pairs, if t did not point to the last pair in TIMP[u^1]
 				up, vp := TIMP[t], TIMP[t+1]
 				q := LINK[t]
 				qp := LINK[q]
@@ -835,7 +839,7 @@ L6:
 			t = TIMP[v^1] + 2*s
 
 			if ppp != t {
-				// Swap pairs
+				// Swap pairs, if t did not point to the last pair in TIMP[v^1]
 				up, vp := TIMP[t], TIMP[t+1]
 				q := LINK[t]
 				qp := LINK[q]
