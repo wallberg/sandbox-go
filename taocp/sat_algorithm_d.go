@@ -15,7 +15,6 @@ import (
 // clauses -- list of clauses to satisfy
 // stats   -- SAT processing statistics
 // options -- runtime options
-//
 func SatAlgorithmD(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (bool, []int) {
 
@@ -389,11 +388,11 @@ D5:
 	if stats != nil {
 		stats.Levels[d-1]++
 		stats.Nodes++
+		if d > stats.MaxLevel {
+			stats.MaxLevel = d
+		}
 
 		if progress {
-			if d > stats.MaxLevel {
-				stats.MaxLevel = d
-			}
 			if stats.Nodes >= stats.Theta {
 				showProgress()
 				stats.Theta += stats.Delta
