@@ -408,7 +408,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// Update private stamp IST, if necessary. Formula (63)
 		if IST[l] != ISTAMP {
 			IST[l] = ISTAMP
-			if I == len(IST) {
+			if I == len(ISTACK) {
 				ISTACK = append(ISTACK, [2]int{l, BSIZE[l]})
 			} else {
 				ISTACK[I][0] = l
