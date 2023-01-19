@@ -25,10 +25,13 @@ const (
 func SatAlgorithmL(n int, clauses SatClauses,
 	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
 
-	// @note Global variables
+	// @note Global variables - some of the arrays are indexed by stack depth level (d) and some by fixed variables (F)
 	var (
 		// original value of n, before conversion to 3SAT
 		nOrig int
+
+		// d - depth of the implicit search tree
+		d int
 
 		// N - number of free variables in VAR (F + N = n)
 		N int
@@ -36,7 +39,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// F - number of fixed variables (F + N = n)
 		F int
 
-		// VAR - free list; permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
+		// VAR - list of free variables; permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		VAR []int
 
 		// INX - index partner of VAR (free list)
@@ -44,9 +47,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// X - variable of L promoted to real truth
 		X int
-
-		// d - depth of the implicit search tree
-		d int
 
 		// TIMP - ternary clauses
 		TIMP []int
@@ -75,7 +75,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// ISTAMP - stamp to make downdating BIMP tables easier
 		ISTAMP int
 
-		// IST - private stamp for literal l
+		// IST - private stamp for literal l (variable indexed)
 		IST []int
 
 		// ISTACK - stack of previous values of (l, BSIZE[l])
@@ -84,19 +84,19 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// I - size of ISTACK
 		I int
 
-		// BRANCH - decision making at depth d; {-1: no decision yet, 0: trying l, 1: trying ^l)}
+		// BRANCH - decision making at depth d; {-1: no decision yet, 0: trying l, 1: trying ^l)} (depth indexed)
 		BRANCH []int
 
-		// DEC - decision on l at each branch
+		// DEC - decision on l at each branch (depth indexed)
 		DEC []int
 
-		// BACKI - ??
+		// BACKI - store previous versions of I in the stack (depth indexed)
 		BACKI []int
 
-		// BACKF - ?? (for showProgress(), Exercise 142)
+		// BACKF - store previous versions of F in the stack (depth indexed)
 		BACKF []int
 
-		// BACKL - ?? (for showProgress(), Exercise 142)
+		// BACKL - added for showProgress(), Exercise 142. Appears to be identical to BACKF (depth indexed)
 		BACKL []int
 
 		// T - truth context
@@ -105,10 +105,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// L - nearly true literal l
 		L int
 
-		// VAL - track if variable x is fixed in context T
+		// VAL - track if variable x is fixed in context T (variable indexed)
 		VAL []int
 
-		// R - record the names of literals that have received values
+		// R - record the names of literals that have received values (variable indexed)
 		R []int
 
 		// E - current stack size of R; 0 <= E <= n
@@ -134,7 +134,31 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// is progress tracking enabled?
 		progress bool
+
+		// b strings.Builder for debugging
+		b strings.Builder
 	)
+
+	// assertTimpIntegrity
+	assertTimpIntegrity := func() {
+		for l := 2; l <= 2*n+1; l++ {
+			boundary := 0
+
+			// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
+			for lp := l + 1; lp < 2*n+1; lp++ {
+				if TIMP[lp] > 0 {
+					boundary = TIMP[lp]
+					break
+				}
+			}
+			if boundary == 0 {
+				boundary = len(TIMP)
+			}
+			if TIMP[l]+2*TSIZE[l] > boundary {
+				log.Panicf("l=%d, boundary=%d, TSIZE[l]=%d", l, boundary, TSIZE[l])
+			}
+		}
+	}
 
 	// truth returns a string description of truth values
 	truth := func(t int) string {
@@ -156,48 +180,69 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
-	// showProgress - Exercise 142
+	// showProgress from Exercise 142
+	// Move codes:
+	// 0 - trying 1, haven't tried 0
+	// 1 - trying 0, haven't tried 1
+	// 2 - trying 1 after 0 failed
+	// 3 - trying 0 after 1 failed
+	// 4 - forced value is 1 (by BIMP reduction)
+	// 5 - forced value is 0 (by BIMP reduction)
+	// 6 - forced value is 1 (by input unit clause or Algorithm X)
+	// 7 - forced value is 0 (by input unit clause or Algorithm X)
+
 	showProgress := func() {
+		assertTimpIntegrity()
+
 		var b strings.Builder
-		b.WriteString("  Progress: ")
-		BACKL[d] = F
+		b.WriteString(fmt.Sprintf("Progress: n=%d, d=%d, F=%d, E=%d, G=%d : ", n, d, F, E, G))
+
 		r := 0
 		k := 0
 
 		for k < d {
+			// Forced values (6, 7)
 			for r < BACKF[k] {
 				b.WriteString(fmt.Sprintf("%d ", 6+(R[r]&1)))
 				r += 1
 			}
+
 			if BRANCH[k] < 0 {
+				// No decision yet
 				b.WriteString("| ")
 			} else {
+				// Trying values (0, 1, 2, 3)
 				b.WriteString(fmt.Sprintf("%d ", (2*BRANCH[k])+R[r]&1))
 				r += 1
 			}
+
+			// Forced values (4, 5)
 			for r < BACKL[k+1] {
 				b.WriteString(fmt.Sprintf("%d ", 4+(R[r]&1)))
 				r += 1
 			}
+
 			k += 1
 		}
 
-		// misc variables and the R stack
-		b.WriteString("\n")
-		b.WriteString(fmt.Sprintf("            n=%d, d=%d, F=%d, E=%d, G=%d\n", n, d, F, E, G))
-		b.WriteString("            ")
-		for k := 0; k < E; k++ {
-			if k > 0 {
-				b.WriteString(", ")
-			}
-			l := R[k]
-			x := l >> 1
-			b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(VAL[x])))
-		}
-		b.WriteString("\n")
+		if debug {
 
-		// Statistics
-		b.WriteString(fmt.Sprintf("            Nodes=%d, Levels=%v\n", stats.Nodes, stats.Levels))
+			// misc variables and the R stack
+			b.WriteString("\n")
+			b.WriteString("            ")
+			for k := 0; k < E; k++ {
+				if k > 0 {
+					b.WriteString(", ")
+				}
+				l := R[k]
+				x := l >> 1
+				b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(VAL[x])))
+			}
+			b.WriteString("\n")
+
+			// Statistics
+			b.WriteString(fmt.Sprintf("            Nodes=%d, Levels=%v\n", stats.Nodes, stats.Levels))
+		}
 
 		b.WriteString("\n")
 		log.Print(b.String())
@@ -209,9 +254,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		var b strings.Builder
 		b.WriteString("\n")
 
-		showProgress()
-
-		b.WriteString(fmt.Sprintf("n=%d, d=%d, f=%d\n", n, d, F))
+		b.WriteString(fmt.Sprintf("n=%d, d=%d, F=%d\n", n, d, F))
 		b.WriteString("\n")
 
 		// FORCE
@@ -228,8 +271,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// VAR
 		b.WriteString("VAR\n")
 		b.WriteString(fmt.Sprintf("N=%d: ", N))
-		for k := 0; k < N; k++ {
-			if k > 0 {
+		for k := 0; k < n; k++ {
+			if k == N {
+				b.WriteString(" | ")
+			} else if k > 0 {
 				b.WriteString(", ")
 			}
 			b.WriteString(fmt.Sprintf("{%d}", VAR[k]))
@@ -276,17 +321,36 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// TIMP
 		b.WriteString("TIMP\n")
 		for l := 2; l <= 2*n+1; l++ {
+
+			var boundary int
+			if l < 2*n+1 {
+				boundary = TIMP[l+1]
+			} else {
+				boundary = len(TIMP)
+			}
+
 			b.WriteString(fmt.Sprintf("%d: ", l))
-			for i := 0; i < TSIZE[l]; i++ {
-				if i > 0 {
+			i := 0
+			p := TIMP[l]
+			for p < boundary {
+
+				if i == TSIZE[l] {
+					b.WriteString(" | ")
+				} else if i > 0 {
 					b.WriteString(", ")
 				}
-				p := TIMP[l] + 2*i
-				b.WriteString(fmt.Sprintf("{%d,%d}->", TIMP[p], TIMP[p+1]))
-				p = LINK[p]
-				b.WriteString(fmt.Sprintf("{%d,%d}->", TIMP[p], TIMP[p+1]))
-				p = LINK[p]
+
+				// if p == 262 {
+				// 	log.Panicf("l=%d, i=%d, TIMP[l]=%d, 2i=%d, p=%d\n", l, i, TIMP[l], 2*i, p)
+				// }
 				b.WriteString(fmt.Sprintf("{%d,%d}", TIMP[p], TIMP[p+1]))
+				// pp = LINK[p]
+				// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[pp], TIMP[pp+1]))
+				// ppp = LINK[pp]
+				// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[ppp], TIMP[ppp+1]))
+
+				i++
+				p += 2
 			}
 			b.WriteString("\n")
 		}
@@ -302,7 +366,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			stats.Theta = stats.Delta
 			stats.MaxLevel = -1
 			if stats.Levels == nil {
-				stats.Levels = make([]int, n)
+				stats.Levels = make([]int, n+1)
 			} else {
 				for len(stats.Levels) < n {
 					stats.Levels = append(stats.Levels, 0)
@@ -568,6 +632,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
+	if debug {
+		assertTimpIntegrity()
+	}
+
 	// Configure initial permutation of the "free variable" list, that is,
 	// not fixed in context RT. A variable becomes fixed by swapping it to the
 	// end of the free list and decreasing N; then we can free it later by
@@ -610,13 +678,14 @@ L2:
 	}
 
 	BRANCH[d] = -1 // No decision yet
+	BACKL[d] = F
 
-	if debug || (progress && stats.Delta != 0 && stats.Nodes%stats.Delta == 0) {
+	if progress && stats.Delta != 0 && stats.Nodes%stats.Delta == 0 {
 		showProgress()
 	}
-
-	stats.Levels[d]++
-	stats.Nodes++
+	if debug && stats.Verbosity > 0 {
+		dump()
+	}
 
 	if U > 0 {
 		goto L5
@@ -673,9 +742,17 @@ L2:
 	x = VAR[0]
 	l = 2 * x
 
+	stats.Levels[d]++
+	stats.Nodes++
+	if d > stats.MaxLevel {
+		stats.MaxLevel = d
+	}
+
 	if debug {
 		log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, BRANCH[0:d], l)
-		dump()
+		if stats.Verbosity > 0 {
+			dump()
+		}
 	}
 
 	//
@@ -806,6 +883,17 @@ L6:
 	VAR[N] = X
 	INX[X] = N
 
+	if debug {
+		assertTimpIntegrity()
+	}
+
+	if debug {
+		b.Reset()
+		for i := 0; i <= d; i++ {
+			b.WriteString("-")
+		}
+		log.Printf("yyy: %s X=%d (L=%d)", b.String(), X, L)
+	}
 	// Remove variable X from all TIMP pairs (Exercise 137 (a))
 	for _, l := range []int{2 * X, 2*X + 1} {
 
@@ -813,10 +901,17 @@ L6:
 		for i := 0; i < TSIZE[l]; i++ {
 			p = TIMP[l] + 2*i
 			u, v := TIMP[p], TIMP[p+1]
+			if debug {
+				log.Printf("L7xxx X=%d, l=%d, u=%d, v=%d", X, l, u, v)
+			}
 
 			pp = LINK[p]
 			ppp = LINK[pp]
 
+			// Decrease the size of TIMP[u^1] by 1
+			if debug {
+				log.Printf("L7xxx      Removing %d: {%d,%d}", u^1, v, l^1)
+			}
 			s := TSIZE[u^1] - 1
 			TSIZE[u^1] = s
 			t := TIMP[u^1] + 2*s
@@ -832,6 +927,11 @@ L6:
 				TIMP[t], TIMP[t+1] = v, l^1
 				LINK[t] = ppp
 				pp = t
+			}
+
+			// Decrease the size of TIMP[v^1] by 1
+			if debug {
+				log.Printf("L7xxx      Removing %d: {%d,%d}", v^1, l^1, u)
 			}
 
 			s = TSIZE[v^1] - 1
@@ -850,6 +950,11 @@ L6:
 				LINK[t] = p
 			}
 		}
+	}
+
+	if debug {
+		log.Printf("L7xxx TSIZE[3]=%d", TSIZE[3])
+		assertTimpIntegrity()
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -879,13 +984,24 @@ L6:
 		vFixedTrue := vFixed && VAL[v>>1]&1 == v&1
 		vFixedFalse := vFixed && VAL[(v^1)>>1]&1 == (v^1)&1
 
+		if debug {
+			log.Printf("    u=%d, fixed=%t, true=%t, false=%t", u, uFixed, uFixedTrue, uFixedFalse)
+			log.Printf("    v=%d, fixed=%t, true=%t, false=%t", v, vFixed, vFixedTrue, vFixedFalse)
+		}
+
 		if uFixedTrue || vFixedTrue {
 
 			// Case 1. u or v is fixed true, do nothing
+			if debug {
+				log.Printf("    do nothing")
+			}
 
 		} else if uFixedFalse && vFixedFalse {
 
 			// Case 2. u and v are fixed false
+			if debug {
+				log.Printf("    Conflict, goto %d", CONFLICT)
+			}
 			switch CONFLICT {
 			case 11:
 				goto L11
@@ -897,6 +1013,9 @@ L6:
 
 			// Case 3. u is fixed false but v isn't fixed
 			if binary_propagation(v) {
+				if debug {
+					log.Printf("    Conflict, goto %d", CONFLICT)
+				}
 				switch CONFLICT {
 				case 11:
 					goto L11
@@ -909,6 +1028,9 @@ L6:
 
 			// Case 4. v is fixed false but u isn't fixed
 			if binary_propagation(u) {
+				if debug {
+					log.Printf("    Conflict, goto %d", CONFLICT)
+				}
 				switch CONFLICT {
 				case 11:
 					goto L11
@@ -1045,6 +1167,13 @@ L12:
 		E -= 1
 		X = R[E] >> 1
 
+		if debug {
+			b.Reset()
+			for i := 0; i <= d; i++ {
+				b.WriteString("+")
+			}
+			log.Printf("yyy: %s X=%d", b.String(), X)
+		}
 		// Reactivate the TIMP pairs that involve X
 		// (Exercise 137)
 		for _, l = range []int{2*X + 1, 2 * X} {
@@ -1057,6 +1186,10 @@ L12:
 			}
 		}
 		VAL[X] = 0
+	}
+
+	if debug && stats.Verbosity > 0 {
+		dump()
 	}
 
 	//
