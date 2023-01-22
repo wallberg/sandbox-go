@@ -893,13 +893,6 @@ L6:
 		assertTimpIntegrity()
 	}
 
-	if debug {
-		b.Reset()
-		for i := 0; i <= d; i++ {
-			b.WriteString("-")
-		}
-		log.Printf("yyy: %s X=%d (L=%d)", b.String(), X, L)
-	}
 	// Remove variable X from all TIMP pairs (Exercise 137 (a))
 	for _, l := range []int{2 * X, 2*X + 1} {
 
@@ -907,17 +900,11 @@ L6:
 		for i := 0; i < TSIZE[l]; i++ {
 			p = TIMP[l] + 2*i
 			u, v := TIMP[p], TIMP[p+1]
-			if debug {
-				log.Printf("L7xxx X=%d, l=%d, u=%d, v=%d", X, l, u, v)
-			}
 
 			pp = LINK[p]
 			ppp = LINK[pp]
 
 			// Decrease the size of TIMP[u^1] by 1
-			if debug {
-				log.Printf("L7xxx      Removing %d: {%d,%d}", u^1, v, l^1)
-			}
 			s := TSIZE[u^1] - 1
 			TSIZE[u^1] = s
 			t := TIMP[u^1] + 2*s
@@ -936,10 +923,6 @@ L6:
 			}
 
 			// Decrease the size of TIMP[v^1] by 1
-			if debug {
-				log.Printf("L7xxx      Removing %d: {%d,%d}", v^1, l^1, u)
-			}
-
 			s = TSIZE[v^1] - 1
 			TSIZE[v^1] = s
 			t = TIMP[v^1] + 2*s
@@ -956,11 +939,6 @@ L6:
 				LINK[t] = p
 			}
 		}
-	}
-
-	if debug {
-		log.Printf("L7xxx TSIZE[3]=%d", TSIZE[3])
-		assertTimpIntegrity()
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -1181,7 +1159,6 @@ L12:
 			for i := 0; i <= d; i++ {
 				b.WriteString("+")
 			}
-			log.Printf("yyy: %s X=%d", b.String(), X)
 		}
 		// Reactivate the TIMP pairs that involve X
 		// (Exercise 137)
