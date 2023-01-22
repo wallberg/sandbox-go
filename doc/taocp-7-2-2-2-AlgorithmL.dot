@@ -8,11 +8,16 @@ digraph G {
     L3 [label="L3. Choose l"]
     L4 [label="L4. Try l"]
     L5 [label="L5. Accept NTs\nbp(l) ∀ FORCE[0...U-1]"]
-    L6 [label="L6. Choose NT L"]
-    L7 [label="L7. Promote L to RT"]
-    L8 [label="L8. Consider u or v"]
-    L9 [label="L9. Exploit u or v"]
-    L10 [label="L10. Accept RT"]
+
+    subgraph cluster_0 {
+        label="Promote all NT to RT"
+        L6 [label="L6. Choose NT L"];
+        L7 [label="L7. Promote L to RT"];
+        L8 [label="L8. Consider u or v"];
+        L9 [label="L9. Exploit u or v"];
+    }
+
+    L10 [label="L10. Accept RT\nF←E"]
     L11 [label="L11. Unfix NT"]
     L12 [label="L12. Unfix RT"]
     L13 [label="L13. Downdate BIMPs"]
@@ -20,28 +25,26 @@ digraph G {
     L15 [label="L15. Backtrack"]
 
     L1 -> L2
-    L2 -> Terminate [label="U=0 and\nX satisfied"]
+    L2 -> Terminate [label="F=n; satisfied"]
     L2 -> L15 [label="U=0 and\nX conflict"]
     L2 -> L3 [label="U=0 and\nX proceed"]
     L2 -> L5 [label="U>0"]
-    L3 -> L2 [label="l=0 (fixed)"]
+    L3 -> L2 [label="l=0 (fixed)\nd←d+1"]
     L3 -> L4 [label="BRANCH[d]←0"]
     L4 -> L5 [label="U←1\nFORCE[0]←l"]
     L5 -> L6 [label="U←0"]
     L5 -> L11 [label="bp() conflict"]
-    L6 -> L10 [label="∀ R: R is RT"]
-    L6 -> L7 [label="Choose NT"]
-    L7 -> L6
-    L7 -> L8
-    L8 -> L7
-    L8 -> L9
-    L9 -> L7
+    L6 -> L10 [label="∀ L ∈ R: L is RT"]
+    L6 -> L7 [label="∀ NT L ∈ R"; dir="both"]
+    L7 -> L8 [label="∀ (u,v) ∈ TIMP(L)"; dir="both"]
+    L8 -> L9 [label="neither u nor v\nis fixed" dir="both"]
+    L8 -> L11 [label="bp() conflict"]
     L9 -> L11 [label="bp() conflict"]
-    L10 -> L2 [label="BRANCH[d]>=0\n d←d+1"]
-    L10 -> L3 [label="else if d>0"]
-    L10 -> L2 [label="else if d=0"]
+    L10 -> L2 [label="if BRANCH[d]>=0\nd←d+1"]
+    #L10 -> L3 [label="else if d>0"] // Does not occur for L^0
+    L10 -> L2 [label="else if d=0\nunits in input"; style="dotted"]
     L11 -> L12 -> L13 -> L14
-    L14 -> L4 [label="BRANCH[d]=0\nBRANCH[d]←1\nl←^l"]
+    L14 -> L4 [label="if BRANCH[d]=0\nBRANCH[d]←1\nl←^l"]
     L14 -> L15 [label="else"]
     L15 -> Terminate [label="d=0; unsatisfiable"]
     L15 -> L12 [label="d←d-1"]

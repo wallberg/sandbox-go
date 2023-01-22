@@ -1130,6 +1130,8 @@ L10:
 		}
 		goto L2
 	} else if d > 0 {
+		// Does not occur for L^0, because we never "don't decide"
+		log.Panic("Can't get here for L^0")
 		if debug {
 			log.Printf("  branch[%d]=%d and d=%d > 0, going to L3", d, BRANCH[d], d)
 		}
@@ -1225,9 +1227,8 @@ L12:
 
 	// We've discovered that DEC[d] doesn't work
 	if BRANCH[d] == 0 {
-		l = DEC[d]
-		DEC[d] = l ^ 1
-		l = l ^ 1
+		l = DEC[d] ^ 1
+		DEC[d] = l
 		BRANCH[d] = 1 // l didn't work out, so try ^l
 
 		if debug {
