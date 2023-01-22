@@ -958,34 +958,29 @@ L6:
 		}
 
 		// We have deduced that u or v must be true; five cases arise.
-		// TODO: don't calculate these values until necessary
 
 		uFixed := VAL[u>>1] >= T
 		uFixedTrue := uFixed && VAL[u>>1]&1 == u&1
-		uFixedFalse := uFixed && VAL[(u^1)>>1]&1 == (u^1)&1
+
+		if uFixedTrue {
+			// Case 1. u or v is fixed true, do nothing
+			continue
+		}
 
 		vFixed := VAL[v>>1] >= T
 		vFixedTrue := vFixed && VAL[v>>1]&1 == v&1
-		vFixedFalse := vFixed && VAL[(v^1)>>1]&1 == (v^1)&1
 
-		if debug {
-			log.Printf("    u=%d, fixed=%t, true=%t, false=%t", u, uFixed, uFixedTrue, uFixedFalse)
-			log.Printf("    v=%d, fixed=%t, true=%t, false=%t", v, vFixed, vFixedTrue, vFixedFalse)
+		if vFixedTrue {
+			// Case 1. u or v is fixed true, do nothing
+			continue
 		}
 
-		if uFixedTrue || vFixedTrue {
+		uFixedFalse := uFixed && VAL[(u^1)>>1]&1 == (u^1)&1
+		vFixedFalse := vFixed && VAL[(v^1)>>1]&1 == (v^1)&1
 
-			// Case 1. u or v is fixed true, do nothing
-			if debug {
-				log.Printf("    do nothing")
-			}
-
-		} else if uFixedFalse && vFixedFalse {
+		if uFixedFalse && vFixedFalse {
 
 			// Case 2. u and v are fixed false
-			if debug {
-				log.Printf("    Conflict, goto %d", CONFLICT)
-			}
 			switch CONFLICT {
 			case 11:
 				goto L11
@@ -997,9 +992,6 @@ L6:
 
 			// Case 3. u is fixed false but v isn't fixed
 			if binary_propagation(v) {
-				if debug {
-					log.Printf("    Conflict, goto %d", CONFLICT)
-				}
 				switch CONFLICT {
 				case 11:
 					goto L11
@@ -1012,9 +1004,6 @@ L6:
 
 			// Case 4. v is fixed false but u isn't fixed
 			if binary_propagation(u) {
-				if debug {
-					log.Printf("    Conflict, goto %d", CONFLICT)
-				}
 				switch CONFLICT {
 				case 11:
 					goto L11
@@ -1034,17 +1023,15 @@ L6:
 			// TODO: Use Exercise 139 to improve this step by deducing
 			// further implications called "compensation resolvents".
 
-			if debug {
-				log.Printf("L9. Exploit u or v")
-			}
-
 			var vInBimp, notvInBimp bool
 			for i := 0; i < BSIZE[u^1]; i++ {
 				if BIMP[u^1][i] == v {
 					vInBimp = true
+					break
 				}
 				if BIMP[u^1][i] == v^1 {
 					notvInBimp = true
+					break
 				}
 			}
 
@@ -1065,6 +1052,7 @@ L6:
 				for i := 0; i < BSIZE[v^1]; i++ {
 					if BIMP[v^1][i] == u^1 {
 						notuInBimp = true
+						break
 					}
 				}
 
@@ -1154,12 +1142,6 @@ L12:
 		E -= 1
 		X = R[E] >> 1
 
-		if debug {
-			b.Reset()
-			for i := 0; i <= d; i++ {
-				b.WriteString("+")
-			}
-		}
 		// Reactivate the TIMP pairs that involve X
 		// (Exercise 137)
 		for _, l = range []int{2*X + 1, 2 * X} {
