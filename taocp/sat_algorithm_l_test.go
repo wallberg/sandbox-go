@@ -37,6 +37,8 @@ func TestSatAlgorithmL(t *testing.T) {
 		{1000, true, SatRand(2, 1000, 1000, 0)},
 		{1000, true, SatRand(2, 1100, 1000, 0)},
 		{1000, false, SatRand(2, 2000, 1000, 0)},
+		{100, true, SatRand(3, 420, 100, 0)},
+		{100, false, SatRand(3, 500, 100, 0)},
 		{3, true, SatClauses{{1, 2, 3}}},
 		{3, true, SatClauses{{-1, -2, 3}}},
 		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -2, 3}}},

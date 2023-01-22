@@ -134,9 +134,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// is progress tracking enabled?
 		progress bool
-
-		// b strings.Builder for debugging
-		b strings.Builder
 	)
 
 	// assertTimpIntegrity
@@ -472,8 +469,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		return solution[:nOrig]
 	}
 
-	// appendBimp adds x to BIMP[l]
-	appendBimp := func(l, x int) {
+	// appendBimp adds u to BIMP[l]
+	appendBimp := func(l, u int) {
 
 		// Update private stamp IST, if necessary. Formula (63)
 		if IST[l] != ISTAMP {
@@ -487,11 +484,11 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			I += 1
 		}
 
-		// Append x to l
+		// Append u to BIMP[l]
 		if BSIZE[l] == len(BIMP[l]) {
-			BIMP[l] = append(BIMP[l], x)
+			BIMP[l] = append(BIMP[l], u)
 		} else {
-			BIMP[l][BSIZE[l]] = x
+			BIMP[l][BSIZE[l]] = u
 		}
 		BSIZE[l] += 1
 	}
