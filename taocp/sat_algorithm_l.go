@@ -389,8 +389,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	}
 
 	// binary_propogation uses a simple breadth-first search procedure
-	// to propagate the binarary consequences of a literal l inn context T
-	// returns. Returns false if no conflict, true if there is conflict.
+	// to propagate the binarary consequences of a literal l in context T.
+	// Returns false if no conflict, true if there is conflict.
 	// Formula (62), p. 221
 	// @note binary_propogation()
 	binary_propagation := func(l int) bool {
@@ -400,43 +400,49 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			assertRStackInvariant()
 		}
 
-		h := E
+		H := E
 
 		// Take account of l
-		if VAL[l>>1] >= T {
-			// l is fixed in context t
-			if VAL[l>>1]&1 == l&1 {
-				// l is fixed true, do nothing
+		x := l >> 1
+		if VAL[x] >= T {
 
-			} else if VAL[(l^1)>>1]&1 == (l^1)&1 { // TODO: change to 'else' ?
+			// l is fixed in context T
+			if VAL[x]&1 == l&1 {
+				// l is fixed true, do nothing
+				return false
+
+			} else {
 				// l is fixed false, goto CONFLICT
 				return true
 			}
-		} else {
-			VAL[l>>1] = T + (l & 1)
-			R[E] = l
-			E += 1
 		}
 
-		for h < E {
-			l = R[h]
-			h += 1
+		VAL[x] = T + (l & 1)
+		R[E] = l
+		E += 1
+
+		for H < E {
+			l = R[H]
+			H += 1
+
 			// For each l' in BIMP(l)
 			for j := 0; j < BSIZE[l]; j++ {
 				lp := BIMP[l][j]
+				xp := lp >> 1
 
 				// Take account of l'
-				if VAL[lp>>1] >= T {
-					// l' is fixed in context t
-					if VAL[lp>>1]&1 == lp&1 {
+				if VAL[xp] >= T {
+
+					// l' is fixed in context T
+					if VAL[xp]&1 == lp&1 {
 						// l' is fixed true, do nothing
 
-					} else if VAL[(lp^1)>>1] == (lp^1)&1 { // TODO: change to 'else' ?
+					} else {
 						// l' is fixed false, goto CONFLICT
 						return true
 					}
 				} else {
-					VAL[lp>>1] = T + (lp & 1)
+					VAL[xp] = T + (lp & 1)
 					R[E] = lp
 					E += 1
 				}
@@ -1129,6 +1135,7 @@ L10:
 		}
 		goto L3
 	} else { // d == 0
+		// Only occurs if there are unit clauses in the input
 		if debug {
 			log.Printf("  branch[%d]=%d and d=0, going to L2", d, BRANCH[d])
 		}
