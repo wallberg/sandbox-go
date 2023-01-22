@@ -138,7 +138,7 @@ func TestSatRand(t *testing.T) {
 	}{
 		{1, 1, 1, SatClauses{{1}}},
 		{2, 1, 2, SatClauses{{-1, 2}}},
-		{3, 3, 3, SatClauses{{1, -2, 3}, {1, 2, -3}, {1, 2, 3}}},
+		{3, 3, 3, SatClauses{{1, -2, 3}, {1, 2, -3}, {1, -2, 3}}},
 		{4, 5, 6, SatClauses{
 			{-1, -3, 4, 5},
 			{-1, 2, 5, 6},

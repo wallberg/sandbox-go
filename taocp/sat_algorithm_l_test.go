@@ -253,6 +253,10 @@ func BenchmarkSatAlgorithmLSatRandom(b *testing.B) {
 		{2, 1000, 1000},
 		{2, 1100, 1000},
 		{2, 2000, 1000},
+		{3, 420, 100},
+		{3, 400, 50},
+		{3, 500, 50},
+		{3, 1000, 50},
 	}
 
 	for _, c := range cases {

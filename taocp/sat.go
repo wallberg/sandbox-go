@@ -6,7 +6,6 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"reflect"
 	"sort"
 	"strings"
 )
@@ -396,23 +395,12 @@ func binomial(n, k int64) int64 {
 }
 
 // SatRand returns m pseudorandom k-SAT clauses on n variables,
-// sampled without replacement (distinct).
-// TODO: improve the algorithm by never generating duplicates
+// sampled with replacement (not distinct).
 func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 
 	// Assert n >= k
 	if n < k {
 		log.Panicf("n=%d must be >= k=%d", n, k)
-	}
-
-	// Assert that we aren't asking for too many clauses, which
-	// would cause an infinite loop
-	m_max := binomial(int64(n), int64(k))
-	for i := 0; i < k; i++ {
-		m_max *= 2
-	}
-	if int64(m) > m_max {
-		log.Panicf("m=%d is too many clauses for n=%d, k=%d", m, n, k)
 	}
 
 	// Seed the pseudorandom generator
@@ -421,7 +409,7 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 	// Generate m clauses
 	clauses = make(SatClauses, m)
 
-	for i := 0; i < m; {
+	for i := 0; i < m; i++ {
 
 		// Generate a single clause
 		clauses[i] = SatClause(rand.Perm(n)[0:k])
@@ -436,20 +424,6 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 			if rand.Intn(2) == 1 {
 				clauses[i][j] *= -1
 			}
-		}
-
-		// Determine if this clause has already been created
-		duplicate := false
-		for j := 0; j < i; j++ {
-			if reflect.DeepEqual(clauses[i], clauses[j]) {
-				duplicate = true
-				break
-			}
-		}
-
-		if !duplicate {
-			// Advance to the next clause; otherwise create again
-			i += 1
 		}
 	}
 	return clauses
