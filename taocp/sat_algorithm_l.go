@@ -13,6 +13,12 @@ const (
 	pt     = MaxInt - 5 // PT - proto truth
 )
 
+// SatAlgorithmLOptions provides optional features
+type SatAlgorithmLOptions struct {
+	// Optional Compensation Resolvants (Exercise 139)
+	CompensationResolvants bool
+}
+
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
 // The task is to determine if the clause set is satisfiable, and if it is return
 // one satisfying assignment of the clauses.
@@ -23,7 +29,7 @@ const (
 // stats   -- SAT processing statistics
 // options -- runtime options
 func SatAlgorithmL(n int, clauses SatClauses,
-	stats *SatStats, options *SatOptions) (sat bool, solution []int) {
+	stats *SatStats, options *SatOptions, optionsL *SatAlgorithmLOptions) (sat bool, solution []int) {
 
 	// @note Global variables - some of the arrays are indexed by stack depth level (d) and some by fixed variables (F)
 	var (
@@ -75,7 +81,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// ISTAMP - stamp to make downdating BIMP tables easier
 		ISTAMP int
 
-		// IST - private stamp for literal l (variable indexed)
+		// IST - private stamp for literal l, with ISTAMP (variable indexed)
 		IST []int
 
 		// ISTACK - stack of previous values of (l, BSIZE[l])
@@ -83,6 +89,14 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// I - size of ISTACK
 		I int
+
+		// BSTAMP - stamp to make downdating BIMP tables easier
+		// (Compensation Resolvent, Exercise 139)
+		BSTAMP int
+
+		// BST - private stamp for literal l, with BSTAMP (variable indexed)
+		// (Compensation Resolvent, Exercise 139)
+		BST []int
 
 		// BRANCH - decision making at depth d; {-1: no decision yet, 0: trying l, 1: trying ^l)} (depth indexed)
 		BRANCH []int
@@ -358,6 +372,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	// @note initialize()
 	initialize := func() {
+
+		if optionsL == nil {
+			optionsL = &SatAlgorithmLOptions{}
+		}
 
 		if stats != nil {
 			stats.Theta = stats.Delta
@@ -655,7 +673,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	F = 0
 
 	ISTAMP = 0
+	BSTAMP = 0
 	IST = make([]int, 2*n+2)
+	BST = make([]int, 2*n+2)
 	ISTACK = make([][2]int, 1024) // Grow dynamically, when needed
 	I = 0
 
@@ -708,15 +728,17 @@ L2:
 
 			// Look for a conflict between the BIMP table entry and an R stack entry
 			for k := 0; k < E; k++ {
-				lpp := R[k]
+				if i != k {
+					lpp := R[k]
 
-				if lp^1 == lpp {
-					// A contradiction
-					if debug && stats.Verbosity > 0 {
-						dump()
-						log.Printf("L2. BIMP table for %d in R contains %d, which contradicts %d in R", l, lp, lpp)
+					if lp^1 == lpp {
+						// A contradiction
+						if debug && stats.Verbosity > 0 {
+							dump()
+							log.Printf("L2. BIMP table for %d in R contains %d, which contradicts %d in R", l, lp, lpp)
+						}
+						goto L15
 					}
-					goto L15
 				}
 			}
 		}
@@ -1017,8 +1039,51 @@ L6:
 			// @note L9 [Exploit u or v.]
 			//
 
-			// TODO: Use Exercise 139 to improve this step by deducing
-			// further implications called "compensation resolvents".
+			if optionsL.CompensationResolvants {
+
+				// Compensation Resolvants (Exercise 139)
+				// If w ∈ BIMP[v], the binary clause u ⋁ v implies the binary clause u ⋁ w,
+				// because we can resolve u ⋁ v with ¬u ⋁ w.
+
+				for _, pair := range [2][]int{{u, v}, {v, u}} {
+					u, v := pair[0], pair[1]
+
+					BSTAMP += 1
+					BST[u^1] = BSTAMP
+					for i := 0; i < BSIZE[u^1]; i++ {
+						l := BIMP[u^1][i]
+						BST[l] = BSTAMP
+					}
+
+					if BST[v^1] != BSTAMP && BST[v] != BSTAMP {
+
+						// Iterate over w ∈ BIMP[v]
+						for i := 0; i < BSIZE[v]; i++ {
+							w := BIMP[v][i]
+
+							wFixed := VAL[w>>1] >= nt // must be fixed true
+							if !wFixed {
+								if BST[w^1] == BSTAMP {
+									if binary_propagation(u) {
+										switch CONFLICT {
+										case 11:
+											goto L11
+										default:
+											log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
+										}
+									}
+									break // TODO: or should this be continue?
+
+								} else if BST[w] != BSTAMP {
+									appendBimp(u^1, w)
+									appendBimp(w^1, u)
+								}
+							}
+
+						}
+					}
+				}
+			}
 
 			var vInBimp, notvInBimp bool
 			for i := 0; i < BSIZE[u^1]; i++ {
