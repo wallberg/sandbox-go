@@ -1049,35 +1049,44 @@ L6:
 					u, v := pair[0], pair[1]
 
 					BSTAMP += 1
+
+					// Mark everything implied true by ¬u with current BSTAMP
+					// ∀ l ∈ ¬u ∪ BIMP(¬u): BST[l] ← BSTAMP
 					BST[u^1] = BSTAMP
 					for i := 0; i < BSIZE[u^1]; i++ {
 						l := BIMP[u^1][i]
 						BST[l] = BSTAMP
 					}
 
+					// If ¬u implies neither v nor ¬v
 					if BST[v^1] != BSTAMP && BST[v] != BSTAMP {
 
 						// Iterate over w ∈ BIMP[v]
 						for i := 0; i < BSIZE[v]; i++ {
 							w := BIMP[v][i]
 
-							wFixed := VAL[w>>1] >= nt // must be fixed true
-							if !wFixed {
-								if BST[w^1] == BSTAMP {
-									if binary_propagation(u) {
-										switch CONFLICT {
-										case 11:
-											goto L11
-										default:
-											log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-										}
-									}
-									break // TODO: or should this be continue?
-
-								} else if BST[w] != BSTAMP {
-									appendBimp(u^1, w)
-									appendBimp(w^1, u)
+							if VAL[w>>1] >= nt {
+								// do nothing, w is fixed in NT
+								if VAL[w>>1]&1 != w&1 {
+									log.Fatalf("assertion failed: violation w=%d if fixed, must be fixed true", w)
 								}
+
+							} else if BST[w^1] == BSTAMP {
+								// ¬u implies both w and ¬w, so let's try and propagate u
+								if binary_propagation(u) {
+									switch CONFLICT {
+									case 11:
+										goto L11
+									default:
+										log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
+									}
+								}
+								break
+
+							} else if BST[w] != BSTAMP {
+								// ¬u did not already imply w, so add new binary clause u ∨ w
+								appendBimp(u^1, w) // ¬u implies w
+								appendBimp(w^1, u) // ¬w implies u
 							}
 
 						}
