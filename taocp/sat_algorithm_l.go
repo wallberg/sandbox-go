@@ -995,50 +995,102 @@ L6:
 		assertTimpIntegrity()
 	}
 
-	// Remove variable X from all TIMP pairs (Exercise 137 (a))
-	for _, l := range []int{2 * X, 2*X + 1} {
+	if bigClauses {
+		// Remove variable X from all CINX/KINX clauses (Exercise 143)
 
-		// For each pair in TIMP[l]
-		for i := 0; i < TSIZE[l]; i++ {
-			p = TIMP[l] + 2*i
-			u, v := TIMP[p], TIMP[p+1]
+		//
+		// Deactivate all of the active big clauses that contain L
+		//
 
-			pp = LINK[p]
-			ppp = LINK[pp]
+		// ∀ c ∈ KINX[L]
+		for i := 0; i < KSIZE[L]; i++ {
+			c := KINX[L][i]
 
-			// Decrease the size of TIMP[u^1] by 1
-			s := TSIZE[u^1] - 1
-			TSIZE[u^1] = s
-			t := TIMP[u^1] + 2*s
+			// ∀ u ∈ CINX[c]
+			for j := 0; j < CSIZE[c]; j++ {
+				u := CINX[c][j]
 
-			if pp != t {
-				// Swap pairs, if t did not point to the last pair in TIMP[u^1]
-				up, vp := TIMP[t], TIMP[t+1]
-				q := LINK[t]
-				qp := LINK[q]
-				LINK[qp], LINK[p] = pp, t
-				TIMP[pp], TIMP[pp+1] = up, vp
-				LINK[pp] = q
-				TIMP[t], TIMP[t+1] = v, l^1
-				LINK[t] = ppp
-				pp = t
+				// Swap c out of u's clause list
+				s := KSIZE[u] - 1
+				KSIZE[u] = s
+				for t := 0; t < s; t++ {
+					if KINX[u][t] == c {
+						KINX[u][t] = KINX[u][s]
+						KINX[u][s] = c
+						break
+					}
+				}
+			}
+		}
+
+		//
+		// Update clauses for which L has become false
+		//
+
+		// ∀ c ∈ KINX[¬L]
+		for i := 0; i < KSIZE[L^1]; i++ {
+			c := KINX[L^1][i]
+			s := CSIZE[c] - 1
+			CSIZE[c] = s
+
+			if s == 2 {
+				// Find the two free literals (u, v) ∈ CINX[c]
+
+				// Swap (u, v) into the first positions of CINX[c]
+
+				// Put (u, v) onto a temporary stack
+
+				// Swap c out of lists u and v
 			}
 
-			// Decrease the size of TIMP[v^1] by 1
-			s = TSIZE[v^1] - 1
-			TSIZE[v^1] = s
-			t = TIMP[v^1] + 2*s
+		}
 
-			if ppp != t {
-				// Swap pairs, if t did not point to the last pair in TIMP[v^1]
-				up, vp := TIMP[t], TIMP[t+1]
-				q := LINK[t]
-				qp := LINK[q]
-				LINK[qp], LINK[pp] = ppp, t
-				TIMP[ppp], TIMP[ppp+1] = up, vp
-				LINK[ppp] = q
-				TIMP[t], TIMP[t+1] = l^1, u
-				LINK[t] = p
+	} else {
+		// Remove variable X from all TIMP pairs (Exercise 137 (a))
+		for _, l := range []int{2 * X, 2*X + 1} {
+
+			// For each pair in TIMP[l]
+			for i := 0; i < TSIZE[l]; i++ {
+				p = TIMP[l] + 2*i
+				u, v := TIMP[p], TIMP[p+1]
+
+				pp = LINK[p]
+				ppp = LINK[pp]
+
+				// Decrease the size of TIMP[u^1] by 1
+				s := TSIZE[u^1] - 1
+				TSIZE[u^1] = s
+				t := TIMP[u^1] + 2*s
+
+				if pp != t {
+					// Swap pairs, if t did not point to the last pair in TIMP[u^1]
+					up, vp := TIMP[t], TIMP[t+1]
+					q := LINK[t]
+					qp := LINK[q]
+					LINK[qp], LINK[p] = pp, t
+					TIMP[pp], TIMP[pp+1] = up, vp
+					LINK[pp] = q
+					TIMP[t], TIMP[t+1] = v, l^1
+					LINK[t] = ppp
+					pp = t
+				}
+
+				// Decrease the size of TIMP[v^1] by 1
+				s = TSIZE[v^1] - 1
+				TSIZE[v^1] = s
+				t = TIMP[v^1] + 2*s
+
+				if ppp != t {
+					// Swap pairs, if t did not point to the last pair in TIMP[v^1]
+					up, vp := TIMP[t], TIMP[t+1]
+					q := LINK[t]
+					qp := LINK[q]
+					LINK[qp], LINK[pp] = ppp, t
+					TIMP[ppp], TIMP[ppp+1] = up, vp
+					LINK[ppp] = q
+					TIMP[t], TIMP[t+1] = l^1, u
+					LINK[t] = p
+				}
 			}
 		}
 	}
