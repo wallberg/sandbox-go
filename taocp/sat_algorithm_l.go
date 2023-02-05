@@ -17,6 +17,9 @@ const (
 type SatAlgorithmLOptions struct {
 	// Optional Compensation Resolvants (Exercise 139)
 	CompensationResolvants bool
+
+	// Optional Big Clauses (Exercise 143)
+	BigClauses bool
 }
 
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
@@ -54,6 +57,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// X - variable of L promoted to real truth
 		X int
 
+		// BIMP - binary clauses; instead of the buddy system, we are using built-in slices
+		BIMP [][]int
+
+		// BSIZE - number of clauses for each l in BIMP
+		BSIZE []int
+
 		// TIMP - ternary clauses
 		TIMP []int
 
@@ -63,11 +72,21 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// LINK - circular list of the three literals in each clause in TIMP
 		LINK []int
 
-		// BIMP - binary clauses; instead of the buddy system, we are using built-in slices
-		BIMP [][]int
+		// KINX - sequential list of clauses c for each literal l
+		// (Exercise 143 - "big" clauses of k > 2)
+		KINX [][]int
 
-		// BSIZE - number of clauses for each l in BIMP
-		BSIZE []int
+		// KSIZE - current number of active clauses for each literal l
+		// (Exercise 143 - "big" clauses of k > 2)
+		KSIZE []int
+
+		// CINX - sequential list of literals l for each clause c
+		// (Exercise 143 - "big" clauses of k > 2)
+		CINX [][]int
+
+		// CSIZE - current number of active literals l for each clause c
+		// (Exercise 143 - "big" clauses of k > 2)
+		CSIZE []int
 
 		// index into TIMP
 		p, pp, ppp int
@@ -148,6 +167,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// is progress tracking enabled?
 		progress bool
+
+		// are we using "big" clauses?
+		bigClauses bool
 	)
 
 	// assertTimpIntegrity
@@ -515,9 +537,19 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// @note L1 [Initialize.]
 	//
 
-	// Convert the input to 3SAT, if it isn't already
+	// If this is a kSAT problem where k > 3 then either convert to 3SAT or use optional "big" clauses.
 	nOrig = n
-	_, n, clauses = Sat3(n, clauses)
+
+	sat3, nSat3, clausesSat3 := Sat3(n, clauses)
+
+	if !sat3 {
+		if optionsL.BigClauses {
+			bigClauses = true
+		} else {
+			n = nSat3
+			clauses = clausesSat3
+		}
+	}
 
 	initialize()
 
@@ -596,65 +628,116 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
-	//
-	// Record all ternary clauses in the TIMP array
-	//
-	TIMP = make([]int, 2*n+2)
-	TSIZE = make([]int, 2*n+2)
+	if bigClauses {
+		//
+		// Record all k > 2 clauses in the KINX and CINX arrays
+		// @note L1 - KINX, CINX
+		//
 
-	// Get the values of TIMP[l] and TSIZE[l] for each l
-	for l := 2; l <= 2*n+1; l++ {
-		// Look for clauses containing this literal
+		KINX = make([][]int, 2*n+2)
+		KSIZE = make([]int, 2*n+2)
+
+		CINX = make([][]int, 0)
+		CSIZE = make([]int, 0)
+
+		// Initialize CINX and CSIZE
+		for _, clause := range clauses {
+			// Check for clause of length > 2
+			if len(clause) > 2 {
+				CINX = append(CINX, clause)
+				CSIZE = append(CSIZE, len(clause))
+			}
+		}
+
+		// Initialize KINX and KSIZE
+
+		// ∀ literal l
+		for l := 2; l <= 2*n+1; l++ {
+
+			// ∀ big clause c
+			for c, clause := range CINX {
+
+				// Look for ¬l in c
+				for i := 0; i < len(clause); i++ {
+					u := clause[i]
+					if l^1 == u {
+						// Found ¬l in clause c
+						KINX[l] = append(KINX[l], c)
+						KSIZE[l] += 1
+						// CINX[c] = append(CINX[c], u)
+						// CSIZE[c] += 1
+						break
+					}
+				}
+			}
+		}
+		fmt.Println(KINX)
+		fmt.Println(KSIZE)
+		fmt.Println(CINX)
+		fmt.Println(CSIZE)
+	} else {
+
+		//
+		// Record all ternary clauses in the TIMP array
+		// @note L1 - TIMP
+		//
+		TIMP = make([]int, 2*n+2)
+		TSIZE = make([]int, 2*n+2)
+
+		// Get the values of TIMP[l] and TSIZE[l] for each l
+		for l := 2; l <= 2*n+1; l++ {
+			// Look for clauses containing this literal
+			for _, clause := range clauses {
+				// Check for clause of length 3
+				if len(clause) == 3 {
+					u, v, w := clause[0], clause[1], clause[2]
+
+					if l == u^1 || l == v^1 || l == w^1 {
+						// Found l in this clause
+						if TIMP[l] == 0 {
+							// This is the first clause in the list for l
+							TIMP[l] = len(TIMP)
+						}
+						TIMP = append(TIMP, 0, 0)
+						TSIZE[l] += 1
+					}
+				}
+			}
+		}
+
+		// Add each clause to TIMP and set their LINK values
+		LINK = make([]int, len(TIMP))
+		tindex := make([]int, 2*n+2) // tindex[l] is the index for next insertion point in TIMP[l]
+
 		for _, clause := range clauses {
 			// Check for clause of length 3
 			if len(clause) == 3 {
 				u, v, w := clause[0], clause[1], clause[2]
 
-				if l == u^1 || l == v^1 || l == w^1 {
-					// Found l in this clause
-					if TIMP[l] == 0 {
-						// This is the first clause in the list for l
-						TIMP[l] = len(TIMP)
-					}
-					TIMP = append(TIMP, 0, 0)
-					TSIZE[l] += 1
-				}
+				p = TIMP[u^1] + tindex[u^1]
+				TIMP[p] = v
+				TIMP[p+1] = w
+				tindex[u^1] += 2
+
+				pp = TIMP[v^1] + tindex[v^1]
+				TIMP[pp] = w
+				TIMP[pp+1] = u
+				tindex[v^1] += 2
+
+				ppp = TIMP[w^1] + tindex[w^1]
+				TIMP[ppp] = u
+				TIMP[ppp+1] = v
+				tindex[w^1] += 2
+
+				LINK[p] = pp
+				LINK[pp] = ppp
+				LINK[ppp] = p
 			}
 		}
-	}
 
-	// Add each clause to TIMP and set their LINK values
-	LINK = make([]int, len(TIMP))
-	tindex := make([]int, 2*n+2) // tindex[l] is the index for next insertion point in TIMP[l]
-
-	for _, clause := range clauses {
-		// Check for clause of length 3
-		if len(clause) == 3 {
-			u, v, w := clause[0], clause[1], clause[2]
-
-			p = TIMP[u^1] + tindex[u^1]
-			TIMP[p] = v
-			TIMP[p+1] = w
-			tindex[u^1] += 2
-
-			pp = TIMP[v^1] + tindex[v^1]
-			TIMP[pp] = w
-			TIMP[pp+1] = u
-			tindex[v^1] += 2
-
-			ppp = TIMP[w^1] + tindex[w^1]
-			TIMP[ppp] = u
-			TIMP[ppp+1] = v
-			tindex[w^1] += 2
-
-			LINK[p] = pp
-			LINK[pp] = ppp
-			LINK[ppp] = p
+		if debug {
+			assertTimpIntegrity()
 		}
-	}
-
-	if debug {
-		assertTimpIntegrity()
 	}
 
 	// Configure initial permutation of the "free variable" list, that is,

@@ -11,44 +11,47 @@ func TestSatAlgorithmL(t *testing.T) {
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	cases := []struct {
-		n       int        // number of strictly distinct literals
-		sat     bool       // is satisfiable
-		clauses SatClauses // clauses to satisfy
+		n          int        // number of strictly distinct literals
+		sat        bool       // is satisfiable
+		bigClauses bool       // use BigClauses option?
+		clauses    SatClauses // clauses to satisfy
 	}{
-		{1, true, SatClauses{{1}}},
-		{1, true, SatClauses{{-1}}},
-		{1, false, SatClauses{{1}, {-1}}},
-		{2, true, SatClauses{{1}, {2}}},
-		{3, true, SatClauses{{1}, {2}, {-3}}},
-		{3, true, SatClauses{{-1}, {2}, {3}}},
-		{2, true, SatClauses{{1, 2}}},
-		{2, true, SatClauses{{1, 2}, {1, -2}}},
-		{2, true, SatClauses{{-1, -2}}},
-		{2, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
-		{2, true, SatClauses{{-1, 2}, {1, -2}}},
-		{2, true, SatClauses{{1, -2}, {-1, 2}}},
-		{5, true, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
-		{5, true, SatClauses{
+		{1, true, false, SatClauses{{1}}},
+		{1, true, false, SatClauses{{-1}}},
+		{1, false, false, SatClauses{{1}, {-1}}},
+		{2, true, false, SatClauses{{1}, {2}}},
+		{3, true, false, SatClauses{{1}, {2}, {-3}}},
+		{3, true, false, SatClauses{{-1}, {2}, {3}}},
+		{2, true, false, SatClauses{{1, 2}}},
+		{2, true, false, SatClauses{{1, 2}, {1, -2}}},
+		{2, true, false, SatClauses{{-1, -2}}},
+		{2, false, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
+		{2, true, false, SatClauses{{-1, 2}, {1, -2}}},
+		{2, true, false, SatClauses{{1, -2}, {-1, 2}}},
+		{5, true, false, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
+		{5, true, false, SatClauses{
 			{1, 2}, {2, 3}, {3, 4}, {4, 5},
 			{-1, -2}, {-1, -3}, {-1, -4}, {-1, -5}}},
-		{100, true, SatRand(2, 80, 100, 0)},
-		{100, true, SatRand(2, 100, 100, 0)},
-		{100, false, SatRand(2, 400, 100, 0)},
-		{1000, true, SatRand(2, 1000, 1000, 0)},
-		{1000, true, SatRand(2, 1100, 1000, 0)},
-		{1000, false, SatRand(2, 2000, 1000, 0)},
-		{100, true, SatRand(3, 420, 100, 0)},
-		{100, false, SatRand(3, 500, 100, 0)},
-		{3, true, SatClauses{{1, 2, 3}}},
-		{3, true, SatClauses{{-1, -2, 3}}},
-		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -2, 3}}},
-		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
-		{3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
-		{4, true, ClausesRPrime},
-		{4, false, ClausesR},
-		{8, true, SatWaerdan(3, 3, 8)},
-		{9, false, SatWaerdan(3, 3, 9)},
-		{10, false, SatWaerdan(3, 3, 10)},
+		{100, true, false, SatRand(2, 80, 100, 0)},
+		{100, true, false, SatRand(2, 100, 100, 0)},
+		{100, false, false, SatRand(2, 400, 100, 0)},
+		{1000, true, false, SatRand(2, 1000, 1000, 0)},
+		{1000, true, false, SatRand(2, 1100, 1000, 0)},
+		{1000, false, false, SatRand(2, 2000, 1000, 0)},
+		{100, true, false, SatRand(3, 420, 100, 0)},
+		{100, false, false, SatRand(3, 500, 100, 0)},
+		{3, true, false, SatClauses{{1, 2, 3}}},
+		{3, true, false, SatClauses{{-1, -2, 3}}},
+		{3, true, false, SatClauses{{1, -2}, {2, 3}, {-1, -2, 3}}},
+		{3, true, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
+		{3, false, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{4, true, false, ClausesRPrime},
+		{4, false, false, ClausesR},
+		{8, true, false, SatWaerdan(3, 3, 8)},
+		{9, false, false, SatWaerdan(3, 3, 9)},
+		{10, false, false, SatWaerdan(3, 3, 10)},
+		{4, true, true, SatClauses{{1, 2, 3, 4}}},
+		{4, true, true, SatClauses{{1, 2, 3, 4}, {1, -2, -3, -4}, {-1, 2, 3, 4}}},
 	}
 
 	for i, c := range cases {
@@ -59,7 +62,10 @@ func TestSatAlgorithmL(t *testing.T) {
 			// Progress:  true,
 		}
 		options := SatOptions{}
-		optionsL := SatAlgorithmLOptions{}
+		optionsL := SatAlgorithmLOptions{
+			CompensationResolvants: false,
+			BigClauses:             c.bigClauses,
+		}
 
 		var clausesStr string
 		if len(c.clauses) < 10 {
@@ -68,7 +74,7 @@ func TestSatAlgorithmL(t *testing.T) {
 			clausesStr = fmt.Sprintf("#%d", len(c.clauses))
 		}
 
-		t.Logf("Executing test case #%d, n=%d, sat=%t, clauses=%s", i, c.n, c.sat, clausesStr)
+		t.Logf("Executing test case #%d, n=%d, sat=%t, bigc=%t, clauses=%s", i, c.n, c.sat, c.bigClauses, clausesStr)
 
 		sat, solution := SatAlgorithmL(c.n, c.clauses, &stats, &options, &optionsL)
 
