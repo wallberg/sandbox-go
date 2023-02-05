@@ -964,6 +964,7 @@ L6:
 		dump()
 	}
 
+	// ∀ (u,v) in TIMP[L]
 	for i := 0; i < TSIZE[L]; i++ {
 		p := TIMP[L] + 2*i
 		u, v := TIMP[p], TIMP[p+1]
@@ -1094,6 +1095,7 @@ L6:
 				}
 			}
 
+			// Check for v or ¬v in BIMP[¬u]
 			var vInBimp, notvInBimp bool
 			for i := 0; i < BSIZE[u^1]; i++ {
 				if BIMP[u^1][i] == v {
@@ -1107,6 +1109,7 @@ L6:
 			}
 
 			if notvInBimp {
+				// ¬v ∈ BIMP[¬u], so select u as true
 				if binary_propagation(u) {
 					switch CONFLICT {
 					case 11:
@@ -1116,9 +1119,11 @@ L6:
 					}
 				}
 			} else if vInBimp {
+				// v ∈ BIMP[¬u]
 				// do nothing, we already have the clause u or v
 			} else {
 
+				// Check ¬u in BIMP[¬v]
 				var notuInBimp bool
 				for i := 0; i < BSIZE[v^1]; i++ {
 					if BIMP[v^1][i] == u^1 {
@@ -1128,6 +1133,7 @@ L6:
 				}
 
 				if notuInBimp {
+					// ¬u ∈ BIMP[¬v], so select v as true
 					if binary_propagation(v) {
 						switch CONFLICT {
 						case 11:
@@ -1137,7 +1143,7 @@ L6:
 						}
 					}
 				} else {
-					// append v to BIMP[^u] and u to BIMP[^v]
+					// Accept new binary clause (u, v), could be either
 					appendBimp(u^1, v)
 					appendBimp(v^1, u)
 				}
