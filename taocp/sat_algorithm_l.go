@@ -51,7 +51,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// VAR - list of free variables; permutation of {1,...,n} (VAR[k] = x iff INX[x] = k)
 		VAR []int
 
-		// INX - index partner of VAR (free list)
+		// INX - index partner of VAR (free list; variable indexed X -> location in VAR)
 		INX []int
 
 		// X - variable of L promoted to real truth
@@ -87,6 +87,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// CSIZE - current number of active literals l for each clause c
 		// (Exercise 143 - "big" clauses of k > 2)
 		CSIZE []int
+
+		// uvStack - temporary stack of (u, v) values, moving to BIMP table
+		// (Exercise 143 - "big" clauses of k > 2)
+		uvStack [][2]int
 
 		// index into TIMP
 		p, pp, ppp int
@@ -650,6 +654,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 
 		// Initialize KINX and KSIZE
+		maxKSize := 0
 
 		// ∀ literal l
 		for l := 2; l <= 2*n+1; l++ {
@@ -664,13 +669,17 @@ func SatAlgorithmL(n int, clauses SatClauses,
 						// Found ¬l in clause c
 						KINX[l] = append(KINX[l], c)
 						KSIZE[l] += 1
-						// CINX[c] = append(CINX[c], u)
-						// CSIZE[c] += 1
+						if KSIZE[l] > maxKSize {
+							maxKSize = KSIZE[l]
+						}
 						break
 					}
 				}
 			}
 		}
+
+		uvStack = make([][2]int, 0, maxKSize)
+
 		fmt.Println(KINX)
 		fmt.Println(KSIZE)
 		fmt.Println(CINX)
@@ -997,6 +1006,7 @@ L6:
 
 	if bigClauses {
 		// Remove variable X from all CINX/KINX clauses (Exercise 143)
+		// @note L7 - KINX,CINX
 
 		//
 		// Deactivate all of the active big clauses that contain L
@@ -1020,6 +1030,9 @@ L6:
 						break
 					}
 				}
+
+				// TODO: implement θ heuristic
+
 			}
 		}
 
@@ -1027,26 +1040,67 @@ L6:
 		// Update clauses for which L has become false
 		//
 
+		// empty the stack
+		uvStack = uvStack[:0]
+
 		// ∀ c ∈ KINX[¬L]
 		for i := 0; i < KSIZE[L^1]; i++ {
 			c := KINX[L^1][i]
 			s := CSIZE[c] - 1
 			CSIZE[c] = s
 
+			// If s > 2, don't bother moving the free literals.  We'll simply
+			// search for the last two free literals when needed when the size
+			// reaches 2.
 			if s == 2 {
 				// Find the two free literals (u, v) ∈ CINX[c]
+				// ∀ u ∈ CINX[c]
+				i := 0 // index into CINX[c], 0 for u, 1 for v
+				for j, u := range CINX[c] {
 
-				// Swap (u, v) into the first positions of CINX[c]
+					// Determine if u is in the VAR free list
+					if INX[u>>1] < N {
+						// Swap (u, v) into the first positions of CINX[c],
+						// if not already there
+						if i != j {
+							CINX[c][j] = CINX[c][i]
+							CINX[c][i] = u
+						}
+						i += 1
+						// TODO: replace assertion with the following
+						// if i == 2 {
+						//   break
+						// }
+						if i > 2 {
+							log.Panicf("assertion failed: i=%d > 2 (found more than 2 free variables in CINX)", i)
+						}
+					}
+
+				}
 
 				// Put (u, v) onto a temporary stack
+				uvStack = append(uvStack, [2]int{CINX[c][0], CINX[c][1]})
 
 				// Swap c out of lists u and v
+				for _, u := range CINX[c][0:2] {
+					s := KSIZE[u] - 1
+					KSIZE[u] = s
+					for t := 0; t < s; t++ {
+						if KINX[u][t] == c {
+							KINX[u][t] = KINX[u][s]
+							KINX[u][s] = c
+							break
+						}
+					}
+				}
 			}
 
 		}
 
 	} else {
 		// Remove variable X from all TIMP pairs (Exercise 137 (a))
+		// @note L7 - TIMP
+
 		for _, l := range []int{2 * X, 2*X + 1} {
 
 			// For each pair in TIMP[l]
