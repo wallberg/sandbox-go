@@ -178,6 +178,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	// assertTimpIntegrity
 	assertTimpIntegrity := func() {
+		if bigClauses {
+			return
+		}
+
 		for l := 2; l <= 2*n+1; l++ {
 			boundary := 0
 
@@ -355,44 +359,87 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 		b.WriteString("\n")
 
-		// TIMP
-		b.WriteString("TIMP\n")
-		for l := 2; l <= 2*n+1; l++ {
+		if bigClauses {
+			// KINX
+			b.WriteString("KINX\n")
+			for l := 2; l <= 2*n+1; l++ {
+				var x string
+				if INX[l>>1] < N {
+					x = " "
+				} else {
+					x = "x"
+				}
+				b.WriteString(fmt.Sprintf("l=%s%d: ", x, l))
 
-			var boundary int
-			if l < 2*n+1 {
-				boundary = TIMP[l+1]
-			} else {
-				boundary = len(TIMP)
+				for i, c := range KINX[l] {
+					if i == KSIZE[l] {
+						b.WriteString(" | ")
+					} else if i > 0 {
+						b.WriteString(", ")
+					}
+					b.WriteString(fmt.Sprintf("%d", c))
+				}
+				b.WriteString("\n")
 			}
+			b.WriteString("\n")
 
-			b.WriteString(fmt.Sprintf("%d: ", l))
-			i := 0
-			p := TIMP[l]
-			for p < boundary {
+			// CINX
+			b.WriteString("CINX\n")
+			for c := range CINX {
+				b.WriteString(fmt.Sprintf("c=%d: size=%d: ", c, CSIZE[c]))
 
-				if i == TSIZE[l] {
-					b.WriteString(" | ")
-				} else if i > 0 {
-					b.WriteString(", ")
+				for i, l := range CINX[c] {
+					if i > 0 {
+						b.WriteString(", ")
+					}
+					if INX[l>>1] >= N {
+						b.WriteString("x")
+					}
+					b.WriteString(fmt.Sprintf("%d", l))
+				}
+				b.WriteString("\n")
+			}
+			b.WriteString("\n")
+
+		} else {
+			// TIMP
+			b.WriteString("TIMP\n")
+			for l := 2; l <= 2*n+1; l++ {
+
+				var boundary int
+				if l < 2*n+1 {
+					boundary = TIMP[l+1]
+				} else {
+					boundary = len(TIMP)
 				}
 
-				// if p == 262 {
-				// 	log.Panicf("l=%d, i=%d, TIMP[l]=%d, 2i=%d, p=%d\n", l, i, TIMP[l], 2*i, p)
-				// }
-				b.WriteString(fmt.Sprintf("{%d,%d}", TIMP[p], TIMP[p+1]))
-				// pp = LINK[p]
-				// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[pp], TIMP[pp+1]))
-				// ppp = LINK[pp]
-				// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[ppp], TIMP[ppp+1]))
+				b.WriteString(fmt.Sprintf("l=%d: ", l))
+				i := 0
+				p := TIMP[l]
+				for p < boundary {
 
-				i++
-				p += 2
+					if i == TSIZE[l] {
+						b.WriteString(" | ")
+					} else if i > 0 {
+						b.WriteString(", ")
+					}
+
+					// if p == 262 {
+					// 	log.Panicf("l=%d, i=%d, TIMP[l]=%d, 2i=%d, p=%d\n", l, i, TIMP[l], 2*i, p)
+					// }
+					b.WriteString(fmt.Sprintf("{%d,%d}", TIMP[p], TIMP[p+1]))
+					// pp = LINK[p]
+					// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[pp], TIMP[pp+1]))
+					// ppp = LINK[pp]
+					// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[ppp], TIMP[ppp+1]))
+
+					i++
+					p += 2
+				}
+				b.WriteString("\n")
 			}
 			b.WriteString("\n")
 		}
-		b.WriteString("\n")
-
 		log.Print(b.String())
 	}
 
@@ -648,7 +695,11 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		for _, clause := range clauses {
 			// Check for clause of length > 2
 			if len(clause) > 2 {
-				CINX = append(CINX, clause)
+				CINX = append(CINX, make([]int, 0, len(clause)))
+				i := len(CINX) - 1
+				for _, l := range clause {
+					CINX[i] = append(CINX[i], l)
+				}
 				CSIZE = append(CSIZE, len(clause))
 			}
 		}
@@ -662,11 +713,11 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			// ∀ big clause c
 			for c, clause := range CINX {
 
-				// Look for ¬l in c
+				// Look for l in c
 				for i := 0; i < len(clause); i++ {
 					u := clause[i]
-					if l^1 == u {
-						// Found ¬l in clause c
+					if l == u {
+						// Found l in clause c
 						KINX[l] = append(KINX[l], c)
 						KSIZE[l] += 1
 						if KSIZE[l] > maxKSize {
@@ -680,10 +731,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		uvStack = make([][2]int, 0, maxKSize)
 
-		fmt.Println(KINX)
-		fmt.Println(KSIZE)
-		fmt.Println(CINX)
-		fmt.Println(CSIZE)
+		// fmt.Println(KINX)
+		// fmt.Println(KSIZE)
+		// fmt.Println(CINX)
+		// fmt.Println(CSIZE)
 	} else {
 
 		//
@@ -1013,28 +1064,32 @@ L6:
 		//
 
 		// ∀ c ∈ KINX[L]
-		for i := 0; i < KSIZE[L]; i++ {
-			c := KINX[L][i]
+		for KSIZE[L] > 0 {
+			c := KINX[L][0]
 
 			// ∀ u ∈ CINX[c]
-			for j := 0; j < CSIZE[c]; j++ {
-				u := CINX[c][j]
+			for _, u := range CINX[c] {
 
-				// Swap c out of u's clause list
-				s := KSIZE[u] - 1
-				KSIZE[u] = s
-				for t := 0; t < s; t++ {
-					if KINX[u][t] == c {
-						KINX[u][t] = KINX[u][s]
-						KINX[u][s] = c
-						break
+				// Check if u is a free literal
+				if u == L || INX[u>>1] < N {
+
+					log.Printf("L=%d, c=%d, u=%d", L, c, u)
+
+					// Swap c out of u's clause list
+					s := KSIZE[u] - 1
+					KSIZE[u] = s
+					for t := 0; t < s; t++ {
+						if KINX[u][t] == c {
+							KINX[u][t] = KINX[u][s]
+							KINX[u][s] = c
+							break
+						}
 					}
+					// TODO: implement 𝜃 heuristic
 				}
-
-				// TODO: implement 𝜃 heuristic
-
 			}
 		}
+		dump()
 
 		//
 		// Update clauses for which L has become false
@@ -1048,6 +1103,8 @@ L6:
 			c := KINX[L^1][i]
 			s := CSIZE[c] - 1
 			CSIZE[c] = s
+
+			log.Printf("s=%d", s)
 
 			// If s > 2, don't bother moving the free literals.  We'll simply
 			// search for the last two free literals when needed when the size
@@ -1158,11 +1215,14 @@ L6:
 		var u, v int
 
 		if bigClauses {
+			log.Printf("uvStack=%v", uvStack)
+
 			// Get (u, v) from uvStack
 			if i == len(uvStack) {
 				break
 			}
 			u, v = uvStack[i][0], uvStack[i][1]
+			log.Printf("(u=%d, v=%d)", u, v)
 		} else {
 			// Get (u, v) from TIMP[L]
 			// TODO: Determine if we are supposed to process uvStack in reverse order
@@ -1179,7 +1239,7 @@ L6:
 		//
 
 		if debug {
-			log.Printf("L8. Consider u or v")
+			log.Printf("L8. Consider u=%d or v=%d", u, v)
 		}
 
 		// We have deduced that u or v must be true; five cases arise.
@@ -1189,6 +1249,9 @@ L6:
 
 		if uFixedTrue {
 			// Case 1. u or v is fixed true, do nothing
+			if debug && stats.Verbosity > 0 {
+				log.Printf(" Case 1. u=%d is fixed true", u)
+			}
 			continue
 		}
 
@@ -1197,6 +1260,9 @@ L6:
 
 		if vFixedTrue {
 			// Case 1. u or v is fixed true, do nothing
+			if debug && stats.Verbosity > 0 {
+				log.Printf(" Case 1. v=%d is fixed true", v)
+			}
 			continue
 		}
 
@@ -1206,6 +1272,9 @@ L6:
 		if uFixedFalse && vFixedFalse {
 
 			// Case 2. u and v are fixed false
+			if debug && stats.Verbosity > 0 {
+				log.Printf(" Case 2. u=%d and v=%d are fixed false; CONFLICT", u, v)
+			}
 			switch CONFLICT {
 			case 11:
 				goto L11
@@ -1216,6 +1285,10 @@ L6:
 		} else if uFixedFalse && !vFixed {
 
 			// Case 3. u is fixed false but v isn't fixed
+			if debug && stats.Verbosity > 0 {
+				log.Printf(" Case 3. u=%d is fixed false but v=%d isn't fixed", u, v)
+			}
+
 			if binary_propagation(v) {
 				switch CONFLICT {
 				case 11:
@@ -1228,6 +1301,9 @@ L6:
 		} else if vFixedFalse && !uFixed {
 
 			// Case 4. v is fixed false but u isn't fixed
+			if debug && stats.Verbosity > 0 {
+				log.Printf(" Case 4. v=%d is fixed false but u=%d isn't fixed", v, u)
+			}
 			if binary_propagation(u) {
 				switch CONFLICT {
 				case 11:
@@ -1240,10 +1316,16 @@ L6:
 		} else {
 
 			// Case 5. Neither u nor v is fixed
+			if debug && stats.Verbosity > 0 {
+				log.Printf(" Case 5. Neither u=%d nor v=%d is fixed", u, v)
+			}
 
 			//
 			// @note L9 [Exploit u or v.]
 			//
+			if debug {
+				log.Printf("L9. Exploit u=%d or v=%d", u, v)
+			}
 
 			if optionsL.CompensationResolvants {
 
