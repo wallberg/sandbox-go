@@ -139,7 +139,9 @@ func SatRead(filename string) (SatClauses, map[int]string, error) {
 	return clauses, variable2name, nil
 }
 
-// SatWaerdan returns the SAT clauses for waerden(j,k;n)
+// SatWaerdan returns the SAT clauses for waerden(j,k;n) which are satisfiable
+// if there exists a binary sequence with length n containing no j equally
+// spaced 0s and no k equally spaced 1s.
 func SatWaerdan(j, k, n int) SatClauses {
 	var clauses SatClauses
 
