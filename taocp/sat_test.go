@@ -155,3 +155,34 @@ func TestSatRand(t *testing.T) {
 		}
 	}
 }
+
+func TestSatComplete(t *testing.T) {
+	cases := []struct {
+		n        int
+		expected SatClauses
+	}{
+		{1, SatClauses{
+			{1},
+			{-1},
+		}},
+		{2, SatClauses{
+			{1, 2},
+			{1, -2},
+			{-1, 2},
+			{-1, -2},
+		}},
+		{4, SatClauses{
+			{1, 2, 3, 4}, {1, 2, 3, -4}, {1, 2, -3, 4}, {1, 2, -3, -4},
+			{1, -2, 3, 4}, {1, -2, 3, -4}, {1, -2, -3, 4}, {1, -2, -3, -4},
+			{-1, 2, 3, 4}, {-1, 2, 3, -4}, {-1, 2, -3, 4}, {-1, 2, -3, -4},
+			{-1, -2, 3, 4}, {-1, -2, 3, -4}, {-1, -2, -3, 4}, {-1, -2, -3, -4},
+		}},
+	}
+
+	for i, c := range cases {
+		got := SatComplete(c.n)
+		if !reflect.DeepEqual(got, c.expected) {
+			t.Errorf("For case #%d, n=%d, expected clauses %v; got %v", i, c.n, c.expected, got)
+		}
+	}
+}

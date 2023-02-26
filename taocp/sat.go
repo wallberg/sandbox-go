@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"sort"
@@ -428,5 +429,27 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 			}
 		}
 	}
+	return clauses
+}
+
+// SatComplete returns all 2^n permutations of clauses of size n
+func SatComplete(n int) (clauses SatClauses) {
+
+	numClauses := int(math.Pow(2, float64(n)))
+
+	for state := 0; state < numClauses; state++ {
+
+		// Add a new clause
+		clause := SatClause{}
+		for j := 1; j <= n; j++ {
+			if state>>(n-j)&1 == 0 {
+				clause = append(clause, j)
+			} else {
+				clause = append(clause, j*-1)
+			}
+		}
+		clauses = append(clauses, clause)
+	}
+
 	return clauses
 }
