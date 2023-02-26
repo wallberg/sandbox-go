@@ -1031,7 +1031,7 @@ L6:
 					}
 				}
 
-				// TODO: implement θ heuristic
+				// TODO: implement 𝜃 heuristic
 
 			}
 		}
@@ -1153,10 +1153,26 @@ L6:
 		dump()
 	}
 
-	// ∀ (u,v) in TIMP[L]
-	for i := 0; i < TSIZE[L]; i++ {
-		p := TIMP[L] + 2*i
-		u, v := TIMP[p], TIMP[p+1]
+	// ∀ (u,v) ready for BIMP consideration
+	for i := 0; true; i++ {
+		var u, v int
+
+		if bigClauses {
+			// Get (u, v) from uvStack
+			if i == len(uvStack) {
+				break
+			}
+			u, v = uvStack[i][0], uvStack[i][1]
+		} else {
+			// Get (u, v) from TIMP[L]
+			// TODO: Determine if we are supposed to process uvStack in reverse order
+			// like popping a stack.
+			if i == TSIZE[L] {
+				break
+			}
+			p := TIMP[L] + 2*i
+			u, v = TIMP[p], TIMP[p+1]
+		}
 
 		//
 		// @note L8 [Consider u or v.]
@@ -1406,19 +1422,65 @@ L12:
 		// Implicitly restore X to the free list because N + E = n
 		// (Exercise 137)
 		E -= 1
-		X = R[E] >> 1
+		L = R[E]
+		X = L >> 1
 
-		// Reactivate the TIMP pairs that involve X
-		// (Exercise 137)
-		for _, l = range []int{2*X + 1, 2 * X} {
-			for i := TSIZE[l] - 1; i >= 0; i-- {
-				p := TIMP[l] + 2*i
-				u, v := TIMP[p], TIMP[p+1]
+		if bigClauses {
+			// Restore variable X to all CINX/KINX clauses (Exercise 143)
+			// @note L12 - KINX,CINX
 
-				TSIZE[v^1] += 1
-				TSIZE[u^1] += 1
+			//
+			// Update clauses for which L has ceased being false
+			//
+
+			// ∀ c ∈ KINX[¬L] (reverse order from L7)
+			for i := KSIZE[L^1] - 1; i >= 0; i-- {
+				c := KINX[L^1][i]
+				s := CSIZE[c]
+				CSIZE[c] += 1
+
+				if s == 2 {
+					// Swap c back into the clauses list of (u, v)
+					for _, u := range CINX[c][0:2] {
+						KSIZE[u] += 1
+					}
+				}
+			}
+
+			//
+			// Reactivate all of the active big clauses that contain L
+			//
+
+			// ∀ c ∈ KINX[L] (reverse order from L7)
+			for i := KSIZE[L] - 1; i >= 0; i-- {
+				c := KINX[L][i]
+
+				// ∀ u ∈ CINX[c] (reverse order from L7)
+				for j := CSIZE[c] - 1; j >= 0; j-- {
+					u := CINX[c][j]
+
+					// Swap c back into u's clause list
+					KSIZE[u] += 1
+				}
+			}
+
+			// TODO: ParamILS advises changing 𝛼 from 3.5 to 0.001(!) in (195).
+
+		} else {
+			// Reactivate the TIMP pairs that involve X
+			// (Exercise 137)
+			// @note L12 - TIMP
+			for _, l = range []int{2*X + 1, 2 * X} {
+				for i := TSIZE[l] - 1; i >= 0; i-- {
+					p := TIMP[l] + 2*i
+					u, v := TIMP[p], TIMP[p+1]
+
+					TSIZE[v^1] += 1
+					TSIZE[u^1] += 1
+				}
 			}
 		}
+
 		VAL[X] = 0
 	}
 

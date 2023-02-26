@@ -52,6 +52,9 @@ func TestSatAlgorithmL(t *testing.T) {
 		{10, false, false, SatWaerdan(3, 3, 10)},
 		{4, true, true, SatClauses{{1, 2, 3, 4}}},
 		{4, true, true, SatClauses{{1, 2, 3, 4}, {1, -2, -3, -4}, {-1, 2, 3, 4}}},
+		{8, true, true, SatWaerdan(3, 3, 8)},
+		{9, false, true, SatWaerdan(3, 3, 9)},
+		{10, false, true, SatWaerdan(3, 3, 10)},
 	}
 
 	for i, c := range cases {
