@@ -80,6 +80,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// (Exercise 143 - "big" clauses of k > 2)
 		KSIZE []int
 
+		// BACKKSIZE - store previous versions of KSIZE in the stack (depth indexed)
+		// (Exercise 143 - "big" clauses of k > 2)
+		BACKKSIZE []int
+
 		// CINX - sequential list of literals l for each clause c
 		// (Exercise 143 - "big" clauses of k > 2)
 		CINX [][]int
@@ -300,12 +304,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// FORCE
 		b.WriteString("FORCE\n")
-		b.WriteString(fmt.Sprintf("U=%d: ", U))
+		b.WriteString(fmt.Sprintf("U=%d:", U))
 		for i := 0; i < U; i++ {
 			if i > 0 {
-				b.WriteString(", ")
+				b.WriteString(",")
 			}
-			b.WriteString(fmt.Sprintf("{%d}", FORCE[i]))
+			b.WriteString(fmt.Sprintf(" {%d}", FORCE[i]))
 		}
 		b.WriteString("\n\n")
 
@@ -348,12 +352,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// BIMP
 		b.WriteString("BIMP\n")
 		for l := 2; l <= 2*n+1; l++ {
-			b.WriteString(fmt.Sprintf("%d: ", l))
+			b.WriteString(fmt.Sprintf("%d:", l))
 			for i := 0; i < BSIZE[l]; i++ {
 				if i > 0 {
-					b.WriteString(", ")
+					b.WriteString(",")
 				}
-				b.WriteString(fmt.Sprintf("%d", BIMP[l][i]))
+				b.WriteString(fmt.Sprintf(" %d", BIMP[l][i]))
 			}
 			b.WriteString("\n")
 		}
@@ -367,7 +371,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				if INX[l>>1] < N {
 					x = " "
 				} else {
-					x = "x"
+					x = "f"
+					for k := 0; k < E; k++ {
+						if R[k] == l {
+							x = "t"
+							break
+						}
+					}
 				}
 				b.WriteString(fmt.Sprintf("l=%s%d: ", x, l))
 
@@ -392,10 +402,19 @@ func SatAlgorithmL(n int, clauses SatClauses,
 					if i > 0 {
 						b.WriteString(", ")
 					}
-					if INX[l>>1] >= N {
-						b.WriteString("x")
+					var x string
+					if INX[l>>1] < N {
+						x = " "
+					} else {
+						x = "f"
+						for k := 0; k < E; k++ {
+							if R[k] == l {
+								x = "t"
+								break
+							}
+						}
 					}
-					b.WriteString(fmt.Sprintf("%d", l))
+					b.WriteString(fmt.Sprintf("%s%d", x, l))
 				}
 				b.WriteString("\n")
 			}
@@ -687,6 +706,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		KINX = make([][]int, 2*n+2)
 		KSIZE = make([]int, 2*n+2)
+		BACKKSIZE = make([]int, n+1)
 
 		CINX = make([][]int, 0)
 		CSIZE = make([]int, 0)
@@ -1063,6 +1083,8 @@ L6:
 		// Deactivate all of the active big clauses that contain L
 		//
 
+		BACKKSIZE[d] = KSIZE[L]
+
 		// ∀ c ∈ KINX[L]
 		for KSIZE[L] > 0 {
 			c := KINX[L][0]
@@ -1070,23 +1092,19 @@ L6:
 			// ∀ u ∈ CINX[c]
 			for _, u := range CINX[c] {
 
-				// Check if u is a free literal
-				if u == L || INX[u>>1] < N {
+				log.Printf("  L=%d, c=%d, u=%d", L, c, u)
 
-					log.Printf("L=%d, c=%d, u=%d", L, c, u)
-
-					// Swap c out of u's clause list
-					s := KSIZE[u] - 1
-					KSIZE[u] = s
-					for t := 0; t < s; t++ {
-						if KINX[u][t] == c {
-							KINX[u][t] = KINX[u][s]
-							KINX[u][s] = c
-							break
-						}
+				// Swap c out of u's clause list
+				s := KSIZE[u] - 1
+				KSIZE[u] = s
+				for t := 0; t < s; t++ {
+					if KINX[u][t] == c {
+						KINX[u][t] = KINX[u][s]
+						KINX[u][s] = c
+						break
 					}
-					// TODO: implement 𝜃 heuristic
 				}
+				// TODO: implement 𝜃 heuristic
 			}
 		}
 		dump()
@@ -1493,7 +1511,7 @@ L11:
 	//
 L12:
 	if debug {
-		log.Printf("L12. Unfix real truths")
+		log.Printf("L12. Unfix real truths, E=%d, F=%d", E, F)
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -1519,7 +1537,7 @@ L12:
 			for i := KSIZE[L^1] - 1; i >= 0; i-- {
 				c := KINX[L^1][i]
 				s := CSIZE[c]
-				CSIZE[c] += 1
+				CSIZE[c] = s + 1
 
 				if s == 2 {
 					// Swap c back into the clauses list of (u, v)
@@ -1529,20 +1547,25 @@ L12:
 				}
 			}
 
+			dump()
+
 			//
 			// Reactivate all of the active big clauses that contain L
 			//
 
 			// ∀ c ∈ KINX[L] (reverse order from L7)
-			for i := KSIZE[L] - 1; i >= 0; i-- {
+			for i := 0; i < BACKKSIZE[d]; i++ {
 				c := KINX[L][i]
 
 				// ∀ u ∈ CINX[c] (reverse order from L7)
 				for j := CSIZE[c] - 1; j >= 0; j-- {
 					u := CINX[c][j]
 
+					// // Check if u is a free literal
+					// if u == L || INX[u>>1] < N {
 					// Swap c back into u's clause list
 					KSIZE[u] += 1
+					// }
 				}
 			}
 
