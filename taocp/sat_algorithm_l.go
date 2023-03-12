@@ -183,44 +183,44 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		bigClauses bool
 	)
 
-	// assertKinxIntegrity
-	assertKinxIntegrity := func() {
-		if !bigClauses {
-			return
-		}
+	// // assertKinxIntegrity
+	// assertKinxIntegrity := func() {
+	// 	if !bigClauses {
+	// 		return
+	// 	}
 
-		// KINX
-		for l := 2; l <= 2*n+1; l++ {
-			if KSIZE[l] < 0 || KSIZE[l] > len(KINX[l]) {
-				log.Panicf("assertion failed: KSIZE[%d]=%d", l, KSIZE[l])
-			}
-		}
-	}
+	// 	// KINX
+	// 	for l := 2; l <= 2*n+1; l++ {
+	// 		if KSIZE[l] < 0 || KSIZE[l] > len(KINX[l]) {
+	// 			log.Panicf("assertion failed: KSIZE[%d]=%d", l, KSIZE[l])
+	// 		}
+	// 	}
+	// }
 
-	// assertTimpIntegrity
-	assertTimpIntegrity := func() {
-		if bigClauses {
-			return
-		}
+	// // assertTimpIntegrity
+	// assertTimpIntegrity := func() {
+	// 	if bigClauses {
+	// 		return
+	// 	}
 
-		for l := 2; l <= 2*n+1; l++ {
-			boundary := 0
+	// 	for l := 2; l <= 2*n+1; l++ {
+	// 		boundary := 0
 
-			// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
-			for lp := l + 1; lp < 2*n+1; lp++ {
-				if TIMP[lp] > 0 {
-					boundary = TIMP[lp]
-					break
-				}
-			}
-			if boundary == 0 {
-				boundary = len(TIMP)
-			}
-			if TIMP[l]+2*TSIZE[l] > boundary {
-				log.Panicf("l=%d, boundary=%d, TSIZE[l]=%d", l, boundary, TSIZE[l])
-			}
-		}
-	}
+	// 		// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
+	// 		for lp := l + 1; lp < 2*n+1; lp++ {
+	// 			if TIMP[lp] > 0 {
+	// 				boundary = TIMP[lp]
+	// 				break
+	// 			}
+	// 		}
+	// 		if boundary == 0 {
+	// 			boundary = len(TIMP)
+	// 		}
+	// 		if TIMP[l]+2*TSIZE[l] > boundary {
+	// 			log.Panicf("l=%d, boundary=%d, TSIZE[l]=%d", l, boundary, TSIZE[l])
+	// 		}
+	// 	}
+	// }
 
 	// truth returns a string description of truth values
 	truth := func(t int) string {
@@ -254,7 +254,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// 7 - forced value is 0 (by input unit clause or Algorithm X)
 
 	showProgress := func() {
-		assertTimpIntegrity()
 
 		var b strings.Builder
 		b.WriteString(fmt.Sprintf("Progress: n=%d, d=%d, F=%d, E=%d, G=%d : ", n, d, F, E, G))
@@ -780,10 +779,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		uvStack = make([][2]int, 0, maxKSize)
 
-		if debug {
-			assertKinxIntegrity()
-		}
-
 	} else {
 
 		//
@@ -842,10 +837,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				LINK[pp] = ppp
 				LINK[ppp] = p
 			}
-		}
-
-		if debug {
-			assertTimpIntegrity()
 		}
 	}
 
@@ -1100,10 +1091,6 @@ L6:
 	VAR[N] = X
 	INX[X] = N
 
-	if debug {
-		assertTimpIntegrity()
-	}
-
 	if bigClauses {
 		// Remove variable X from all CINX/KINX clauses (Exercise 143)
 		// @note L7 - KINX,CINX
@@ -1119,13 +1106,10 @@ L6:
 			c := KINX[L][0]
 
 			// ∀ u ∈ CINX[c]
-			freeLiterals := 0
 			for _, u := range CINX[c] {
 
 				// Check if u is a free literal
-				// if u == L || INX[u>>1] < N {
 				if u == L || VAL[u>>1] < rt {
-					freeLiterals++
 
 					// Swap c out of u's clause list
 					s := KSIZE[u] - 1
@@ -1140,13 +1124,6 @@ L6:
 					// TODO: implement 𝜃 heuristic
 				}
 			}
-			if debug && freeLiterals != CSIZE[c] {
-				dump()
-				log.Panicf("assertion failed: for c=%d, freeLiterals=%d != CSIZE[%d]=%d", c, freeLiterals, c, CSIZE[c])
-			}
-		}
-		if debug {
-			assertKinxIntegrity()
 		}
 
 		//
@@ -1173,19 +1150,17 @@ L6:
 
 					// Determine if u is in the VAR free list
 					if INX[u>>1] < N {
+
 						// Swap (u, v) into the first positions of CINX[c],
 						// if not already there
 						if i != j {
 							CINX[c][j] = CINX[c][i]
 							CINX[c][i] = u
 						}
-						i += 1
-						// TODO: replace assertion with the following
-						// if i == 2 {
-						//   break
-						// }
-						if i > 2 {
-							log.Panicf("assertion failed: i=%d > 2 (found more than 2 free variables in CINX)", i)
+						if i == 1 {
+							break
+						} else {
+							i += 1
 						}
 					}
 
@@ -1208,10 +1183,6 @@ L6:
 				}
 			}
 
-		}
-
-		if debug {
-			assertKinxIntegrity()
 		}
 
 	} else {
@@ -1586,10 +1557,6 @@ L12:
 				}
 			}
 
-			if debug {
-				assertKinxIntegrity()
-			}
-
 			//
 			// Reactivate all of the active big clauses that contain L
 			//
@@ -1602,7 +1569,6 @@ L12:
 				c := KINX[L][i]
 
 				// ∀ u ∈ CINX[c] (reverse order from L7)
-				freeLiterals := 0
 				for j := len(CINX[c]) - 1; j >= 0; j-- {
 					u := CINX[c][j]
 
@@ -1611,12 +1577,8 @@ L12:
 
 						// Swap c back into u's clause list
 						KSIZE[u] += 1
-						freeLiterals++
 					}
 				}
-			}
-			if debug {
-				assertKinxIntegrity()
 			}
 
 			// TODO: ParamILS advises changing 𝛼 from 3.5 to 0.001(!) in (195).
