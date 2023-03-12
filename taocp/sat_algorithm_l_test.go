@@ -68,7 +68,7 @@ func TestSatAlgorithmL(t *testing.T) {
 		options := SatOptions{}
 		optionsL := SatAlgorithmLOptions{
 			CompensationResolvants: false,
-			BigClauses:             c.bigClauses,
+			SuppressBigClauses:     !c.bigClauses,
 		}
 
 		var clausesStr string
@@ -138,9 +138,7 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 				// Delta:    10000000,
 			}
 			options := SatOptions{}
-			optionsL := SatAlgorithmLOptions{
-				BigClauses: true,
-			}
+			optionsL := SatAlgorithmLOptions{}
 
 			sat, solution := SatAlgorithmL(len(variables), clauses, &stats, &options, &optionsL)
 
@@ -170,7 +168,6 @@ func TestSatAlgorithmLLangford(t *testing.T) {
 			options := SatOptions{}
 			optionsL := SatAlgorithmLOptions{
 				CompensationResolvants: true,
-				BigClauses:             true,
 			}
 
 			expected := false
@@ -223,7 +220,6 @@ func BenchmarkSatAlgorithmLFromFile(b *testing.B) {
 				options := SatOptions{}
 				optionsL := SatAlgorithmLOptions{
 					CompensationResolvants: true,
-					BigClauses:             true,
 				}
 
 				sat, _ := SatAlgorithmL(len(variables), clauses, &stats, &options, &optionsL)

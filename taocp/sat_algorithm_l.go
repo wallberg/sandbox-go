@@ -15,11 +15,11 @@ const (
 
 // SatAlgorithmLOptions provides optional features
 type SatAlgorithmLOptions struct {
-	// Optional Compensation Resolvants (Exercise 139)
+	// Optional Compensation Resolvants (Exercise 139) - default false
 	CompensationResolvants bool
 
-	// Optional Big Clauses (Exercise 143)
-	BigClauses bool
+	// Optional Big Clauses (Exercise 143) - default true
+	SuppressBigClauses bool
 }
 
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
@@ -641,7 +641,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	sat3, nSat3, clausesSat3 := Sat3(n, clauses)
 
 	if !sat3 {
-		if optionsL.BigClauses {
+		if !optionsL.SuppressBigClauses {
 			bigClauses = true
 		} else {
 			n = nSat3
