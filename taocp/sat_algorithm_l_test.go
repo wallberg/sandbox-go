@@ -3,54 +3,99 @@ package taocp
 import (
 	"fmt"
 	"log"
-	"reflect"
 	"testing"
 )
 
-func TestSatAlgorithmD(t *testing.T) {
+func TestSatAlgorithmL(t *testing.T) {
 
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	cases := []struct {
-		n       int        // number of strictly distinct literals
-		sat     bool       // is satisfiable
-		clauses SatClauses // clauses to satisfy
+		n          int        // number of strictly distinct literals
+		sat        bool       // is satisfiable
+		bigClauses bool       // use BigClauses option?
+		clauses    SatClauses // clauses to satisfy
 	}{
-		{100, true, SatRand(2, 80, 100, 0)},
-		{100, true, SatRand(2, 100, 100, 0)},
-		{100, false, SatRand(2, 400, 100, 0)},
-		{1000, true, SatRand(2, 1000, 1000, 0)},
-		{1000, true, SatRand(2, 1100, 1000, 0)},
-		{1000, false, SatRand(2, 2000, 1000, 0)},
-		{3, true, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
-		{3, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
-		{4, true, ClausesRPrime},
-		{4, false, ClausesR},
-		{9, false, ClausesWaerden339},
+		{1, true, false, SatClauses{{1}}},
+		{1, true, false, SatClauses{{-1}}},
+		{1, false, false, SatClauses{{1}, {-1}}},
+		{2, true, false, SatClauses{{1}, {2}}},
+		{3, true, false, SatClauses{{1}, {2}, {-3}}},
+		{3, true, false, SatClauses{{-1}, {2}, {3}}},
+		{2, true, false, SatClauses{{1, 2}}},
+		{2, true, false, SatClauses{{1, 2}, {1, -2}}},
+		{2, true, false, SatClauses{{-1, -2}}},
+		{2, false, false, SatClauses{{1, 2}, {-1, -2}, {1, -2}, {-1, 2}}},
+		{2, true, false, SatClauses{{-1, 2}, {1, -2}}},
+		{2, true, false, SatClauses{{1, -2}, {-1, 2}}},
+		{5, true, false, SatClauses{{1, -2}, {2, 2}, {-1, 3}, {2, 4}, {-4, 5}}},
+		{5, true, false, SatClauses{
+			{1, 2}, {2, 3}, {3, 4}, {4, 5},
+			{-1, -2}, {-1, -3}, {-1, -4}, {-1, -5}}},
+		{100, true, false, SatRand(2, 80, 100, 0)},
+		{100, true, false, SatRand(2, 100, 100, 0)},
+		{100, false, false, SatRand(2, 400, 100, 0)},
+		{1000, true, false, SatRand(2, 1000, 1000, 0)},
+		{1000, true, false, SatRand(2, 1100, 1000, 0)},
+		{1000, false, false, SatRand(2, 2000, 1000, 0)},
+		{100, true, false, SatRand(3, 420, 100, 0)},
+		{100, false, false, SatRand(3, 500, 100, 0)},
+		{3, true, false, SatClauses{{1, 2, 3}}},
+		{3, true, false, SatClauses{{-1, -2, 3}}},
+		{3, true, false, SatClauses{{1, -2}, {2, 3}, {-1, -2, 3}}},
+		{3, true, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}}},
+		{3, false, false, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3}}},
+		{4, true, false, ClausesRPrime},
+		{4, false, false, ClausesR},
+		{8, true, false, SatWaerdan(3, 3, 8)},
+		{9, false, false, SatWaerdan(3, 3, 9)},
+		{10, false, false, SatWaerdan(3, 3, 10)},
+		{3, false, true, SatComplete(3)},
+		{4, false, true, SatComplete(4)},
+		{5, false, true, SatComplete(5)},
+		{8, true, true, SatWaerdan(3, 3, 8)},
+		{9, false, true, SatWaerdan(3, 3, 9)},
+		{10, false, true, SatWaerdan(3, 3, 10)},
 	}
 
-	for _, c := range cases {
+	for i, c := range cases {
 
 		stats := SatStats{
-			// Debug: true,
-			// Progress: true,
+			// Debug:     true,
+			// Verbosity: 1,
+			// Progress:  true,
 		}
 		options := SatOptions{}
+		optionsL := SatAlgorithmLOptions{
+			CompensationResolvants: false,
+			SuppressBigClauses:     !c.bigClauses,
+		}
 
-		sat, solution := SatAlgorithmD(c.n, c.clauses, &stats, &options)
+		var clausesStr string
+		if len(c.clauses) < 10 {
+			clausesStr = fmt.Sprintf("%v", c.clauses)
+		} else {
+			clausesStr = fmt.Sprintf("#%d", len(c.clauses))
+		}
+
+		t.Logf("Executing test case #%d, n=%d, sat=%t, bigc=%t, clauses=%s", i, c.n, c.sat, c.bigClauses, clausesStr)
+
+		sat, solution := SatAlgorithmL(c.n, c.clauses, &stats, &options, &optionsL)
 
 		if sat != c.sat {
-			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
-		} else if sat {
+			t.Errorf("expected satisfiable=%t for case %d, clauses %v; got %t", c.sat, i, c.clauses, sat)
+		}
+		if sat {
 			validSolution := SatTest(c.n, c.clauses, solution)
 			if !validSolution {
-				t.Errorf("expected a valid solution for n=%d, clauses=%v; did not get one", c.n, c.clauses)
+				t.Errorf("expected a valid solution for case %d, n=%d, clauses=%v; did not get one (solution=%v)", i, c.n, c.clauses, solution)
 			}
 		}
+
 	}
 }
 
-func TestSatAlgorithmDFromFile(t *testing.T) {
+func TestSatAlgorithmLFromFile(t *testing.T) {
 
 	// log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
@@ -65,7 +110,7 @@ func TestSatAlgorithmDFromFile(t *testing.T) {
 		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
 		{"testdata/SATExamples/X2.sat", 129, 354, false},
 		{"testdata/SATExamples/P3.sat", 144, 529, true},
-		{"testdata/SATExamples/P4.sat", 400, 2509, true},
+		// {"testdata/SATExamples/P4.sat", 400, 2509, true}, // (long, see 7.2.2.2 p. 304)
 	}
 
 	for _, c := range cases {
@@ -88,13 +133,15 @@ func TestSatAlgorithmDFromFile(t *testing.T) {
 			}
 
 			stats := SatStats{
-				// Debug:    true,
-				// Progress: true,
-				// Delta:    1000000000,
+				// Debug: true,
+				// Verbosity: 1,
+				Progress: true,
+				Delta:    100000,
 			}
 			options := SatOptions{}
+			optionsL := SatAlgorithmLOptions{}
 
-			sat, solution := SatAlgorithmD(len(variables), clauses, &stats, &options)
+			sat, solution := SatAlgorithmL(len(variables), clauses, &stats, &options, &optionsL)
 
 			if sat != c.sat {
 				t.Errorf("expected satisfiable=%t for filename %s; got %t", c.sat, c.filename, sat)
@@ -108,7 +155,7 @@ func TestSatAlgorithmDFromFile(t *testing.T) {
 	}
 }
 
-func TestSatAlgorithmDLangford(t *testing.T) {
+func TestSatAlgorithmLLangford(t *testing.T) {
 
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
@@ -120,6 +167,9 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 				// Progress: true,
 			}
 			options := SatOptions{}
+			optionsL := SatAlgorithmLOptions{
+				CompensationResolvants: true,
+			}
 
 			expected := false
 			if n%4 == 0 || n%4 == 3 {
@@ -128,7 +178,7 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 
 			clauses, coverOptions := SatLangford(n)
 
-			sat, solution := SatAlgorithmD(len(coverOptions), clauses, &stats, &options)
+			sat, solution := SatAlgorithmL(len(coverOptions), clauses, &stats, &options, &optionsL)
 
 			if sat != expected {
 				t.Errorf("expected langford(%d) satisfiable=%t; got %t", n, expected, sat)
@@ -142,57 +192,7 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 	}
 }
 
-// TestSatAlgorithmDSat3 tests Sat3() using Algorithm D.
-func TestSat3(t *testing.T) {
-
-	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
-
-	cases := []struct {
-		n        int        // number of strictly distinct literals
-		sat      bool       // is satisfiable
-		solution []int      // solution
-		clauses  SatClauses // clauses to satisfy
-	}{
-		{4, true, []int{0, 0, 1, 0}, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3, 4}, {1, -4}}},
-		{4, false, nil, SatClauses{{1, -2}, {2, 3}, {-1, -3}, {-1, -2, 3}, {1, 2, -3, 4}, {-4}}},
-		{4, true, []int{0, 1, 0, 1}, ClausesRPrime},
-		{4, false, nil, ClausesR},
-		{9, false, nil, ClausesWaerden339},
-	}
-
-	for _, c := range cases {
-
-		sat3, n3, clauses3 := Sat3(c.n, c.clauses)
-
-		if !sat3 {
-			if n3 <= c.n {
-				t.Errorf("expected number of SAT3 variables for filename to be greater than %d; got %d", c.n, n3)
-			}
-			if len(clauses3) <= len(c.clauses) {
-				t.Errorf("expected number of SAT3 clauses for filename to be greater than %d; got %d", len(c.clauses), len(clauses3))
-			}
-		}
-
-		stats := SatStats{}
-		options := SatOptions{}
-
-		sat, solution := SatAlgorithmD(n3, clauses3, &stats, &options)
-		if solution != nil {
-			solution = solution[0:c.n]
-		}
-
-		if sat != c.sat {
-			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, sat)
-			continue
-		}
-		if sat && !reflect.DeepEqual(solution, c.solution) {
-			t.Errorf("expected solution=%v for clauses %v; got %v", c.solution, c.clauses, solution)
-			continue
-		}
-	}
-}
-
-func BenchmarkSatAlgorithmDFromFile(b *testing.B) {
+func BenchmarkSatAlgorithmLFromFile(b *testing.B) {
 
 	cases := []struct {
 		filename     string // file name of the SAT data file
@@ -205,7 +205,7 @@ func BenchmarkSatAlgorithmDFromFile(b *testing.B) {
 		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
 		{"testdata/SATExamples/X2.sat", 129, 354, false},
 		{"testdata/SATExamples/P3.sat", 144, 529, true},
-		{"testdata/SATExamples/P4.sat", 400, 2509, true},
+		// {"testdata/SATExamples/P4.sat", 400, 2509, true}, // (long, see 7.2.2.2 p. 304)
 	}
 
 	for _, c := range cases {
@@ -219,8 +219,11 @@ func BenchmarkSatAlgorithmDFromFile(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				stats := SatStats{}
 				options := SatOptions{}
+				optionsL := SatAlgorithmLOptions{
+					CompensationResolvants: true,
+				}
 
-				sat, _ := SatAlgorithmD(len(variables), clauses, &stats, &options)
+				sat, _ := SatAlgorithmL(len(variables), clauses, &stats, &options, &optionsL)
 
 				if firstExecution {
 					b.Logf("SAT=%t, n=%d, m=%d, nodes=%d", sat, len(variables), len(clauses), stats.Nodes)
@@ -232,7 +235,7 @@ func BenchmarkSatAlgorithmDFromFile(b *testing.B) {
 	}
 }
 
-func BenchmarkSatAlgorithmDLangford(b *testing.B) {
+func BenchmarkSatAlgorithmLLangford(b *testing.B) {
 
 	for _, n := range []int{5, 9, 13} {
 
@@ -245,8 +248,9 @@ func BenchmarkSatAlgorithmDLangford(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				stats := SatStats{}
 				options := SatOptions{}
+				optionsL := SatAlgorithmLOptions{}
 
-				sat, _ := SatAlgorithmD(len(coverOptions), clauses, &stats, &options)
+				sat, _ := SatAlgorithmL(len(coverOptions), clauses, &stats, &options, &optionsL)
 
 				if firstExecution {
 					b.Logf("SAT=%t, n=%d, m=%d, nodes=%d", sat, len(coverOptions), len(clauses), stats.Nodes)
@@ -258,7 +262,7 @@ func BenchmarkSatAlgorithmDLangford(b *testing.B) {
 	}
 }
 
-func BenchmarkSatAlgorithmDSatRandom(b *testing.B) {
+func BenchmarkSatAlgorithmLSatRandom(b *testing.B) {
 
 	cases := []struct {
 		k int // clause length (k-SAT)
@@ -288,8 +292,9 @@ func BenchmarkSatAlgorithmDSatRandom(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				stats := SatStats{}
 				options := SatOptions{}
+				optionsL := SatAlgorithmLOptions{}
 
-				sat, _ := SatAlgorithmD(c.n, clauses, &stats, &options)
+				sat, _ := SatAlgorithmL(c.n, clauses, &stats, &options, &optionsL)
 
 				if firstExecution {
 					b.Logf("SAT=%t, m=%d, n=%d, nodes=%d", sat, c.m, c.n, stats.Nodes)

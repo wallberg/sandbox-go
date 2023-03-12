@@ -3,7 +3,11 @@ package taocp
 import (
 	"bufio"
 	"fmt"
+	"log"
+	"math"
+	"math/rand"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -136,7 +140,9 @@ func SatRead(filename string) (SatClauses, map[int]string, error) {
 	return clauses, variable2name, nil
 }
 
-// SatWaerdan returns the SAT clauses for waerden(j,k;n)
+// SatWaerdan returns the SAT clauses for waerden(j,k;n) which are satisfiable
+// if there exists a binary sequence with length n containing no j equally
+// spaced 0s and no k equally spaced 1s.
 func SatWaerdan(j, k, n int) SatClauses {
 	var clauses SatClauses
 
@@ -378,4 +384,72 @@ func SatTest(n int, clauses SatClauses, solution []int) bool {
 	}
 
 	return true
+}
+
+// binomial efficiently computes the binomial coefficient (n pick k)
+func binomial(n, k int64) int64 {
+	if k == 0 {
+		return 1
+	} else if k > n/2 {
+		return binomial(n, n-k)
+	} else {
+		return n * binomial(n-1, k-1) / k
+	}
+}
+
+// SatRand returns m pseudorandom k-SAT clauses on n variables,
+// sampled with replacement (not distinct).
+func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
+
+	// Assert n >= k
+	if n < k {
+		log.Panicf("n=%d must be >= k=%d", n, k)
+	}
+
+	// Seed the pseudorandom generator
+	rand.Seed(seed)
+
+	// Generate m clauses
+	clauses = make(SatClauses, m)
+
+	for i := 0; i < m; i++ {
+
+		// Generate a single clause
+		clauses[i] = SatClause(rand.Perm(n)[0:k])
+
+		// Sort the clause
+		sort.IntSlice(clauses[i]).Sort()
+
+		// Shift variables to begin at 1, and
+		// determine which variables are negated
+		for j := 0; j < k; j++ {
+			clauses[i][j] += 1
+			if rand.Intn(2) == 1 {
+				clauses[i][j] *= -1
+			}
+		}
+	}
+	return clauses
+}
+
+// SatComplete returns all 2^n permutations of clauses of size n
+func SatComplete(n int) (clauses SatClauses) {
+
+	numClauses := int(math.Pow(2, float64(n)))
+
+	for state := 0; state < numClauses; state++ {
+
+		// Add a new clause
+		clause := SatClause{}
+		for j := 1; j <= n; j++ {
+			if state>>(n-j)&1 == 0 {
+				clause = append(clause, j)
+			} else {
+				clause = append(clause, j*-1)
+			}
+		}
+		clauses = append(clauses, clause)
+	}
+
+	return clauses
 }
