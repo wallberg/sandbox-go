@@ -1252,8 +1252,6 @@ L6:
 			u, v = uvStack[i][0], uvStack[i][1]
 		} else {
 			// Get (u, v) from TIMP[L]
-			// TODO: Determine if we are supposed to process uvStack in reverse order
-			// like popping a stack.
 			if i == TSIZE[L] {
 				break
 			}
