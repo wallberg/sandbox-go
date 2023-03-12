@@ -110,7 +110,7 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
 		{"testdata/SATExamples/X2.sat", 129, 354, false},
 		{"testdata/SATExamples/P3.sat", 144, 529, true},
-		// {"testdata/SATExamples/P4.sat", 400, 2509, true},
+		// {"testdata/SATExamples/P4.sat", 400, 2509, true}, // (long, see 7.2.2.2 p. 304)
 	}
 
 	for _, c := range cases {
@@ -133,9 +133,10 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 			}
 
 			stats := SatStats{
-				// Debug:    true,
-				// Progress: true,
-				// Delta:    10000000,
+				// Debug: true,
+				// Verbosity: 1,
+				Progress: true,
+				Delta:    100000,
 			}
 			options := SatOptions{}
 			optionsL := SatAlgorithmLOptions{}
@@ -204,7 +205,7 @@ func BenchmarkSatAlgorithmLFromFile(b *testing.B) {
 		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
 		{"testdata/SATExamples/X2.sat", 129, 354, false},
 		{"testdata/SATExamples/P3.sat", 144, 529, true},
-		// {"testdata/SATExamples/P4.sat", 400, 2509, true},
+		// {"testdata/SATExamples/P4.sat", 400, 2509, true}, // (long, see 7.2.2.2 p. 304)
 	}
 
 	for _, c := range cases {
