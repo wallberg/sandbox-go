@@ -638,17 +638,16 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// If this is a kSAT problem where k > 3 then either convert to 3SAT or use optional "big" clauses.
 	nOrig = n
 
-	// sat3, nSat3, clausesSat3 := Sat3(n, clauses)
-	_, nSat3, clausesSat3 := Sat3(n, clauses)
+	sat3, nSat3, clausesSat3 := Sat3(n, clauses)
 
-	// if !sat3 {
-	if optionsL.BigClauses {
-		bigClauses = true
-	} else {
-		n = nSat3
-		clauses = clausesSat3
+	if !sat3 {
+		if optionsL.BigClauses {
+			bigClauses = true
+		} else {
+			n = nSat3
+			clauses = clausesSat3
+		}
 	}
-	// }
 
 	initialize()
 
