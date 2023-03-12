@@ -169,7 +169,8 @@ func TestSatAlgorithmLLangford(t *testing.T) {
 			}
 			options := SatOptions{}
 			optionsL := SatAlgorithmLOptions{
-				BigClauses: true,
+				CompensationResolvants: true,
+				BigClauses:             true,
 			}
 
 			expected := false
