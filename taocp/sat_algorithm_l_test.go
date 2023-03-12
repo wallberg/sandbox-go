@@ -50,8 +50,9 @@ func TestSatAlgorithmL(t *testing.T) {
 		{8, true, false, SatWaerdan(3, 3, 8)},
 		{9, false, false, SatWaerdan(3, 3, 9)},
 		{10, false, false, SatWaerdan(3, 3, 10)},
-		{4, true, true, SatClauses{{1, 2, 3, 4}}},
-		{4, true, true, SatClauses{{1, 2, 3, 4}, {1, -2, -3, -4}, {-1, 2, 3, 4}}},
+		{3, false, true, SatComplete(3)},
+		{4, false, true, SatComplete(4)},
+		{5, false, true, SatComplete(5)},
 		{8, true, true, SatWaerdan(3, 3, 8)},
 		{9, false, true, SatWaerdan(3, 3, 9)},
 		{10, false, true, SatWaerdan(3, 3, 10)},
@@ -106,7 +107,7 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 	}{
 		{"testdata/SATExamples/L1.sat", 130, 2437, false},
 		{"testdata/SATExamples/L2.sat", 273, 1020, false},
-		// {"testdata/SATExamples/L5.sat", 1472, 102922, true},
+		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
 		// {"testdata/SATExamples/X2.sat", 129, 354, false},
 		// {"testdata/SATExamples/P3.sat", 144, 529, true},
 		// {"testdata/SATExamples/P4.sat", 400, 2509, true},
@@ -133,11 +134,13 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 
 			stats := SatStats{
 				// Debug:    true,
-				Progress: true,
-				Delta:    10000000,
+				// Progress: true,
+				// Delta:    10000000,
 			}
 			options := SatOptions{}
-			optionsL := SatAlgorithmLOptions{}
+			optionsL := SatAlgorithmLOptions{
+				BigClauses: true,
+			}
 
 			sat, solution := SatAlgorithmL(len(variables), clauses, &stats, &options, &optionsL)
 
@@ -165,7 +168,9 @@ func TestSatAlgorithmLLangford(t *testing.T) {
 				// Progress: true,
 			}
 			options := SatOptions{}
-			optionsL := SatAlgorithmLOptions{}
+			optionsL := SatAlgorithmLOptions{
+				BigClauses: true,
+			}
 
 			expected := false
 			if n%4 == 0 || n%4 == 3 {

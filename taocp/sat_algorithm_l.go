@@ -80,9 +80,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// (Exercise 143 - "big" clauses of k > 2)
 		KSIZE []int
 
-		// BACKKSIZE - store previous versions of KSIZE in the stack (depth indexed)
+		// BACKKSIZE - store previous versions of KSIZE in the stack
 		// (Exercise 143 - "big" clauses of k > 2)
 		BACKKSIZE []int
+
+		// backksize - previous version of KSIZE popped from BACKKISZE
+		backksize int
 
 		// CINX - sequential list of literals l for each clause c
 		// (Exercise 143 - "big" clauses of k > 2)
@@ -179,6 +182,20 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// are we using "big" clauses?
 		bigClauses bool
 	)
+
+	// assertKinxIntegrity
+	assertKinxIntegrity := func() {
+		if !bigClauses {
+			return
+		}
+
+		// KINX
+		for l := 2; l <= 2*n+1; l++ {
+			if KSIZE[l] < 0 || KSIZE[l] > len(KINX[l]) {
+				log.Panicf("assertion failed: KSIZE[%d]=%d", l, KSIZE[l])
+			}
+		}
+	}
 
 	// assertTimpIntegrity
 	assertTimpIntegrity := func() {
@@ -294,6 +311,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	}
 
 	// dump
+	// @note dump()
 	dump := func() {
 
 		var b strings.Builder
@@ -364,6 +382,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		b.WriteString("\n")
 
 		if bigClauses {
+			active := make([]bool, len(CINX)) // active clauses
+
 			// KINX
 			b.WriteString("KINX\n")
 			for l := 2; l <= 2*n+1; l++ {
@@ -382,6 +402,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				b.WriteString(fmt.Sprintf("l=%s%d: ", x, l))
 
 				for i, c := range KINX[l] {
+					if x != "f" && i < KSIZE[l] {
+						active[c] = true
+					}
 					if i == KSIZE[l] {
 						b.WriteString(" | ")
 					} else if i > 0 {
@@ -396,23 +419,29 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			// CINX
 			b.WriteString("CINX\n")
 			for c := range CINX {
-				b.WriteString(fmt.Sprintf("c=%d: size=%d: ", c, CSIZE[c]))
+				a := "  a"
+				if active[c] {
+					a = "n/a"
+				}
+				b.WriteString(fmt.Sprintf("c=%d: size=%d: %s:", c, CSIZE[c], a))
 
 				for i, l := range CINX[c] {
 					if i > 0 {
-						b.WriteString(", ")
+						b.WriteString(",")
 					}
+					b.WriteString(" ")
 					var x string
 					if INX[l>>1] < N {
 						x = " "
 					} else {
-						x = "f"
-						for k := 0; k < E; k++ {
-							if R[k] == l {
-								x = "t"
-								break
-							}
-						}
+						// x = "f"
+						// for k := 0; k < E; k++ {
+						// 	if R[k] == l {
+						// 		x = "t"
+						// 		break
+						// 	}
+						// }
+						x = "x"
 					}
 					b.WriteString(fmt.Sprintf("%s%d", x, l))
 				}
@@ -610,16 +639,17 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// If this is a kSAT problem where k > 3 then either convert to 3SAT or use optional "big" clauses.
 	nOrig = n
 
-	sat3, nSat3, clausesSat3 := Sat3(n, clauses)
+	// sat3, nSat3, clausesSat3 := Sat3(n, clauses)
+	_, nSat3, clausesSat3 := Sat3(n, clauses)
 
-	if !sat3 {
-		if optionsL.BigClauses {
-			bigClauses = true
-		} else {
-			n = nSat3
-			clauses = clausesSat3
-		}
+	// if !sat3 {
+	if optionsL.BigClauses {
+		bigClauses = true
+	} else {
+		n = nSat3
+		clauses = clausesSat3
 	}
+	// }
 
 	initialize()
 
@@ -706,7 +736,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		KINX = make([][]int, 2*n+2)
 		KSIZE = make([]int, 2*n+2)
-		BACKKSIZE = make([]int, n+1)
 
 		CINX = make([][]int, 0)
 		CSIZE = make([]int, 0)
@@ -751,10 +780,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		uvStack = make([][2]int, 0, maxKSize)
 
-		// fmt.Println(KINX)
-		// fmt.Println(KSIZE)
-		// fmt.Println(CINX)
-		// fmt.Println(CSIZE)
+		if debug {
+			assertKinxIntegrity()
+		}
+
 	} else {
 
 		//
@@ -1083,31 +1112,42 @@ L6:
 		// Deactivate all of the active big clauses that contain L
 		//
 
-		BACKKSIZE[d] = KSIZE[L]
+		BACKKSIZE = append(BACKKSIZE, KSIZE[L])
 
 		// ∀ c ∈ KINX[L]
 		for KSIZE[L] > 0 {
 			c := KINX[L][0]
 
 			// ∀ u ∈ CINX[c]
+			freeLiterals := 0
 			for _, u := range CINX[c] {
 
-				log.Printf("  L=%d, c=%d, u=%d", L, c, u)
+				// Check if u is a free literal
+				// if u == L || INX[u>>1] < N {
+				if u == L || VAL[u>>1] < rt {
+					freeLiterals++
 
-				// Swap c out of u's clause list
-				s := KSIZE[u] - 1
-				KSIZE[u] = s
-				for t := 0; t < s; t++ {
-					if KINX[u][t] == c {
-						KINX[u][t] = KINX[u][s]
-						KINX[u][s] = c
-						break
+					// Swap c out of u's clause list
+					s := KSIZE[u] - 1
+					KSIZE[u] = s
+					for t := 0; t < s; t++ {
+						if KINX[u][t] == c {
+							KINX[u][t] = KINX[u][s]
+							KINX[u][s] = c
+							break
+						}
 					}
+					// TODO: implement 𝜃 heuristic
 				}
-				// TODO: implement 𝜃 heuristic
+			}
+			if debug && freeLiterals != CSIZE[c] {
+				dump()
+				log.Panicf("assertion failed: for c=%d, freeLiterals=%d != CSIZE[%d]=%d", c, freeLiterals, c, CSIZE[c])
 			}
 		}
-		dump()
+		if debug {
+			assertKinxIntegrity()
+		}
 
 		//
 		// Update clauses for which L has become false
@@ -1121,8 +1161,6 @@ L6:
 			c := KINX[L^1][i]
 			s := CSIZE[c] - 1
 			CSIZE[c] = s
-
-			log.Printf("s=%d", s)
 
 			// If s > 2, don't bother moving the free literals.  We'll simply
 			// search for the last two free literals when needed when the size
@@ -1170,6 +1208,10 @@ L6:
 				}
 			}
 
+		}
+
+		if debug {
+			assertKinxIntegrity()
 		}
 
 	} else {
@@ -1224,23 +1266,20 @@ L6:
 		}
 	}
 
-	if debug && stats.Verbosity > 0 {
-		dump()
-	}
-
 	// ∀ (u,v) ready for BIMP consideration
 	for i := 0; true; i++ {
+		if debug && stats.Verbosity > 0 {
+			dump()
+		}
+
 		var u, v int
 
 		if bigClauses {
-			log.Printf("uvStack=%v", uvStack)
-
 			// Get (u, v) from uvStack
 			if i == len(uvStack) {
 				break
 			}
 			u, v = uvStack[i][0], uvStack[i][1]
-			log.Printf("(u=%d, v=%d)", u, v)
 		} else {
 			// Get (u, v) from TIMP[L]
 			// TODO: Determine if we are supposed to process uvStack in reverse order
@@ -1547,26 +1586,37 @@ L12:
 				}
 			}
 
-			dump()
+			if debug {
+				assertKinxIntegrity()
+			}
 
 			//
 			// Reactivate all of the active big clauses that contain L
 			//
 
+			// Pop last value of KSIZE[L]
+			backksize, BACKKSIZE = BACKKSIZE[len(BACKKSIZE)-1], BACKKSIZE[:len(BACKKSIZE)-1]
+
 			// ∀ c ∈ KINX[L] (reverse order from L7)
-			for i := 0; i < BACKKSIZE[d]; i++ {
+			for i := 0; i < backksize; i++ {
 				c := KINX[L][i]
 
 				// ∀ u ∈ CINX[c] (reverse order from L7)
-				for j := CSIZE[c] - 1; j >= 0; j-- {
+				freeLiterals := 0
+				for j := len(CINX[c]) - 1; j >= 0; j-- {
 					u := CINX[c][j]
 
-					// // Check if u is a free literal
-					// if u == L || INX[u>>1] < N {
-					// Swap c back into u's clause list
-					KSIZE[u] += 1
-					// }
+					// Check if u is a free literal
+					if u == L || VAL[u>>1] < rt {
+
+						// Swap c back into u's clause list
+						KSIZE[u] += 1
+						freeLiterals++
+					}
 				}
+			}
+			if debug {
+				assertKinxIntegrity()
 			}
 
 			// TODO: ParamILS advises changing 𝛼 from 3.5 to 0.001(!) in (195).
