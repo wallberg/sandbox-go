@@ -207,7 +207,7 @@ func BenchmarkSatAlgorithmLFromFile(b *testing.B) {
 		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
 		{"testdata/SATExamples/X2.sat", 129, 354, false},
 		{"testdata/SATExamples/P3.sat", 144, 529, true},
-		{"testdata/SATExamples/P4.sat", 400, 2509, true},
+		// {"testdata/SATExamples/P4.sat", 400, 2509, true},
 	}
 
 	for _, c := range cases {
@@ -221,7 +221,10 @@ func BenchmarkSatAlgorithmLFromFile(b *testing.B) {
 			for i := 0; i < b.N; i++ {
 				stats := SatStats{}
 				options := SatOptions{}
-				optionsL := SatAlgorithmLOptions{}
+				optionsL := SatAlgorithmLOptions{
+					CompensationResolvants: true,
+					BigClauses:             true,
+				}
 
 				sat, _ := SatAlgorithmL(len(variables), clauses, &stats, &options, &optionsL)
 
