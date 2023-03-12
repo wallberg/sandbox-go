@@ -135,8 +135,8 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 			stats := SatStats{
 				// Debug: true,
 				// Verbosity: 1,
-				Progress: true,
-				Delta:    100000,
+				// Progress: true,
+				// Delta:    100000,
 			}
 			options := SatOptions{}
 			optionsL := SatAlgorithmLOptions{}
@@ -237,7 +237,7 @@ func BenchmarkSatAlgorithmLFromFile(b *testing.B) {
 
 func BenchmarkSatAlgorithmLLangford(b *testing.B) {
 
-	for _, n := range []int{5, 9, 13} {
+	for _, n := range []int{5, 9, 10} {
 
 		firstExecution := true
 
