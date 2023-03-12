@@ -108,8 +108,8 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 		{"testdata/SATExamples/L1.sat", 130, 2437, false},
 		{"testdata/SATExamples/L2.sat", 273, 1020, false},
 		{"testdata/SATExamples/L5.sat", 1472, 102922, true},
-		// {"testdata/SATExamples/X2.sat", 129, 354, false},
-		// {"testdata/SATExamples/P3.sat", 144, 529, true},
+		{"testdata/SATExamples/X2.sat", 129, 354, false},
+		{"testdata/SATExamples/P3.sat", 144, 529, true},
 		// {"testdata/SATExamples/P4.sat", 400, 2509, true},
 	}
 
