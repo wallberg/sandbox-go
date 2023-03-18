@@ -3,6 +3,7 @@ package taocp
 import (
 	"fmt"
 	"log"
+	"math"
 	"strings"
 )
 
@@ -94,6 +95,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// CSIZE - current number of active literals l for each clause c
 		// (Exercise 143 - "big" clauses of k > 2)
 		CSIZE []int
+
+		// CTHETA - Computed 𝜃 threshold for swapping free literals in CINX (L7)
+		// (Exercise 143 - "big" clauses of k > 2)
+		CTHETA []int
 
 		// uvStack - temporary stack of (u, v) values, moving to BIMP table
 		// (Exercise 143 - "big" clauses of k > 2)
@@ -737,17 +742,26 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		CINX = make([][]int, 0)
 		CSIZE = make([]int, 0)
+		CTHETA = make([]int, 0)
 
 		// Initialize CINX and CSIZE
 		for _, clause := range clauses {
 			// Check for clause of length > 2
-			if len(clause) > 2 {
+			csize := len(clause)
+			if csize > 2 {
 				CINX = append(CINX, make([]int, 0, len(clause)))
 				i := len(CINX) - 1
 				for _, l := range clause {
 					CINX[i] = append(CINX[i], l)
 				}
-				CSIZE = append(CSIZE, len(clause))
+				CSIZE = append(CSIZE, csize)
+
+				// Compute 𝜃 value for this c
+				theta := 0
+				if csize > 32 {
+					theta = int(math.Round(float64(csize) * 25 / 64))
+				}
+				CTHETA = append(CTHETA, theta)
 			}
 		}
 
@@ -1105,7 +1119,9 @@ L6:
 			c := KINX[L][0]
 
 			// ∀ u ∈ CINX[c]
-			for _, u := range CINX[c] {
+			swapFreeLiterals := CSIZE[c] < CTHETA[c] // Swap free literals to beginning of CINX[c]
+			freeLiterals := 0                        // Number of free literals found
+			for i, u := range CINX[c] {
 
 				// Check if u is a free literal
 				if u == L || VAL[u>>1] < rt {
@@ -1119,6 +1135,17 @@ L6:
 							KINX[u][s] = c
 							break
 						}
+					}
+
+					// Swap free literals to beginning of CINX[c]
+					if swapFreeLiterals {
+						if i != freeLiterals {
+							CINX[freeLiterals], CINX[i] = CINX[i], CINX[freeLiterals]
+						}
+					}
+					freeLiterals++
+					if freeLiterals == CSIZE[c] {
+						break
 					}
 					// TODO: implement 𝜃 heuristic
 				}
