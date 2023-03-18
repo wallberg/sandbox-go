@@ -1137,17 +1137,16 @@ L6:
 						}
 					}
 
-					// Swap free literals to beginning of CINX[c]
+					// Swap free literal u to the beginning of CINX[c]
 					if swapFreeLiterals {
-						if i != freeLiterals {
-							CINX[freeLiterals], CINX[i] = CINX[i], CINX[freeLiterals]
+						if i > freeLiterals {
+							CINX[c][freeLiterals], CINX[c][i] = CINX[c][i], CINX[c][freeLiterals]
 						}
 					}
 					freeLiterals++
 					if freeLiterals == CSIZE[c] {
 						break
 					}
-					// TODO: implement 𝜃 heuristic
 				}
 			}
 		}
