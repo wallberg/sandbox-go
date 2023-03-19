@@ -21,6 +21,20 @@ type SatAlgorithmLOptions struct {
 
 	// Optional Big Clauses (Exercise 143) - default true
 	SuppressBigClauses bool
+
+	// Optional threshold for swapping free literals in CINX,
+	// used with Big Clauses (Exercise 143)
+	Theta float64
+}
+
+// NewSatAlgorithmLOptions creates a new NewSatAlgorithmLOptions
+// struct with default values
+func NewSatAlgorithmLOptions() *SatAlgorithmLOptions {
+	return &SatAlgorithmLOptions{
+		CompensationResolvants: false,
+		SuppressBigClauses:     false,
+		Theta:                  25 / 64,
+	}
 }
 
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
@@ -756,12 +770,14 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				}
 				CSIZE = append(CSIZE, csize)
 
-				// Compute 𝜃 value for this c
-				theta := 0
-				if csize > 32 {
-					theta = int(math.Round(float64(csize) * 25 / 64))
+				// Compute 𝜃 threshhold value for this c
+				// csize must be big enough that 20 original literals
+				// could become false
+				threshhold := 0
+				if csize > int(20/(1-optionsL.Theta)) {
+					threshhold = int(math.Round(float64(csize) * optionsL.Theta))
 				}
-				CTHETA = append(CTHETA, theta)
+				CTHETA = append(CTHETA, threshhold)
 			}
 		}
 
