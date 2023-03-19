@@ -97,7 +97,7 @@ func TestSatAlgorithmL(t *testing.T) {
 
 func TestSatAlgorithmLFromFile(t *testing.T) {
 
-	// log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
+	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
 	cases := []struct {
 		filename     string // file name of the SAT data file
