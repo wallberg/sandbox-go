@@ -25,6 +25,15 @@ type SatAlgorithmLOptions struct {
 	// Optional threshold for swapping free literals in CINX,
 	// used with Big Clauses (Exercise 143)
 	Theta float64
+
+	// Use Algorithm X, if false then compute L^0
+	AlgorithmX bool
+
+	// Use Algorithm Y
+	AlgorithmY bool
+
+	// Alpha magic constant for Algrithm X preselection heuristic
+	Alpha float64
 }
 
 // NewSatAlgorithmLOptions creates a new NewSatAlgorithmLOptions
@@ -33,7 +42,10 @@ func NewSatAlgorithmLOptions() *SatAlgorithmLOptions {
 	return &SatAlgorithmLOptions{
 		CompensationResolvants: false,
 		SuppressBigClauses:     false,
-		Theta:                  25 / 64,
+		Theta:                  25.0 / 64.0,
+		AlgorithmX:             false,
+		AlgorithmY:             false,
+		Alpha:                  3.5,
 	}
 }
 
@@ -191,6 +203,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// index
 		k, j int
+
+		// h - heuristic value for Algorithm X preselection (depth, literal indexed)
+		h [][]float64
+
+		// hp - h' heuristic value for Algorithm X preselection (literal indexed)
+		hp []float64
 
 		// is debugging enabled?
 		debug bool
@@ -513,7 +531,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	initialize := func() {
 
 		if optionsL == nil {
-			optionsL = &SatAlgorithmLOptions{}
+			optionsL = NewSatAlgorithmLOptions()
 		}
 
 		if stats != nil {
@@ -900,6 +918,14 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	VAL = make([]int, n+1)
 	R = make([]int, n+1)
 
+	if optionsL.AlgorithmX {
+		h = make([][]float64, n+1)
+		for d := 0; d <= n; d++ {
+			h[d] = make([]float64, 2*n+2)
+		}
+		hp = make([]float64, 2*n+2)
+	}
+
 	if debug && stats.Verbosity > 0 {
 		dump()
 	}
@@ -926,35 +952,37 @@ L2:
 		goto L5
 	}
 
-	//
-	// Algorithm X
-	//
+	if !optionsL.AlgorithmX {
+		// Iterate over each R stack entry, checking for contradictions
+		for i := 0; i < E; i++ {
+			l := R[i]
 
-	// Iterate over each R stack entry, checking for contradictions
-	for i := 0; i < E; i++ {
-		l := R[i]
+			// Iterate over l's BIMP table
+			for j := 0; j < BSIZE[l]; j++ {
+				lp := BIMP[l][j]
 
-		// Iterate over l's BIMP table
-		for j := 0; j < BSIZE[l]; j++ {
-			lp := BIMP[l][j]
+				// Look for a conflict between the BIMP table entry and an R stack entry
+				for k := 0; k < E; k++ {
+					if i != k {
+						lpp := R[k]
 
-			// Look for a conflict between the BIMP table entry and an R stack entry
-			for k := 0; k < E; k++ {
-				if i != k {
-					lpp := R[k]
-
-					if lp^1 == lpp {
-						// A contradiction
-						if debug && stats.Verbosity > 0 {
-							dump()
-							log.Printf("L2. BIMP table for %d in R contains %d, which contradicts %d in R", l, lp, lpp)
+						if lp^1 == lpp {
+							// A contradiction
+							if debug && stats.Verbosity > 0 {
+								dump()
+								log.Printf("L2. BIMP table for %d in R contains %d, which contradicts %d in R", l, lp, lpp)
+							}
+							goto L15
 						}
-						goto L15
 					}
 				}
 			}
 		}
 	}
+
+	//
+	// @note X1 [Satisfied?]
+	//
 
 	if F == n {
 		// All variables are fixed, visit the solution
@@ -974,10 +1002,126 @@ L2:
 		return true, lvisit()
 	}
 
-	// Choose whatever literal happens to be first in the current list
-	// of free variables.
-	x = VAR[0]
-	l = 2 * x
+	if !optionsL.AlgorithmX {
+
+		// Choose whatever literal happens to be first in the current list
+		// of free variables.
+		x = VAR[0]
+		l = 2 * x
+
+	} else {
+		//
+		// @note X2 [Compile rough heuristics]
+		// Apply heuristics only to free variables
+		//
+
+		// dump()
+
+		// TODO: determine how this placement affects L^0 implementation
+		N = n - F
+
+		// Set VAL[l] = 0, for each free literal l
+		for x := 1; x <= n; x++ {
+			if INX[x] < N {
+				VAL[x] = 0
+			}
+		}
+
+		// Setup initial values for heuristic h
+		for l := 2; l <= 2*n+1; l++ {
+			if INX[l>>2] < N {
+				if d <= 1 {
+					h[d][l] = 1.0
+				} else {
+					h[d][l] = h[d-1][l]
+				}
+			}
+		}
+
+		// log.Printf("h[%d]: %v", d, h[d])
+
+		// approx := 0.0
+		// for l := 2; l <= 2*n+1; l++ {
+		// 	if INX[l>>2] < N {
+		// 		approx += h[d][l]
+		// 	}
+		// }
+		// log.Printf("approx / 2N = %f", approx/2/float64(N))
+
+		// Determine the number of passes
+		passes := 1
+		if d <= 1 {
+			passes = 5
+		}
+
+		// Compute heuristic h (Formula 65)
+		for p := 0; p < passes; p++ {
+
+			// Compute h_ave
+			hAveSum := 0.0
+			for l := 2; l <= 2*n+1; l++ {
+				if INX[l>>1] < N {
+					hAveSum += h[d][l]
+				}
+			}
+			hAve := hAveSum / 2 / float64(N)
+
+			// Compute h'
+			for l := 2; l <= 2*n+1; l++ {
+				if INX[l>>1] < N {
+					// Compute BIMP Sum
+					bimpSum := 0.0
+
+					// Iterate over u ∈ BIMP[l]
+					for i := 0; i < BSIZE[l]; i++ {
+						u := BIMP[l][i]
+
+						// Check u is not fixed
+						if VAL[u>>1] < rt {
+							bimpSum += h[d][u] / hAve
+						}
+					}
+
+					// Compute TIMP Sum
+					timpSum := 0.0
+
+					// Iterate over (u, v) ∈ TIMP[l]
+					for i := 0; i < TSIZE[l]; i++ {
+						p := TIMP[l] + 2*i
+						u, v := TIMP[p], TIMP[p+1]
+
+						timpSum += h[d][u] * h[d][v] / hAve / hAve
+					}
+
+					hp[l] = 0.1 + optionsL.Alpha*bimpSum + timpSum
+				}
+			}
+
+			// Reset h values to h'
+			for l := 2; l <= 2*n+1; l++ {
+				if INX[l>>2] < N {
+					h[d][l] = hp[l]
+				}
+			}
+
+			// log.Printf("pass=%d, h[%d]: %v", p, d, h[d])
+			// approx := 0.0
+			// for l := 2; l <= 2*n+1; l++ {
+			// 	if INX[l>>2] < N {
+			// 		approx += h[d][l]
+			// 	}
+			// }
+			// log.Printf("approx / 2N = %f", approx/2/float64(N))
+		}
+
+		if F > 0 {
+			log.Panic()
+		}
+
+		x = 5
+		l = 2*x + 1
+
+	}
 
 	stats.Levels[d]++
 	stats.Nodes++
@@ -1422,7 +1566,7 @@ L6:
 
 							if VAL[w>>1] >= nt {
 								// do nothing, w is fixed in NT
-								if VAL[w>>1]&1 != w&1 {
+								if debug && VAL[w>>1]&1 != w&1 {
 									log.Fatalf("assertion failed: violation w=%d if fixed, must be fixed true", w)
 								}
 
