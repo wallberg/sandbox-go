@@ -34,6 +34,12 @@ type SatAlgorithmLOptions struct {
 
 	// Alpha magic constant for Algrithm X preselection heuristic
 	Alpha float64
+
+	// C_0 cutoff parameter for Algorithm X cancdidate preselection
+	C0 int
+
+	// C_1 cutoff parameter for Algorithm X cancdidate preselection
+	C1 int
 }
 
 // NewSatAlgorithmLOptions creates a new NewSatAlgorithmLOptions
@@ -46,6 +52,8 @@ func NewSatAlgorithmLOptions() *SatAlgorithmLOptions {
 		AlgorithmX:             false,
 		AlgorithmY:             false,
 		Alpha:                  3.5,
+		C0:                     30,
+		C1:                     600,
 	}
 }
 
@@ -87,13 +95,13 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// BIMP - binary clauses; instead of the buddy system, we are using built-in slices
 		BIMP [][]int
 
-		// BSIZE - number of clauses for each l in BIMP
+		// BSIZE - number of clauses for each l in BIMP (literal indexed)
 		BSIZE []int
 
 		// TIMP - ternary clauses
 		TIMP []int
 
-		// TSIZE - number of clauses for each l in TIMP
+		// TSIZE - number of clauses for each l in TIMP (literal indexed)
 		TSIZE []int
 
 		// LINK - circular list of the three literals in each clause in TIMP
@@ -209,6 +217,22 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// hp - h' heuristic value for Algorithm X preselection (literal indexed)
 		hp []float64
+
+		// C - number of free variable candidates for Algorithm X preselection
+		C int
+
+		// CAND - free variable candidates for Algorithm X preselection
+		CAND []int
+
+		// r - combined h(x)h(¬x) score for free variable candidates
+		r []float64
+
+		// SIG - binary string representing the highest node of the search tree
+		// in which variable x has participated (variable indexed) (Exercise 149)
+		SIG []string
+
+		// sigma - binary string representing the current search tree (Exercise 149)
+		sigma string
 
 		// is debugging enabled?
 		debug bool
@@ -923,7 +947,18 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		for d := 0; d <= n; d++ {
 			h[d] = make([]float64, 2*n+2)
 		}
+
 		hp = make([]float64, 2*n+2)
+
+		SIG = make([]string, n+1)
+		for x := 1; x <= n; x++ {
+			SIG[x] = "-" // initial value can't be a prefix of any possible sigma
+		}
+
+		sigma = ""
+
+		CAND = make([]int, n+1)
+		r = make([]float64, n+1)
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -940,6 +975,12 @@ L2:
 
 	BRANCH[d] = -1 // No decision yet
 	BACKL[d] = F
+
+	if optionsL.AlgorithmX {
+		// Set sigma to b_0 ... b_(d-1)
+		sigma = sigma[0:d]
+		log.Printf("L2. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
+	}
 
 	if progress && stats.Delta != 0 && stats.Nodes%stats.Delta == 0 {
 		showProgress()
@@ -988,7 +1029,11 @@ L2:
 		// All variables are fixed, visit the solution
 
 		if debug {
-			log.Println("L2. [Success!]")
+			if optionsL.AlgorithmX {
+				log.Println("X1. [Success!]")
+			} else {
+				log.Println("L2. [Success!]")
+			}
 		}
 
 		if stats != nil {
@@ -1055,6 +1100,7 @@ L2:
 		}
 
 		// Compute heuristic h (Formula 65)
+		// TODO: Support Big Clauses using KINX/CINX instead of TIMP (Exercise 146)
 		for p := 0; p < passes; p++ {
 
 			// Compute h_ave
@@ -1114,12 +1160,118 @@ L2:
 			// log.Printf("approx / 2N = %f", approx/2/float64(N))
 		}
 
-		if F > 0 {
-			log.Panic()
+		//
+		// @note X3 [Preselect candidates.]
+		//
+
+		rSum := 0.0 // Sum of r(x) for all candidates
+
+		// Find free variable "participants", ie have either x or ¬x which has played the
+		// role of u or v in step L8, at some node above us in the search tree. Place them
+		// in the CAND array of candidates.
+		C = 0
+		for i := 0; i < N; i++ {
+			x = VAR[i]
+			if strings.HasPrefix(sigma, SIG[x]) {
+				// Variable x is a participant
+				CAND[C] = x
+				r[C] = h[d][2*x] * h[d][2*x+1]
+				rSum += r[C]
+				C++
+			}
 		}
 
-		x = 5
-		l = 2*x + 1
+		// If there are no participants, ie all are newbies, then put
+		// all free variables into CAND
+		if C == 0 {
+			// TODO: While we're at it, determine if all clauses are satisfied (Exercise 152)
+			// sat := true
+
+			C = N
+			for i := 0; i < N; i++ {
+				x := VAR[i]
+				CAND[i] = x
+				r[C] = h[d][2*x] * h[d][2*x+1]
+				rSum += r[C]
+				// if TSIZE[2*x] > 0 || TSIZE[2*x+1] > 0 {
+				// 	sat = false
+				// }
+			}
+
+			// if sat {
+			// 	// All free literals have TSIZE[l] = 0; now check if
+			// 	// some free l has an unfixed literal l' ∈ BIMP[l]
+
+			//  // TODO:
+			// 	if sat {
+
+			// 		// Terminate happily, all clauses are satisfied
+			// 		if debug {
+			// 			log.Println("X3. [Success!]")
+			// 		}
+
+			// 		if stats != nil {
+			// 			stats.Solutions++
+			// 		}
+
+			// 		if progress {
+			// 			showProgress()
+			// 		}
+
+			// 		// TODO: return true, lvisit()
+			// 	}
+			// }
+		}
+
+		// Calculate C_max (Formula 66)
+		Cmax := optionsL.C0
+		C1d := int(float64(optionsL.C1) / float64(d))
+		if C1d > Cmax {
+			Cmax = C1d
+		}
+
+		// Reduce C <= 2*C_max if we can, by deleting elements of CAND whose rating is less
+		// than the mean rating.
+		//
+		// The author does not specify the order which candidates should
+		// be deleted. Do we spend the time finding/sorting so we can delete by
+		// smallest to largest?  Or just quickly delete them as we find them?
+		// Let's try the easiest approach first.
+		//
+		// TODO: Compare performance against sorting first
+
+		rMean := rSum / float64(C)
+
+		log.Printf("rMean=%f", rMean)
+
+		if d > 0 && C > 2*Cmax {
+			log.Printf("C=%d > 2*C_max=%d", C, 2*Cmax)
+
+			// Perform the reduction
+			i := 0
+			for C > 2*Cmax && i < C {
+				if r[i] < rMean {
+					// Swap out this candidate
+					CAND[i], r[i] = CAND[C-1], r[C-1]
+					C -= 1
+				} else {
+					// Advance to next candidate
+					i += 1
+				}
+			}
+
+			log.Printf("After reduction, C=%d", C)
+		}
+
+		// TODO: Remove this temporary branching
+		switch F {
+		case 0:
+			x = 5
+			l = 2*x + 1
+		default:
+			x = VAR[0]
+			l = 2 * x
+		}
 
 	}
 
@@ -1169,6 +1321,19 @@ L4:
 
 	U = 1
 	FORCE[0] = l
+
+	if optionsL.AlgorithmX {
+		// Set sigma to b_0 ... b_d
+		sigma = sigma[0:d]
+
+		if BRANCH[d] == 1 {
+			sigma += "1"
+		} else {
+			sigma += "0"
+		}
+
+		log.Printf("L4. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
+	}
 
 	//
 	// @note L5 [Accept near truths.]
@@ -1536,6 +1701,17 @@ L6:
 			//
 			if debug {
 				log.Printf("L9. Exploit u=%d or v=%d", u, v)
+			}
+
+			// Store sigma values (Exercise 149)
+			// TODO: Implement support for Big Clauses (Exercise 143)
+			if optionsL.AlgorithmX {
+				if !strings.HasPrefix(sigma, SIG[u>>1]) {
+					SIG[u>>1] = sigma
+				}
+				if !strings.HasPrefix(sigma, SIG[v>>1]) {
+					SIG[v>>1] = sigma
+				}
 			}
 
 			if optionsL.CompensationResolvants {
