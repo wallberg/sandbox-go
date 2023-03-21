@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/wallberg/sandbox/taocp"
+	"github.com/wallberg/sandbox-go/taocp"
 )
 
 func main() {
