@@ -998,7 +998,6 @@ L2:
 	if optionsL.AlgorithmX {
 		// Set sigma to b_0 ... b_(d-1)
 		sigma = sigma[0:d]
-		// log.Printf("L2. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
 	}
 
 	if progress && stats.Delta != 0 && stats.Nodes%stats.Delta == 0 {
@@ -1372,8 +1371,6 @@ L4:
 		} else {
 			sigma += "0"
 		}
-
-		// log.Printf("L4. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
 	}
 
 	//
