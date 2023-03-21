@@ -1,9 +1,11 @@
 package taocp
 
 import (
+	"container/heap"
 	"fmt"
 	"log"
 	"math"
+	"os"
 	"strings"
 )
 
@@ -55,6 +57,27 @@ func NewSatAlgorithmLOptions() *SatAlgorithmLOptions {
 		C0:                     30,
 		C1:                     600,
 	}
+}
+
+// Candidate is a free variable candidate for Algorithm X preselection
+type Candidate struct {
+	x int     // variable
+	r float64 // rating - h(x)h(¬x)
+}
+
+type Candidates []Candidate
+
+func (cs Candidates) Len() int           { return len(cs) }
+func (cs Candidates) Less(i, j int) bool { return cs[i].r > cs[j].r } // inverse for largest values first
+func (cs Candidates) Swap(i, j int)      { cs[i], cs[j] = cs[j], cs[i] }
+func (cs *Candidates) Push(x any)        { *cs = append(*cs, x.(Candidate)) }
+
+func (cs *Candidates) Pop() any {
+	old := *cs
+	n := len(old)
+	x := old[n-1]
+	*cs = old[0 : n-1]
+	return x
 }
 
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
@@ -222,10 +245,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		C int
 
 		// CAND - free variable candidates for Algorithm X preselection
-		CAND []int
-
-		// r - combined h(x)h(¬x) score for free variable candidates
-		r []float64
+		CAND Candidates
 
 		// SIG - binary string representing the highest node of the search tree
 		// in which variable x has participated (variable indexed) (Exercise 149)
@@ -957,8 +977,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		sigma = ""
 
-		CAND = make([]int, n+1)
-		r = make([]float64, n+1)
+		CAND = make(Candidates, n+1)
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -979,7 +998,7 @@ L2:
 	if optionsL.AlgorithmX {
 		// Set sigma to b_0 ... b_(d-1)
 		sigma = sigma[0:d]
-		log.Printf("L2. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
+		// log.Printf("L2. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
 	}
 
 	if progress && stats.Delta != 0 && stats.Nodes%stats.Delta == 0 {
@@ -1174,9 +1193,11 @@ L2:
 			x = VAR[i]
 			if strings.HasPrefix(sigma, SIG[x]) {
 				// Variable x is a participant
-				CAND[C] = x
-				r[C] = h[d][2*x] * h[d][2*x+1]
-				rSum += r[C]
+				CAND[C] = Candidate{
+					x: x,
+					r: h[d][2*x] * h[d][2*x+1],
+				}
+				rSum += CAND[C].r
 				C++
 			}
 		}
@@ -1184,43 +1205,56 @@ L2:
 		// If there are no participants, ie all are newbies, then put
 		// all free variables into CAND
 		if C == 0 {
-			// TODO: While we're at it, determine if all clauses are satisfied (Exercise 152)
-			// sat := true
+			// While we're at it, determine if all clauses are satisfied (Exercise 152)
+			sat := true
 
 			C = N
 			for i := 0; i < N; i++ {
 				x := VAR[i]
-				CAND[i] = x
-				r[C] = h[d][2*x] * h[d][2*x+1]
-				rSum += r[C]
-				// if TSIZE[2*x] > 0 || TSIZE[2*x+1] > 0 {
-				// 	sat = false
-				// }
+				CAND[i] = Candidate{
+					x: x,
+					r: h[d][2*x] * h[d][2*x+1],
+				}
+				rSum += CAND[C].r
+
+				if sat {
+					// Check if all free literals have TSIZE[l] = 0
+					if TSIZE[2*x] > 0 || TSIZE[2*x+1] > 0 {
+						sat = false
+					} else {
+						// Check if some free l has an unfixed literal l' ∈ BIMP[l]
+						for _, l := range []int{2 * x, 2*x + 1} {
+							for i := 0; i < BSIZE[l]; i++ {
+								lp := BIMP[l][i]
+								if VAL[lp>>1] < T {
+									sat = false
+								}
+							}
+						}
+					}
+				}
 			}
 
-			// if sat {
-			// 	// All free literals have TSIZE[l] = 0; now check if
-			// 	// some free l has an unfixed literal l' ∈ BIMP[l]
+			if sat {
 
-			//  // TODO:
-			// 	if sat {
+				// Terminate happily, all clauses are satisfied
+				if debug {
+					log.Println("X3. [Success!]")
+				}
 
-			// 		// Terminate happily, all clauses are satisfied
-			// 		if debug {
-			// 			log.Println("X3. [Success!]")
-			// 		}
+				if stats != nil {
+					stats.Solutions++
+				}
 
-			// 		if stats != nil {
-			// 			stats.Solutions++
-			// 		}
+				if progress {
+					showProgress()
+				}
 
-			// 		if progress {
-			// 			showProgress()
-			// 		}
-
-			// 		// TODO: return true, lvisit()
-			// 	}
-			// }
+				dump()
+				log.Printf("X3. Success! TODO: lvisit()")
+				os.Exit(0)
+				// return true, lvisit()
+			}
 		}
 
 		// Calculate C_max (Formula 66)
@@ -1230,37 +1264,40 @@ L2:
 			Cmax = C1d
 		}
 
-		// Reduce C <= 2*C_max if we can, by deleting elements of CAND whose rating is less
-		// than the mean rating.
-		//
-		// The author does not specify the order which candidates should
-		// be deleted. Do we spend the time finding/sorting so we can delete by
-		// smallest to largest?  Or just quickly delete them as we find them?
-		// Let's try the easiest approach first.
-		//
-		// TODO: Compare performance against sorting first
+		// Reduce C <= 2*C_max if we can, by deleting elements of CAND whose
+		// rating is less than the mean rating. Select candidates in this round
+		// quickly, don't bother sorting yet.
 
 		rMean := rSum / float64(C)
 
-		log.Printf("rMean=%f", rMean)
-
 		if d > 0 && C > 2*Cmax {
-			log.Printf("C=%d > 2*C_max=%d", C, 2*Cmax)
 
 			// Perform the reduction
 			i := 0
 			for C > 2*Cmax && i < C {
-				if r[i] < rMean {
+				if CAND[i].r < rMean {
 					// Swap out this candidate
-					CAND[i], r[i] = CAND[C-1], r[C-1]
+					CAND[i] = CAND[C-1]
 					C -= 1
 				} else {
 					// Advance to next candidate
 					i += 1
 				}
 			}
+		}
 
-			log.Printf("After reduction, C=%d", C)
+		// Reduce C even further by retaining only top-ranked candidates
+		if C > Cmax {
+
+			// Make the candidates into a heap. This approximates a reverse sort
+			// much faster than a full sort. (Exercise 153)
+			//
+			// TODO: determine why the author wants us to use a forward sort and then
+			// delete CAND[0] one at a time.
+			CANDheap := CAND[0:C]
+			heap.Init(&CANDheap)
+			C = Cmax
+			// log.Printf("CAND=%v", CAND[0:C])
 		}
 
 		// TODO: Remove this temporary branching
@@ -1269,8 +1306,12 @@ L2:
 			x = 5
 			l = 2*x + 1
 		default:
-			x = VAR[0]
+			// Select by candidate x score, then literal score
+			x = CAND[0].x
 			l = 2 * x
+			if h[d][l+1] > h[d][l] {
+				l += 1
+			}
 		}
 
 	}
@@ -1332,7 +1373,7 @@ L4:
 			sigma += "0"
 		}
 
-		log.Printf("L4. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
+		// log.Printf("L4. BRANCH[%d]=%d, sigma=%s", d, BRANCH[d], sigma)
 	}
 
 	//
