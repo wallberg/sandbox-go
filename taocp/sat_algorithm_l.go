@@ -1079,6 +1079,10 @@ L2:
 		// Apply heuristics only to free variables
 		//
 
+		if debug {
+			log.Printf("X2. Compile rough heuristics")
+		}
+
 		// dump()
 
 		// TODO: determine how this placement affects L^0 implementation
@@ -1183,6 +1187,10 @@ L2:
 		// @note X3 [Preselect candidates.]
 		//
 
+		if debug {
+			log.Printf("X3. Preselect candidates")
+		}
+
 		rSum := 0.0 // Sum of r(x) for all candidates
 
 		// Find free variable "participants", ie have either x or ¬x which has played the
@@ -1258,10 +1266,15 @@ L2:
 		}
 
 		// Calculate C_max (Formula 66)
-		Cmax := optionsL.C0
-		C1d := int(float64(optionsL.C1) / float64(d))
-		if C1d > Cmax {
-			Cmax = C1d
+		var Cmax int
+		if d == 0 {
+			Cmax = -1 // representing ∞, but not actually used
+		} else {
+			Cmax = optionsL.C0
+			C1d := int(float64(optionsL.C1) / float64(d))
+			if C1d > Cmax {
+				Cmax = C1d
+			}
 		}
 
 		// Reduce C <= 2*C_max if we can, by deleting elements of CAND whose
@@ -1287,10 +1300,10 @@ L2:
 		}
 
 		// Reduce C even further by retaining only top-ranked candidates
-		if C > Cmax {
+		if d > 0 && C > Cmax {
 
 			// Make the candidates into a heap. This approximates a reverse sort
-			// much faster than a full sort. (Exercise 153)
+			// and is faster than a full sort. (Exercise 153)
 			//
 			// TODO: determine why the author wants us to use a forward sort and then
 			// delete CAND[0] one at a time.
@@ -1298,6 +1311,10 @@ L2:
 			heap.Init(&CANDheap)
 			C = Cmax
 			// log.Printf("CAND=%v", CAND[0:C])
+		}
+
+		if debug {
+			log.Printf("    Cmax=%d, C=%d", Cmax, C)
 		}
 
 		// TODO: Remove this temporary branching
