@@ -34,7 +34,8 @@ type SatAlgorithmLOptions struct {
 	// Use Algorithm Y
 	AlgorithmY bool
 
-	// Alpha magic constant for Algrithm X preselection heuristic
+	// Alpha magic constant for Algrithm X preselection heuristic. How much to
+	// weight the BIMP h(u) values versus the TIMP or KINX/CINX h(u)h(v) values.
 	Alpha float64
 
 	// C_0 cutoff parameter for Algorithm X cancdidate preselection
