@@ -1317,6 +1317,14 @@ L2:
 			log.Printf("    Cmax=%d, C=%d", Cmax, C)
 		}
 
+		//
+		// @note X4 [Nest the candidates.]
+		//
+
+		if debug {
+			log.Printf("X4. Nest the candidates")
+		}
+
 		// TODO: Remove this temporary branching
 		switch F {
 		case 0:
