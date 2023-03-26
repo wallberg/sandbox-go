@@ -262,25 +262,39 @@ func main() {
 					}
 				}
 
-				if i < len(scc) {
-					// Found a representative l
-					reps[r] = l
-
-					// Set the PARENT for all l ∈ SCC
-					for _, lp := range scc {
-						if l == lp {
-							if BSIZE[l] == 0 {
-								PARENT[l] = 0
-							} else {
-								PARENT[l] = BIMP[l][0] // must select one parent for the subforest
-							}
-						} else {
-							PARENT[lp] = l
-						}
-					}
-				} else {
-					log.Panicf("assertion failed: we did not find any members of l ∈ SCC=%v with a matching ¬l among the other representatives", scc)
+				if i == len(scc) {
+					// We did not find a representative l with matching ¬l
+					// Let's pick the l with maximum h(l) and assume that the matching
+					// ¬l will arrive later
+					l = scc[0]
 				}
+
+				reps[r] = l
+
+				// Set the PARENT for all l ∈ SCC
+				for _, lp := range scc {
+					if l == lp {
+						if BSIZE[l] == 0 {
+							PARENT[l] = 0
+						} else {
+							PARENT[l] = BIMP[l][0] // must select one parent for the subforest
+						}
+					} else {
+						PARENT[lp] = l
+					}
+				}
+			}
+		}
+
+		// Assert that every variable x has 0 or 2 literal representatives
+		// TODO: wrap this assertion in a debug
+		xCount := make([]int, n+1)
+		for _, l := range reps {
+			xCount[l>>1] += 1
+		}
+		for _, x := range xCount {
+			if xCount[x] != 0 && xCount[x] != 2 {
+				log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, xCount[x])
 			}
 		}
 
