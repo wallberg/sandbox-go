@@ -5,11 +5,11 @@ import (
 	"log"
 )
 
-// data contains all common data for a single operation.
-type data struct {
+// sccData contains all common data for a single scc search.
+type sccData struct {
 
 	// nodes - all nodes we've seen, ordered by their index value
-	nodes []node
+	nodes []sccNode
 
 	// stack - current node stack
 	stack []int
@@ -18,8 +18,8 @@ type data struct {
 	indexes map[int]int
 }
 
-// node stores data for a single node in the connection process.
-type node struct {
+// sccNode stores data for a single vertex node in the search process.
+type sccNode struct {
 	// lowlink - smallest index of any node on the stack known to be reachable from this node.
 	// Set it initially to the value of index. After we've looked at all child nodes, if lowlink
 	// still equals index then we know it's the root of the SCC on the stack.
@@ -29,19 +29,20 @@ type node struct {
 	onStack bool
 }
 
-// strongConnect runs Tarjan's algorithm recursivley and outputs a grouping of
+// @note scc()
+// scc runs Tarjan's algorithm recursivley and outputs a grouping of
 // strongly connected vertices.
 // Returns: a) *node - the v node currently processed, and b) bool - did we find a contradiction?
 //
 // TODO: add license and acknowledgement
-func (data *data) strongConnect(v int, BIMP [][]int, BSIZE []int, visit func([]int) bool) (*node, bool) {
+func (data *sccData) scc(v int, BIMP [][]int, BSIZE []int, visit func([]int) bool) (*sccNode, bool) {
 
 	// Set the depth index for v to the smallest unused index
 	vIndex := len(data.nodes)
 	data.indexes[v] = vIndex
 
 	// Add v to the list of "seen" nodes
-	vNode := &node{lowlink: vIndex, onStack: true}
+	vNode := &sccNode{lowlink: vIndex, onStack: true}
 	data.nodes = append(data.nodes, *vNode)
 
 	// Push v into the stack
@@ -57,7 +58,7 @@ func (data *data) strongConnect(v int, BIMP [][]int, BSIZE []int, visit func([]i
 		if !seen {
 
 			// Successor w has not yet been visited; recurse on it
-			wNode, contradiction := data.strongConnect(w, BIMP, BSIZE, visit)
+			wNode, contradiction := data.scc(w, BIMP, BSIZE, visit)
 			if contradiction {
 				// Contradiction found, halt the search
 				return vNode, true
@@ -107,6 +108,28 @@ func (data *data) strongConnect(v int, BIMP [][]int, BSIZE []int, visit func([]i
 	return vNode, false
 }
 
+// @note build_lookahead()
+// build_lookahead builds the LL and LO lookahead tables,
+// returning new values of i and degree
+func build_lookahead(LL []int, LO []int, CHILDREN [][]int, l int, i int, degree int) (int, int) {
+
+	// Build LL in preorder
+	LL[i] = l
+
+	// Visit all children
+	nexti := i + 1
+	for _, lp := range CHILDREN[l] {
+		nexti, degree = build_lookahead(LL, LO, CHILDREN, lp, nexti, degree)
+	}
+
+	// Build LO in postorder
+	degree += 2
+	LO[i] = degree
+	i++
+
+	return nexti, degree
+}
+
 func main() {
 	log.SetFlags(log.Flags() &^ (log.Ldate | log.Ltime))
 
@@ -120,16 +143,35 @@ func main() {
 		// BSIZE - number of clauses for each l in BIMP (literal indexed)
 		BSIZE []int
 
-		// S - number of SCCs found in the dependency graph
+		// sccs - list of all Strongly Connected Components (SCCs) (Algorithm X)
+		sccs [][]int
+
+		// S - number of SCCs found in the dependency digraph (Algorithm X)
 		S int
 
-		// PARENT - parent node in the dependency subforest (literal indexed)
+		// reps - list of all representatives of each SCC in the dependency subforest (Algorithm X)
+		reps []int
+
+		// PARENT - parent node in the dependency subforest (Algorithm X, literal indexed)
 		PARENT []int
+
+		// CHILDREN - child nodes in the dependency subforest (Algorithm X, literal indexed)
+		CHILDREN [][]int
+
+		// LL - lookahead literal in the Algorithm X dependency subforest
+		LL []int
+
+		// LO - lookahead offset in the Algrorithm X dependency subforest
+		LO []int
 	)
 
+	// @note test()
 	test := func() {
 		fmt.Println("---")
 
+		//
+		// @note X4 - Dependency Digraph
+		//
 		// Construct the dependency graph on the 2C candidate literals, by
 		// extracting a subset of arcs from the BIMP tables. (This computation
 		// needn't be exact, because we're only calculating heuristics; an upper
@@ -143,8 +185,11 @@ func main() {
 		for l := 2; l <= 2*n+1; l++ {
 			if BSIZE[l] > 0 {
 				vertices[l] = true
+				CHILDREN[l] = CHILDREN[l][:0]
 				for i := 0; i < BSIZE[l]; i++ {
-					vertices[BIMP[l][i]] = true
+					lp := BIMP[l][i]
+					vertices[lp] = true
+					CHILDREN[lp] = CHILDREN[lp][:0]
 				}
 			}
 		}
@@ -155,18 +200,19 @@ func main() {
 		// subforest at the same time. The subforest must include all 2C
 		// candidate literals, have no cycles, and have no nodes with > 1
 		// outbound edge.
+		// TODO: split these comments to correct positions
 
-		// sccs - list of all SCCs
-		var sccs [][]int
+		sccs = sccs[:0]
 
-		data := &data{
-			nodes:   make([]node, 0, len(vertices)),
+		// TODO: determine if we can be faster without these maps
+		data := &sccData{
+			nodes:   make([]sccNode, 0, len(vertices)),
 			indexes: make(map[int]int, len(vertices)),
 		}
 
 		for v := range vertices {
 			if _, seen := data.indexes[v]; !seen {
-				_, contradiction := data.strongConnect(v, BIMP, BSIZE, func(scc []int) bool {
+				_, contradiction := data.scc(v, BIMP, BSIZE, func(scc []int) bool {
 
 					if len(scc) > 1 {
 
@@ -193,9 +239,12 @@ func main() {
 			}
 		}
 
+		//
+		// @note X4 - Dependency Subforest
+		//
 		// Select a representative from each SCC
 		S = len(sccs)
-		reps := make([]int, S)
+		reps = reps[:S]
 
 		// Select representatives from each SCC of size = 1
 		for r, scc := range sccs {
@@ -206,7 +255,9 @@ func main() {
 				if BSIZE[l] == 0 {
 					PARENT[l] = 0
 				} else {
-					PARENT[l] = BIMP[l][0] // must select one parent for the subforest
+					lp := BIMP[l][0] // must select one parent for the subforest
+					PARENT[l] = lp
+					CHILDREN[lp] = append(CHILDREN[lp], l)
 				}
 				reps[r] = l
 			}
@@ -274,13 +325,10 @@ func main() {
 				// Set the PARENT for all l ∈ SCC
 				for _, lp := range scc {
 					if l == lp {
-						if BSIZE[l] == 0 {
-							PARENT[l] = 0
-						} else {
-							PARENT[l] = BIMP[l][0] // must select one parent for the subforest
-						}
+						PARENT[l] = 0
 					} else {
 						PARENT[lp] = l
+						CHILDREN[l] = append(CHILDREN[l], lp)
 					}
 				}
 			}
@@ -307,12 +355,47 @@ func main() {
 			fmt.Printf("%d=%d", l, PARENT[l])
 		}
 		fmt.Println()
+
+		//
+		// @note X4 - Lookahead Tables
+		//
+		// Construct lookahead tables LL and LO, for the S candidate literals,
+		// with LL containing the candidate literals in preorder, and LO containing
+		// each literal's truth degree (2 * literal's postorder position)
+		LL = LL[:len(vertices)]
+		LO = LO[:len(vertices)]
+
+		i := 0
+		degree := 0
+
+		// Iterate over the representatives
+		for _, rep := range reps {
+			if PARENT[rep] == 0 {
+				i, degree = build_lookahead(LL, LO, CHILDREN, rep, i, degree)
+			}
+		}
+
+		fmt.Print("\nLL: ")
+		for i := 0; i < len(LL); i++ {
+			fmt.Printf("%2d ", LL[i])
+		}
+		fmt.Print("\nLO: ")
+		for i := 0; i < len(LO); i++ {
+			fmt.Printf("%2d ", LO[i])
+		}
+		fmt.Println()
 	}
 
 	n = 4
 	BIMP = make([][]int, 2*n+2)
 	BSIZE = make([]int, 2*n+2)
 	PARENT = make([]int, 2*n+2)
+	CHILDREN = make([][]int, 2*n+2)
+	sccs = make([][]int, 0, 2*n)
+	reps = make([]int, 0, 2*n)
+	LL = make([]int, 0, 2*n)
+	LO = make([]int, 0, 2*n)
+
 	for l := 2; l <= 2*n+1; l++ {
 		switch l {
 		case 3:
@@ -329,6 +412,7 @@ func main() {
 			BIMP[l] = []int{}
 		}
 		BSIZE[l] = len(BIMP[l])
+		CHILDREN[l] = make([]int, 0)
 	}
 
 	test()
@@ -337,6 +421,12 @@ func main() {
 	BIMP = make([][]int, 2*n+2)
 	BSIZE = make([]int, 2*n+2)
 	PARENT = make([]int, 2*n+2)
+	CHILDREN = make([][]int, 2*n+2)
+	sccs = make([][]int, 0, 2*n)
+	reps = make([]int, 0, 2*n)
+	LL = make([]int, 0, 2*n)
+	LO = make([]int, 0, 2*n)
+
 	for l := 2; l <= 2*n+1; l++ {
 		switch l {
 		case 3:
@@ -359,6 +449,7 @@ func main() {
 			BIMP[l] = []int{}
 		}
 		BSIZE[l] = len(BIMP[l])
+		CHILDREN[l] = make([]int, 0)
 	}
 
 	test()
@@ -367,6 +458,12 @@ func main() {
 	BIMP = make([][]int, 2*n+2)
 	BSIZE = make([]int, 2*n+2)
 	PARENT = make([]int, 2*n+2)
+	CHILDREN = make([][]int, 2*n+2)
+	sccs = make([][]int, 0, 2*n)
+	reps = make([]int, 0, 2*n)
+	LL = make([]int, 0, 2*n)
+	LO = make([]int, 0, 2*n)
+
 	for l := 2; l <= 2*n+1; l++ {
 		switch l {
 		case 2:
@@ -389,6 +486,7 @@ func main() {
 			BIMP[l] = []int{}
 		}
 		BSIZE[l] = len(BIMP[l])
+		CHILDREN[l] = make([]int, 0)
 	}
 
 	test()
