@@ -81,6 +81,146 @@ func (cs *Candidates) Pop() any {
 	return x
 }
 
+// sccData contains all common data for a single Strongly Connected Components (SCC)
+// search (Algorithm X)
+type sccData struct {
+
+	// nodes - all nodes we've seen, ordered by their index value
+	nodes []sccNode
+
+	// stack - current node stack
+	stack []int
+
+	// indexes - map a vertex v to it's index value
+	indexes map[int]int
+}
+
+// sccNode stores data for a single vertex node in the SCC search (Algorithm X)
+type sccNode struct {
+	// lowlink - smallest index of any node on the stack known to be reachable from this node.
+	// Set it initially to the value of index. After we've looked at all child nodes, if lowlink
+	// still equals index then we know it's the root of the SCC on the stack.
+	lowlink int
+
+	// onStack - is this node currently on the stack?
+	onStack bool
+}
+
+// scc runs Tarjan's algorithm recursively and outputs a grouping of
+// strongly connected vertices.
+//
+// Returns: a) *node - the v node currently processed, and b) bool - did we find
+// a contradiction?
+//
+// Based on https://github.com/looplab/tarjan/blob/v0.1.0/tarjan.go
+// Copyright (c) 2013 - Max Persson <max@looplab.se>
+// Copyright (c) 2010-2013 - Gustavo Niemeyer <gustavo@niemeyer.net>
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//	http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
+// @note scc()
+func (data *sccData) scc(v int, BIMP [][]int, BSIZE []int, visit func([]int) bool) (*sccNode, bool) {
+
+	// Set the depth index for v to the smallest unused index
+	vIndex := len(data.nodes)
+	data.indexes[v] = vIndex
+
+	// Add v to the list of "seen" nodes
+	vNode := &sccNode{lowlink: vIndex, onStack: true}
+	data.nodes = append(data.nodes, *vNode)
+
+	// Push v into the stack
+	data.stack = append(data.stack, v)
+
+	// Consider successors of v
+	for i := 0; i < BSIZE[v]; i++ {
+		w := BIMP[v][i]
+
+		wIndex, seen := data.indexes[w]
+		if !seen {
+
+			// Successor w has not yet been visited; recurse on it
+			wNode, contradiction := data.scc(w, BIMP, BSIZE, visit)
+			if contradiction {
+				// Contradiction found, halt the search
+				return vNode, true
+			}
+
+			// vNode.lowlink = min(vNode.lowlink, wNode.lowlink)
+			if wNode.lowlink < vNode.lowlink {
+				vNode.lowlink = wNode.lowlink
+			}
+
+		} else if data.nodes[wIndex].onStack {
+
+			// Successor w is in stack S and hence in the current SCC.
+
+			// If successor w is not in stack S, then (v, w) is an edge pointing
+			// to an SCC previously found and must be ignored.
+
+			// vNode.lowlink = min(vNode.lowlink, wIndex)
+			if wIndex < vNode.lowlink {
+				vNode.lowlink = wIndex
+			}
+		}
+	}
+
+	// If v is a root node, pop the stack and generate an SCC
+	if vNode.lowlink == vIndex {
+		var scc []int
+		i := len(data.stack) - 1
+		for {
+			w := data.stack[i]
+			wIndex := data.indexes[w]
+			data.nodes[wIndex].onStack = false
+			scc = append(scc, w)
+			if wIndex == vIndex {
+				break
+			}
+			i--
+		}
+		data.stack = data.stack[:i]
+		if visit(scc) {
+			// Contradiction found, halt the search
+			return vNode, true
+		}
+	}
+
+	return vNode, false
+}
+
+// build_lookahead builds the LL and LO lookahead tables,
+// returning new values of i and degree
+// @note build_lookahead()
+func build_lookahead(LL []int, LO []int, CHILDREN [][]int, l int, i int, degree int) (int, int) {
+
+	// Build LL in preorder
+	LL[i] = l
+
+	// Visit all children
+	nexti := i + 1
+	for _, lp := range CHILDREN[l] {
+		nexti, degree = build_lookahead(LL, LO, CHILDREN, lp, nexti, degree)
+	}
+
+	// Build LO in postorder
+	degree += 2
+	LO[i] = degree
+	i++
+
+	return nexti, degree
+}
+
 // SatAlgorithmL implements Algorithm L (7.2.2.2), satisfiability by DPLL with lookahead.
 // The task is to determine if the clause set is satisfiable, and if it is return
 // one satisfying assignment of the clauses.
@@ -254,6 +394,27 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// sigma - binary string representing the current search tree (Exercise 149)
 		sigma string
+
+		// sccs - list of all Strongly Connected Components (SCCs) (Algorithm X)
+		sccs [][]int
+
+		// S - number of SCCs found in the dependency digraph (Algorithm X)
+		S int
+
+		// reps - list of all representatives of each SCC in the dependency subforest (Algorithm X)
+		reps []int
+
+		// PARENT - parent node in the dependency subforest (Algorithm X, literal indexed)
+		PARENT []int
+
+		// CHILDREN - child nodes in the dependency subforest (Algorithm X, literal indexed)
+		CHILDREN [][]int
+
+		// LL - lookahead literal in the Algorithm X dependency subforest
+		LL []int
+
+		// LO - lookahead offset in the Algrorithm X dependency subforest
+		LO []int
 
 		// is debugging enabled?
 		debug bool
@@ -979,6 +1140,16 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		sigma = ""
 
 		CAND = make(Candidates, n+1)
+
+		PARENT = make([]int, 2*n+2)
+		CHILDREN = make([][]int, 2*n+2)
+		for l := 2; l <= 2*n+1; l++ {
+			CHILDREN[l] = make([]int, 0)
+		}
+		sccs = make([][]int, 0, 2*n)
+		reps = make([]int, 0, 2*n)
+		LL = make([]int, 0, 2*n)
+		LO = make([]int, 0, 2*n)
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -1325,6 +1496,228 @@ L2:
 			log.Printf("X4. Nest the candidates")
 		}
 
+		//
+		// @note X4 - Dependency Digraph
+		//
+		// Construct the dependency digraph on the 2C candidate literals, by
+		// extracting a subset of arcs from the BIMP tables. (This computation
+		// needn't be exact, because we're only calculating heuristics; an upper
+		// bound can be placed on the number of arcs considered, so that we
+		// don't spend too much time here. However, it is important to have the
+		// arc u --> v iff ¬v --> ¬u is also present.)
+		// TODO: Extract a subset, instead of everything
+
+		vertices := make(map[int]bool, 2*n)
+
+		for l := 2; l <= 2*n+1; l++ {
+			if BSIZE[l] > 0 {
+				vertices[l] = true
+				CHILDREN[l] = CHILDREN[l][:0]
+				for i := 0; i < BSIZE[l]; i++ {
+					lp := BIMP[l][i]
+					vertices[lp] = true
+					CHILDREN[lp] = CHILDREN[lp][:0]
+				}
+			}
+		}
+
+		// Use Tarjan's algorithm to get strongly connected components.
+
+		sccs = sccs[:0]
+
+		// TODO: determine if we can be faster without these maps
+		data := &sccData{
+			nodes:   make([]sccNode, 0, len(vertices)),
+			indexes: make(map[int]int, len(vertices)),
+		}
+
+		for v := range vertices {
+			if _, seen := data.indexes[v]; !seen {
+				_, contradiction := data.scc(v, BIMP, BSIZE, func(scc []int) bool {
+
+					if len(scc) > 1 {
+
+						// Check if this SCC contains both l and ¬l, and if so terminate with a contradiction.
+						// TODO: Determine if this would be faster with a map
+						for i := 0; i < len(scc); i++ {
+							for j := i + 1; j < len(scc); j++ {
+								if scc[i] == scc[j]^1 {
+									// Contradiction found, halt the search
+									return true
+								}
+							}
+						}
+					}
+
+					sccs = append(sccs, scc)
+
+					return false
+				})
+				if contradiction {
+					// There was a conflict
+					switch CONFLICT {
+					case 11:
+						goto L11
+					default:
+						log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
+					}
+				}
+			}
+		}
+
+		//
+		// @note X4 - Dependency Subforest
+		//
+		// Select a representative from each SCC. The subforest must include all 2C
+		// candidate literals, have no cycles, and have no nodes with > 1
+		// outbound edge. The representatives l will have PARENT[l] = 0, while all other
+		// candidate literals will have a parent.
+
+		S = len(sccs)
+		reps = reps[:S]
+
+		// Select representatives from each SCC of size = 1
+		for r, scc := range sccs {
+
+			if len(scc) == 1 {
+				l := scc[0]
+
+				if BSIZE[l] == 0 {
+					PARENT[l] = 0
+				} else {
+					lp := BIMP[l][0] // must select one parent for the subforest
+					PARENT[l] = lp
+					CHILDREN[lp] = append(CHILDREN[lp], l)
+				}
+				reps[r] = l
+			}
+		}
+
+		// Select representatives from each SCC of size > 1
+		for r, scc := range sccs {
+
+			if len(scc) > 1 {
+
+				// Choose a representatve l with maximum h(l), ensuring that if l is a
+				// representative then ¬l is also a representative
+
+				var l int    // l with maximum h(l) value
+				var maxi int // index of l in reps
+				var maxh int // maximum  value of in reps
+
+				// Search for l ∈ SCC which has maximum h(l) and ¬l is a representative
+				i := 0
+				for ; i < len(scc); i++ {
+
+					// Search for next value of l ∈ SCC which has maximum h(l)
+					maxi = i
+					maxh = scc[i] // TODO: replace simulated h(l) with real value
+
+					for j := i + 1; j < len(scc); j++ {
+						if scc[j] > maxh {
+							maxi = j
+							maxh = scc[j]
+						}
+					}
+
+					l = scc[maxi]
+
+					// Determine if ¬l is a representative
+					isRep := false
+					for _, rep := range reps {
+						if l == rep^1 {
+							isRep = true
+							break
+						}
+					}
+
+					if isRep {
+						// Found the representative we are looking for
+						break
+					} else {
+						// ¬l is not a representative so swap l to the beginning of the list and try again with the
+						// remaining members of the SCC.
+						if maxi != i {
+							scc[i], scc[maxi] = scc[maxi], scc[i]
+						}
+					}
+				}
+
+				if i == len(scc) {
+					// We did not find a representative l with matching ¬l
+					// Let's pick the l with maximum h(l) and assume that the matching
+					// ¬l will arrive later
+					l = scc[0]
+				}
+
+				reps[r] = l
+
+				// Set the PARENT for all l ∈ SCC
+				for _, lp := range scc {
+					if l == lp {
+						PARENT[l] = 0
+					} else {
+						PARENT[lp] = l
+						CHILDREN[l] = append(CHILDREN[l], lp)
+					}
+				}
+			}
+		}
+
+		// Assert that every variable x has 0 or 2 literal representatives
+		// TODO: wrap this assertion in a debug
+		xCount := make([]int, n+1)
+		for _, l := range reps {
+			xCount[l>>1] += 1
+		}
+		for _, x := range xCount {
+			if xCount[x] != 0 && xCount[x] != 2 {
+				log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, xCount[x])
+			}
+		}
+
+		// fmt.Printf("S=%d, representatives=%v\n", S, reps)
+		// fmt.Print("PARENT: ")
+		// for l := 2; l <= 2*n+1; l++ {
+		// 	if l > 2 {
+		// 		fmt.Print(", ")
+		// 	}
+		// 	fmt.Printf("%d=%d", l, PARENT[l])
+		// }
+		// fmt.Println()
+
+		//
+		// @note X4 - Lookahead Tables
+		//
+		// Construct lookahead tables LL and LO, for the S candidate literals,
+		// with LL containing the candidate literals in preorder, and LO containing
+		// each literal's truth degree (2 * literal's postorder position)
+		LL = LL[:len(vertices)]
+		LO = LO[:len(vertices)]
+
+		i := 0
+		degree := 0
+
+		// Iterate over the representatives
+		for _, rep := range reps {
+			if PARENT[rep] == 0 {
+				i, degree = build_lookahead(LL, LO, CHILDREN, rep, i, degree)
+			}
+		}
+
+		if debug {
+			fmt.Print("\nLL: ")
+			for i := 0; i < len(LL); i++ {
+				fmt.Printf("%2d ", LL[i])
+			}
+			fmt.Print("\nLO: ")
+			for i := 0; i < len(LO); i++ {
+				fmt.Printf("%2d ", LO[i])
+			}
+			fmt.Println()
+		}
+
+		// @note X4 - temporary branching
 		// TODO: Remove this temporary branching
 		switch F {
 		case 0:
