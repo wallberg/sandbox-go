@@ -38,10 +38,10 @@ type SatAlgorithmLOptions struct {
 	// weight the BIMP h(u) values versus the TIMP or KINX/CINX h(u)h(v) values.
 	Alpha float64
 
-	// C_0 cutoff parameter for Algorithm X cancdidate preselection
+	// C_0 cutoff parameter for Algorithm X candidate preselection
 	C0 int
 
-	// C_1 cutoff parameter for Algorithm X cancdidate preselection
+	// C_1 cutoff parameter for Algorithm X candidate preselection
 	C1 int
 }
 
@@ -395,14 +395,14 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// sigma - binary string representing the current search tree (Exercise 149)
 		sigma string
 
-		// sccs - list of all Strongly Connected Components (SCCs) (Algorithm X)
-		sccs [][]int
-
 		// S - number of SCCs found in the dependency digraph (Algorithm X)
 		S int
 
 		// reps - list of all representatives of each SCC in the dependency subforest (Algorithm X)
 		reps []int
+
+		// repsX - count of representative literals for a given variable x (variable indexed, Algorithm X)
+		repsX []int
 
 		// PARENT - parent node in the dependency subforest (Algorithm X, literal indexed)
 		PARENT []int
@@ -1146,8 +1146,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		for l := 2; l <= 2*n+1; l++ {
 			CHILDREN[l] = make([]int, 0)
 		}
-		sccs = make([][]int, 0, 2*n)
 		reps = make([]int, 0, 2*n)
+		repsX = make([]int, n+1)
 		LL = make([]int, 0, 2*n)
 		LO = make([]int, 0, 2*n)
 	}
@@ -1497,7 +1497,7 @@ L2:
 		}
 
 		//
-		// @note X4 - Dependency Digraph
+		// @note X4 - Dependency Digraph and Subforest
 		//
 		// Construct the dependency digraph on the 2C candidate literals, by
 		// extracting a subset of arcs from the BIMP tables. (This computation
@@ -1505,6 +1505,12 @@ L2:
 		// bound can be placed on the number of arcs considered, so that we
 		// don't spend too much time here. However, it is important to have the
 		// arc u --> v iff ¬v --> ¬u is also present.)
+		//
+		// Also select a representative from each SCC to build the subforest,
+		// which must include all 2C candidate literals, have no cycles, and
+		// have no nodes with > 1 outbound edge. The representatives l will have
+		// PARENT[l] = 0, while all other candidate literals will have a parent
+
 		// TODO: Extract a subset, instead of everything
 
 		vertices := make(map[int]bool, 2*n)
@@ -1521,10 +1527,12 @@ L2:
 			}
 		}
 
-		// Use Tarjan's algorithm to get strongly connected components.
+		reps = reps[:0] // representatives of each SCC
+		for x := 1; x <= n; x++ {
+			repsX[x] = 0
+		}
 
-		sccs = sccs[:0]
-
+		// Use Tarjan's algorithm to get strongly connected components
 		// TODO: determine if we can be faster without these maps
 		data := &sccData{
 			nodes:   make([]sccNode, 0, len(vertices)),
@@ -1535,11 +1543,28 @@ L2:
 			if _, seen := data.indexes[v]; !seen {
 				_, contradiction := data.scc(v, BIMP, BSIZE, func(scc []int) bool {
 
-					if len(scc) > 1 {
+					var l int // selected representative
 
-						// Check if this SCC contains both l and ¬l, and if so terminate with a contradiction.
+					if len(scc) == 1 {
+						l = scc[0]
+						repsX[l>>1] += 1
+
+						if BSIZE[l] == 0 {
+							PARENT[l] = 0
+						} else {
+							lp := BIMP[l][0] // must select one parent for the subforest
+							PARENT[l] = lp
+							CHILDREN[lp] = append(CHILDREN[lp], l)
+						}
+
+					} else {
+
+						// Check if this SCC contains both l and ¬l, and if so terminate
+						// with a contradiction.
 						// TODO: Determine if this would be faster with a map
+						// TODO: Merge with the following code
 						for i := 0; i < len(scc); i++ {
+							repsX[scc[i]>>1] += 1 // increment repsX count while we're at it
 							for j := i + 1; j < len(scc); j++ {
 								if scc[i] == scc[j]^1 {
 									// Contradiction found, halt the search
@@ -1547,12 +1572,68 @@ L2:
 								}
 							}
 						}
+
+						// Choose a representatve l with maximum h(l), ensuring that if l is a
+						// representative then ¬l is also a representative
+
+						var maxi int     // index of l in reps
+						var maxh float64 // maximum  value of in reps
+
+						// Search for l ∈ SCC which has maximum h(l) and ¬l is a representative
+						i := 0
+						for ; i < len(scc); i++ {
+
+							// Search for next value of l ∈ SCC which has maximum h(l)
+							maxi = i
+							maxh = h[d][scc[i]]
+
+							for j := i + 1; j < len(scc); j++ {
+								thish := h[d][scc[j]]
+								if thish > maxh {
+									maxi = j
+									maxh = thish
+								}
+							}
+
+							l = scc[maxi]
+
+							if repsX[l>>1] > 1 {
+								// Found the representative we are looking for
+								break
+							} else {
+								// ¬l is not a representative so swap l to the
+								// beginning of the list and try again with the
+								// remaining members of the SCC.
+								if maxi != i {
+									scc[i], scc[maxi] = scc[maxi], scc[i]
+								}
+							}
+						}
+
+						if i == len(scc) {
+							// We did not find a representative l with matching ¬l
+							// Let's pick the l with maximum h(l) and assume that the matching
+							// ¬l will arrive later
+							l = scc[0]
+						}
+
+						// Set the PARENT for all l ∈ SCC
+						for _, lp := range scc {
+							if l == lp {
+								PARENT[l] = 0
+							} else {
+								PARENT[lp] = l
+								CHILDREN[l] = append(CHILDREN[l], lp)
+							}
+						}
+
 					}
 
-					sccs = append(sccs, scc)
+					reps = append(reps, l)
 
 					return false
 				})
+
 				if contradiction {
 					// There was a conflict
 					switch CONFLICT {
@@ -1565,126 +1646,26 @@ L2:
 			}
 		}
 
-		//
-		// @note X4 - Dependency Subforest
-		//
-		// Select a representative from each SCC. The subforest must include all 2C
-		// candidate literals, have no cycles, and have no nodes with > 1
-		// outbound edge. The representatives l will have PARENT[l] = 0, while all other
-		// candidate literals will have a parent.
-
-		S = len(sccs)
-		reps = reps[:S]
-
-		// Select representatives from each SCC of size = 1
-		for r, scc := range sccs {
-
-			if len(scc) == 1 {
-				l := scc[0]
-
-				if BSIZE[l] == 0 {
-					PARENT[l] = 0
-				} else {
-					lp := BIMP[l][0] // must select one parent for the subforest
-					PARENT[l] = lp
-					CHILDREN[lp] = append(CHILDREN[lp], l)
-				}
-				reps[r] = l
-			}
-		}
-
-		// Select representatives from each SCC of size > 1
-		for r, scc := range sccs {
-
-			if len(scc) > 1 {
-
-				// Choose a representatve l with maximum h(l), ensuring that if l is a
-				// representative then ¬l is also a representative
-
-				var l int    // l with maximum h(l) value
-				var maxi int // index of l in reps
-				var maxh int // maximum  value of in reps
-
-				// Search for l ∈ SCC which has maximum h(l) and ¬l is a representative
-				i := 0
-				for ; i < len(scc); i++ {
-
-					// Search for next value of l ∈ SCC which has maximum h(l)
-					maxi = i
-					maxh = scc[i] // TODO: replace simulated h(l) with real value
-
-					for j := i + 1; j < len(scc); j++ {
-						if scc[j] > maxh {
-							maxi = j
-							maxh = scc[j]
-						}
-					}
-
-					l = scc[maxi]
-
-					// Determine if ¬l is a representative
-					isRep := false
-					for _, rep := range reps {
-						if l == rep^1 {
-							isRep = true
-							break
-						}
-					}
-
-					if isRep {
-						// Found the representative we are looking for
-						break
-					} else {
-						// ¬l is not a representative so swap l to the beginning of the list and try again with the
-						// remaining members of the SCC.
-						if maxi != i {
-							scc[i], scc[maxi] = scc[maxi], scc[i]
-						}
-					}
-				}
-
-				if i == len(scc) {
-					// We did not find a representative l with matching ¬l
-					// Let's pick the l with maximum h(l) and assume that the matching
-					// ¬l will arrive later
-					l = scc[0]
-				}
-
-				reps[r] = l
-
-				// Set the PARENT for all l ∈ SCC
-				for _, lp := range scc {
-					if l == lp {
-						PARENT[l] = 0
-					} else {
-						PARENT[lp] = l
-						CHILDREN[l] = append(CHILDREN[l], lp)
-					}
-				}
-			}
-		}
+		S = len(reps)
 
 		// Assert that every variable x has 0 or 2 literal representatives
 		// TODO: wrap this assertion in a debug
-		xCount := make([]int, n+1)
-		for _, l := range reps {
-			xCount[l>>1] += 1
-		}
-		for _, x := range xCount {
-			if xCount[x] != 0 && xCount[x] != 2 {
-				log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, xCount[x])
+		for _, x := range repsX {
+			if repsX[x] != 0 && repsX[x] != 2 {
+
+				fmt.Printf("S=%d, representatives=%v\n", S, reps)
+				fmt.Print("PARENT: ")
+				for l := 2; l <= 2*n+1; l++ {
+					if l > 2 {
+						fmt.Print(", ")
+					}
+					fmt.Printf("%d=%d", l, PARENT[l])
+				}
+				fmt.Println()
+
+				log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, repsX[x])
 			}
 		}
-
-		// fmt.Printf("S=%d, representatives=%v\n", S, reps)
-		// fmt.Print("PARENT: ")
-		// for l := 2; l <= 2*n+1; l++ {
-		// 	if l > 2 {
-		// 		fmt.Print(", ")
-		// 	}
-		// 	fmt.Printf("%d=%d", l, PARENT[l])
-		// }
-		// fmt.Println()
 
 		//
 		// @note X4 - Lookahead Tables
@@ -1699,9 +1680,9 @@ L2:
 		degree := 0
 
 		// Iterate over the representatives
-		for _, rep := range reps {
-			if PARENT[rep] == 0 {
-				i, degree = build_lookahead(LL, LO, CHILDREN, rep, i, degree)
+		for _, l := range reps {
+			if PARENT[l] == 0 {
+				i, degree = build_lookahead(LL, LO, CHILDREN, l, i, degree)
 			}
 		}
 
