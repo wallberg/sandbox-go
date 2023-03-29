@@ -692,21 +692,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			b.WriteString("TIMP\n")
 			for l := 2; l <= 2*n+1; l++ {
 
-				var boundary int
-				if l < 2*n+1 {
-					boundary = TIMP[l+1]
-				} else {
-					if TSIZE[l] > 0 {
-						boundary = len(TIMP)
-					} else {
-						boundary = 0
-					}
-				}
-
 				b.WriteString(fmt.Sprintf("l=%d:", l))
-				i := 0
-				p := TIMP[l]
-				for p < boundary {
+
+				for i := 0; i < TSIZE[l]; i++ {
+					p := TIMP[l] + 2*i
 
 					if i == TSIZE[l] {
 						b.WriteString(" |")
@@ -719,9 +708,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 					// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[pp], TIMP[pp+1]))
 					// ppp = LINK[pp]
 					// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[ppp], TIMP[ppp+1]))
-
-					i++
-					p += 2
 				}
 				b.WriteString("\n")
 			}
