@@ -1690,18 +1690,23 @@ L2:
 			fmt.Println()
 		}
 
-		// @note X4 - temporary branching
+		// @note X - temporary branching
 		// TODO: Remove this temporary branching
 		switch F {
-		case 0:
-			x = 5
-			l = 2*x + 1
+		// case 0:
+		// 	x = 5
+		// 	l = 2*x + 1
 		default:
-			// Select by candidate x score, then literal score
-			x = CAND[0].x
-			l = 2 * x
-			if h[d][l+1] > h[d][l] {
-				l += 1
+			if C > 0 {
+				// Select by candidate x score, then literal score
+				x = CAND[0].x
+				l = 2 * x
+				if h[d][l+1] > h[d][l] {
+					l += 1
+				}
+			} else {
+				x = VAR[0]
+				l = 2 * x
 			}
 		}
 
