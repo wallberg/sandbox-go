@@ -364,9 +364,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// G - number of really true literals in R (starting from 0), and nearly true for G <= k < E
 		G int
 
-		// CONFLICT - algorithm L step to goto in case of CONFLICT
-		CONFLICT int
-
 		// literal l
 		l int
 
@@ -1635,13 +1632,7 @@ L2:
 				})
 
 				if contradiction {
-					// There was a conflict
-					switch CONFLICT {
-					case 11:
-						goto L11
-					default:
-						log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-					}
+					goto L11
 				}
 			}
 		}
@@ -1784,7 +1775,6 @@ L5:
 	T = nt
 	G, E = F, F
 	ISTAMP += 1
-	CONFLICT = 11 // L11
 
 	// Iterate over each l in the FORCE stack
 	for i := 0; i < U; i++ {
@@ -1798,13 +1788,7 @@ L5:
 		// Perform the binary propogation routine
 		if binary_propagation(l) {
 			// There was a conflict
-			switch CONFLICT {
-			case 11:
-				goto L11
-			default:
-				log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-			}
-
+			goto L11
 		}
 	}
 
@@ -2089,12 +2073,8 @@ L6:
 			if debug && stats.Verbosity > 0 {
 				log.Printf(" Case 2. u=%d and v=%d are fixed false; CONFLICT", u, v)
 			}
-			switch CONFLICT {
-			case 11:
-				goto L11
-			default:
-				log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-			}
+			// Conflict
+			goto L11
 
 		} else if uFixedFalse && !vFixed {
 
@@ -2104,12 +2084,8 @@ L6:
 			}
 
 			if binary_propagation(v) {
-				switch CONFLICT {
-				case 11:
-					goto L11
-				default:
-					log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-				}
+				// Conflict
+				goto L11
 			}
 
 		} else if vFixedFalse && !uFixed {
@@ -2119,12 +2095,8 @@ L6:
 				log.Printf(" Case 4. v=%d is fixed false but u=%d isn't fixed", v, u)
 			}
 			if binary_propagation(u) {
-				switch CONFLICT {
-				case 11:
-					goto L11
-				default:
-					log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-				}
+				// Conflict
+				goto L11
 			}
 
 		} else {
@@ -2187,12 +2159,8 @@ L6:
 							} else if BST[w^1] == BSTAMP {
 								// ¬u implies both w and ¬w, so let's try and propagate u
 								if binary_propagation(u) {
-									switch CONFLICT {
-									case 11:
-										goto L11
-									default:
-										log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-									}
+									// Conflict
+									goto L11
 								}
 								break
 
@@ -2223,12 +2191,8 @@ L6:
 			if notvInBimp {
 				// ¬v ∈ BIMP[¬u], so select u as true
 				if binary_propagation(u) {
-					switch CONFLICT {
-					case 11:
-						goto L11
-					default:
-						log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-					}
+					// Conflict
+					goto L11
 				}
 			} else if vInBimp {
 				// v ∈ BIMP[¬u]
@@ -2247,12 +2211,8 @@ L6:
 				if notuInBimp {
 					// ¬u ∈ BIMP[¬v], so select v as true
 					if binary_propagation(v) {
-						switch CONFLICT {
-						case 11:
-							goto L11
-						default:
-							log.Panicf("Unknown value of CONFLICT: %d", CONFLICT)
-						}
+						// Conflict
+						goto L11
 					}
 				} else {
 					// Accept new binary clause (u, v), could be either
