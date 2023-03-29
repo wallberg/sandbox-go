@@ -832,6 +832,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	}
 
 	// lvisit prepares the solution
+	// @note lvisit()
 	lvisit := func() []int {
 		solution := make([]int, n)
 
@@ -1376,6 +1377,10 @@ L2:
 				rSum += CAND[C].r
 				C++
 			}
+		}
+
+		if debug && stats.Verbosity > 1 {
+			log.Printf("C=%d, CAND=%v", C, CAND[:C])
 		}
 
 		// If there are no participants, ie all are newbies, then put
