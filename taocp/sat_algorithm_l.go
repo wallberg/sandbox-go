@@ -585,14 +585,14 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// R
 		b.WriteString("R\n")
-		b.WriteString(fmt.Sprintf("E=%d, G=%d: ", E, G))
+		b.WriteString(fmt.Sprintf("E=%d, G=%d:", E, G))
 		for k := 0; k < E; k++ {
 			if k > 0 {
-				b.WriteString(", ")
+				b.WriteString(",")
 			}
 			l := R[k]
 			x := l >> 1
-			b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(VAL[x])))
+			b.WriteString(fmt.Sprintf(" {%d}=%s", l, truth(VAL[x])))
 		}
 		b.WriteString("\n\n")
 
@@ -697,24 +697,25 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				if l < 2*n+1 {
 					boundary = TIMP[l+1]
 				} else {
-					boundary = len(TIMP)
+					if TSIZE[l] > 0 {
+						boundary = len(TIMP)
+					} else {
+						boundary = 0
+					}
 				}
 
-				b.WriteString(fmt.Sprintf("l=%d: ", l))
+				b.WriteString(fmt.Sprintf("l=%d:", l))
 				i := 0
 				p := TIMP[l]
 				for p < boundary {
 
 					if i == TSIZE[l] {
-						b.WriteString(" | ")
+						b.WriteString(" |")
 					} else if i > 0 {
-						b.WriteString(", ")
+						b.WriteString(",")
 					}
 
-					// if p == 262 {
-					// 	log.Panicf("l=%d, i=%d, TIMP[l]=%d, 2i=%d, p=%d\n", l, i, TIMP[l], 2*i, p)
-					// }
-					b.WriteString(fmt.Sprintf("{%d,%d}", TIMP[p], TIMP[p+1]))
+					b.WriteString(fmt.Sprintf(" {%d,%d}", TIMP[p], TIMP[p+1]))
 					// pp = LINK[p]
 					// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[pp], TIMP[pp+1]))
 					// ppp = LINK[pp]
