@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"strings"
 )
 
@@ -1427,10 +1426,14 @@ L2:
 					showProgress()
 				}
 
-				dump()
-				log.Printf("X3. Success! TODO: lvisit()")
-				os.Exit(0)
-				// return true, lvisit()
+				// Set all values of the free variables to true
+				for i := 0; i < N; i++ {
+					x := VAR[i]
+					R[E] = 2 * x
+					E += 1
+				}
+
+				return true, lvisit()
 			}
 		}
 
