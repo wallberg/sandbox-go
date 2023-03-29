@@ -14,6 +14,7 @@ require (
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gobuffalo/packd v1.0.0 // indirect
 	github.com/joho/godotenv v1.3.0 // indirect
+	github.com/looplab/tarjan v0.1.0 // indirect
 	github.com/rogpeppe/go-internal v1.6.2 // indirect
 	github.com/stretchr/testify v1.5.1 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
