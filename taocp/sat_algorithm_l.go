@@ -1366,7 +1366,7 @@ L2:
 		}
 
 		if debug && stats.Verbosity > 1 {
-			log.Printf("C=%d, CAND=%v", C, CAND[:C])
+			log.Printf("   C=%d, CAND=%v", C, CAND[:C])
 		}
 
 		// If there are no participants, ie all are newbies, then put
@@ -1382,7 +1382,7 @@ L2:
 					x: x,
 					r: h[d][2*x] * h[d][2*x+1],
 				}
-				rSum += CAND[C].r
+				rSum += CAND[i].r
 
 				if sat {
 					// Check if all free literals have TSIZE[l] = 0
@@ -1445,6 +1445,9 @@ L2:
 		// quickly, don't bother sorting yet.
 
 		rMean := rSum / float64(C)
+		if debug {
+			log.Printf("    d=%d, Cmax=%d, C=%d", d, Cmax, C)
+		}
 
 		if d > 0 && C > 2*Cmax {
 
@@ -1485,7 +1488,7 @@ L2:
 		//
 
 		if debug {
-			log.Printf("X4. Nest the candidates")
+			log.Printf("X4. Nest the candidates, C=%d", C)
 		}
 
 		//
@@ -1507,8 +1510,9 @@ L2:
 
 		vertices := make(map[int]bool, 2*n)
 
-		for l := 2; l <= 2*n+1; l++ {
-			if BSIZE[l] > 0 {
+		for i := 0; i < N; i++ {
+			x := VAR[i]
+			for _, l := range []int{2 * x, 2*x + 1} {
 				vertices[l] = true
 				CHILDREN[l] = CHILDREN[l][:0]
 				for i := 0; i < BSIZE[l]; i++ {
