@@ -89,9 +89,6 @@ type sccData struct {
 
 	// stack - current node stack
 	stack []int
-
-	// indexes - map a vertex v to it's index value
-	indexes map[int]int
 }
 
 // sccNode stores data for a single vertex node in the SCC search (Algorithm X)
@@ -111,10 +108,14 @@ type varType struct {
 	isRepArc bool
 }
 
-// // litType - stores data for literals
-// type litType struct {
-// 	// parent of this literal
-// }
+// litType - stores data for literals
+type litType struct {
+	// Is this a vertex for SCC processing?
+	isVertex bool
+
+	// depth index for SCC processing (-1 for undefined)
+	index int
+}
 
 // scc runs Tarjan's algorithm recursively and outputs a grouping of
 // strongly connected vertices.
@@ -139,11 +140,11 @@ type varType struct {
 // limitations under the License.
 //
 // @note scc()
-func (data *sccData) scc(v int, vertices map[int]bool, BIMP [][]int, BSIZE []int, visit func([]int) bool) (*sccNode, bool) {
+func (data *sccData) scc(v int, lits *[]litType, BIMP *[][]int, BSIZE *[]int, visit func([]int) bool) (*sccNode, bool) {
 
 	// Set the depth index for v to the smallest unused index
 	vIndex := len(data.nodes)
-	data.indexes[v] = vIndex
+	(*lits)[v].index = vIndex
 
 	// Add v to the list of "seen" nodes
 	vNode := &sccNode{lowlink: vIndex, onStack: true}
@@ -153,15 +154,15 @@ func (data *sccData) scc(v int, vertices map[int]bool, BIMP [][]int, BSIZE []int
 	data.stack = append(data.stack, v)
 
 	// Consider successors of v
-	for i := 0; i < BSIZE[v]; i++ {
-		w := BIMP[v][i]
+	for i := 0; i < (*BSIZE)[v]; i++ {
+		w := (*BIMP)[v][i]
 
-		if _, found := vertices[w]; found {
-			wIndex, seen := data.indexes[w]
-			if !seen {
+		if (*lits)[w].isVertex {
+			wIndex := (*lits)[w].index
+			if wIndex == -1 {
 
 				// Successor w has not yet been visited; recurse on it
-				wNode, contradiction := data.scc(w, vertices, BIMP, BSIZE, visit)
+				wNode, contradiction := data.scc(w, lits, BIMP, BSIZE, visit)
 				if contradiction {
 					// Contradiction found, halt the search
 					return vNode, true
@@ -193,7 +194,7 @@ func (data *sccData) scc(v int, vertices map[int]bool, BIMP [][]int, BSIZE []int
 		i := len(data.stack) - 1
 		for {
 			w := data.stack[i]
-			wIndex := data.indexes[w]
+			wIndex := (*lits)[w].index
 			data.nodes[wIndex].onStack = false
 			scc = append(scc, w)
 			if wIndex == vIndex {
@@ -252,6 +253,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// vars - structure representing all variables
 		vars []varType
+
+		// lits - structure representing all literals
+		lits []litType
 
 		// d - depth of the implicit search tree
 		d int
@@ -418,6 +422,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// S - number of SCCs found in the dependency digraph (Algorithm X)
 		S int
+
+		// vertexCount - number of vertices selected for SCC processing
+		vertexCount int
 
 		// reps - list of all representatives of each SCC in the dependency subforest (Algorithm X)
 		reps []int
@@ -944,6 +951,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	clauses = clausesInternal
 
 	vars = make([]varType, n+1)
+	lits = make([]litType, 2*n+2)
 
 	//
 	// Record all unit clauses as forced variable values at depth 0
@@ -1559,14 +1567,10 @@ L2:
 		}
 
 		for l := 2; l <= 2*n+1; l++ {
+			lits[l].isVertex = false
+			lits[l].index = -1
 			CHILDREN[l] = CHILDREN[l][:0]
 		}
-
-		// // Add all candidates
-		// for i := 0; i < C; i++ {
-		// 	x := CAND[i].x
-		// 	vars[x].isRepArc = true
-		// }
 
 		// Add all arcs
 		for i := 0; i < C; i++ {
@@ -1585,13 +1589,12 @@ L2:
 			}
 		}
 
-		// Vertices for SCC extraction
-		vertices := make(map[int]bool, 2*n)
-
+		vertexCount = 0
 		for x := 1; x <= n; x++ {
 			if vars[x].isRepArc {
-				vertices[2*x] = true
-				vertices[2*x+1] = true
+				lits[2*x].isVertex = true
+				lits[2*x+1].isVertex = true
+				vertexCount += 2
 			}
 		}
 
@@ -1600,13 +1603,12 @@ L2:
 		// Use Tarjan's algorithm to get strongly connected components
 		// TODO: determine if we can be faster without these maps
 		data := &sccData{
-			nodes:   make([]sccNode, 0, len(vertices)),
-			indexes: make(map[int]int, len(vertices)),
+			nodes: make([]sccNode, 0, vertexCount),
 		}
 
-		for v := range vertices {
-			if _, seen := data.indexes[v]; !seen {
-				_, contradiction := data.scc(v, vertices, BIMP, BSIZE, func(scc []int) bool {
+		for v := 2; v <= 2*n+1; v++ {
+			if lits[v].isVertex && lits[v].index == -1 {
+				_, contradiction := data.scc(v, &lits, &BIMP, &BSIZE, func(scc []int) bool {
 
 					var l int // selected representative
 
@@ -1620,7 +1622,7 @@ L2:
 							lp := 0
 							for i := 0; i < BSIZE[l]; i++ {
 								lp = BIMP[l][i]
-								if _, found := vertices[lp]; found {
+								if lits[lp].isVertex {
 									break
 								}
 							}
@@ -1687,8 +1689,8 @@ L2:
 		// Construct lookahead tables LL and LO, for the S candidate literals,
 		// with LL containing the candidate literals in preorder, and LO containing
 		// each literal's truth degree (2 * literal's postorder position)
-		LL = LL[:len(vertices)]
-		LO = LO[:len(vertices)]
+		LL = LL[:vertexCount]
+		LO = LO[:vertexCount]
 
 		i := 0
 		degree := 0
