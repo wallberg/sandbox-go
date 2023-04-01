@@ -109,9 +109,6 @@ type sccNode struct {
 type varType struct {
 	// selected to represent arcs for SCC extraction
 	isRepArc bool
-
-	// number of literals occuring as a rep (sanity check)
-	repCount int
 }
 
 // // litType - stores data for literals
@@ -1534,7 +1531,6 @@ L2:
 		// Reset all values
 		for x := 1; x <= n; x++ {
 			vars[x].isRepArc = false
-			vars[x].repCount = 0
 		}
 
 		for l := 2; l <= 2*n+1; l++ {
@@ -1612,62 +1608,27 @@ L2:
 
 					} else {
 
-						// Check if this SCC contains both l and ¬l, and if so terminate
-						// with a contradiction.
-						// TODO: Determine if this would be faster with a map
-						// TODO: Merge with the following code
-						for i := 0; i < len(scc); i++ {
+						// Choose a representatve l with maximum h(l). Also check if this SCC contains
+						// both l and ¬l, and if so terminate with a contradiction.
+
+						// TODO: We are not ensuring that l and ¬l are both representatives. Why is this
+						// working. Could it be faster if we did?
+
+						maxh := -0.1
+
+						for i, lp := range scc {
 							for j := i + 1; j < len(scc); j++ {
-								if scc[i] == scc[j]^1 {
+								if lp == scc[j]^1 {
 									// Contradiction found, halt the search
 									return true
 								}
 							}
-						}
 
-						// Choose a representatve l with maximum h(l), ensuring that if l is a
-						// representative then ¬l is also a representative
-
-						var maxi int     // index of l in reps
-						var maxh float64 // maximum  value of in reps
-
-						// Search for l ∈ SCC which has maximum h(l) and ¬l is a representative
-						i := 0
-						for ; i < len(scc); i++ {
-
-							// Search for next value of l ∈ SCC which has maximum h(l)
-							maxi = i
-							maxh = h[d][scc[i]]
-
-							for j := i + 1; j < len(scc); j++ {
-								thish := h[d][scc[j]]
-								if thish > maxh {
-									maxi = j
-									maxh = thish
-								}
+							lph := h[d][lp]
+							if lph > maxh {
+								l = lp
+								maxh = lph
 							}
-
-							l = scc[maxi]
-
-							// if vars[l>>1].repCount > 1 {
-							// 	// Found the representative we are looking for
-							// 	break
-							// } else {
-							// 	// ¬l is not a representative so swap l to the
-							// 	// beginning of the list and try again with the
-							// 	// remaining members of the SCC.
-							// 	if maxi != i {
-							// 		scc[i], scc[maxi] = scc[maxi], scc[i]
-							// 	}
-							// }
-							break
-						}
-
-						if i == len(scc) {
-							// We did not find a representative l with matching ¬l
-							// Let's pick the l with maximum h(l) and assume that the matching
-							// ¬l will arrive later
-							l = scc[0]
 						}
 
 						// Set the PARENT for all l ∈ SCC
@@ -1683,7 +1644,6 @@ L2:
 					}
 
 					reps = append(reps, l)
-					vars[l>>1].repCount += 1
 
 					return false
 				})
@@ -1695,34 +1655,6 @@ L2:
 		}
 
 		S = len(reps)
-
-		if sanity {
-			// Assert that every variable x has 0 or 2 literal representatives
-			for x := 1; x <= n; x++ {
-				if vars[x].repCount != 0 && vars[x].repCount != 2 {
-
-					dump()
-
-					fmt.Printf("CAND=%v\n", CAND[0:S])
-					fmt.Printf("vertices=%v\n", vertices)
-					for l, children := range CHILDREN {
-						fmt.Printf("CHILDREN[%d]=%v\n", l, children)
-
-					}
-					fmt.Printf("S=%d, representatives=%v\n", S, reps)
-					fmt.Print("PARENT: ")
-					for l := 2; l <= 2*n+1; l++ {
-						if l > 2 {
-							fmt.Print(", ")
-						}
-						fmt.Printf("%d=%d", l, PARENT[l])
-					}
-					fmt.Println()
-
-					log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, vars[x].repCount)
-				}
-			}
-		}
 
 		//
 		// @note X4 - Lookahead Tables
@@ -1744,6 +1676,7 @@ L2:
 		}
 
 		if debug {
+			fmt.Printf("\nS:%d", S)
 			fmt.Print("\nLL: ")
 			for i := 0; i < len(LL); i++ {
 				fmt.Printf("%2d ", LL[i])
