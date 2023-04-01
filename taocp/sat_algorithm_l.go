@@ -105,6 +105,20 @@ type sccNode struct {
 	onStack bool
 }
 
+// varType - stores data for variables
+type varType struct {
+	// selected to represent arcs for SCC extraction
+	isRepArc bool
+
+	// number of literals occuring as a rep (sanity check)
+	repCount int
+}
+
+// // litType - stores data for literals
+// type litType struct {
+// 	// parent of this literal
+// }
+
 // scc runs Tarjan's algorithm recursively and outputs a grouping of
 // strongly connected vertices.
 //
@@ -128,7 +142,7 @@ type sccNode struct {
 // limitations under the License.
 //
 // @note scc()
-func (data *sccData) scc(v int, BIMP [][]int, BSIZE []int, visit func([]int) bool) (*sccNode, bool) {
+func (data *sccData) scc(v int, vertices map[int]bool, BIMP [][]int, BSIZE []int, visit func([]int) bool) (*sccNode, bool) {
 
 	// Set the depth index for v to the smallest unused index
 	vIndex := len(data.nodes)
@@ -145,31 +159,33 @@ func (data *sccData) scc(v int, BIMP [][]int, BSIZE []int, visit func([]int) boo
 	for i := 0; i < BSIZE[v]; i++ {
 		w := BIMP[v][i]
 
-		wIndex, seen := data.indexes[w]
-		if !seen {
+		if _, found := vertices[w]; found {
+			wIndex, seen := data.indexes[w]
+			if !seen {
 
-			// Successor w has not yet been visited; recurse on it
-			wNode, contradiction := data.scc(w, BIMP, BSIZE, visit)
-			if contradiction {
-				// Contradiction found, halt the search
-				return vNode, true
-			}
+				// Successor w has not yet been visited; recurse on it
+				wNode, contradiction := data.scc(w, vertices, BIMP, BSIZE, visit)
+				if contradiction {
+					// Contradiction found, halt the search
+					return vNode, true
+				}
 
-			// vNode.lowlink = min(vNode.lowlink, wNode.lowlink)
-			if wNode.lowlink < vNode.lowlink {
-				vNode.lowlink = wNode.lowlink
-			}
+				// vNode.lowlink = min(vNode.lowlink, wNode.lowlink)
+				if wNode.lowlink < vNode.lowlink {
+					vNode.lowlink = wNode.lowlink
+				}
 
-		} else if data.nodes[wIndex].onStack {
+			} else if data.nodes[wIndex].onStack {
 
-			// Successor w is in stack S and hence in the current SCC.
+				// Successor w is in stack S and hence in the current SCC.
 
-			// If successor w is not in stack S, then (v, w) is an edge pointing
-			// to an SCC previously found and must be ignored.
+				// If successor w is not in stack S, then (v, w) is an edge pointing
+				// to an SCC previously found and must be ignored.
 
-			// vNode.lowlink = min(vNode.lowlink, wIndex)
-			if wIndex < vNode.lowlink {
-				vNode.lowlink = wIndex
+				// vNode.lowlink = min(vNode.lowlink, wIndex)
+				if wIndex < vNode.lowlink {
+					vNode.lowlink = wIndex
+				}
 			}
 		}
 	}
@@ -236,6 +252,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	var (
 		// original value of n, before conversion to 3SAT
 		nOrig int
+
+		// vars - structure representing all variables
+		vars []varType
 
 		// d - depth of the implicit search tree
 		d int
@@ -396,9 +415,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// reps - list of all representatives of each SCC in the dependency subforest (Algorithm X)
 		reps []int
-
-		// repsX - count of representative literals for a given variable x (variable indexed, Algorithm X)
-		repsX []int
 
 		// PARENT - parent node in the dependency subforest (Algorithm X, literal indexed)
 		PARENT []int
@@ -745,6 +761,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			debug = stats.Debug
 			progress = stats.Progress
 		}
+
 	}
 
 	// assertRStackInvariant checks for the R stack invariant, that truth degrees never increase
@@ -904,6 +921,8 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 	clauses = clausesInternal
+
+	vars = make([]varType, n+1)
 
 	//
 	// Record all unit clauses as forced variable values at depth 0
@@ -1140,7 +1159,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			CHILDREN[l] = make([]int, 0)
 		}
 		reps = make([]int, 0, 2*n)
-		repsX = make([]int, n+1)
 		LL = make([]int, 0, 2*n)
 		LO = make([]int, 0, 2*n)
 	}
@@ -1488,10 +1506,6 @@ L2:
 			// log.Printf("CAND=%v", CAND[0:C])
 		}
 
-		if debug {
-			log.Printf("    Cmax=%d, C=%d", Cmax, C)
-		}
-
 		//
 		// @note X4 [Nest the candidates.]
 		//
@@ -1517,25 +1531,50 @@ L2:
 
 		// TODO: Extract a subset, instead of everything
 
-		vertices := make(map[int]bool, 2*n)
+		// Reset all values
+		for x := 1; x <= n; x++ {
+			vars[x].isRepArc = false
+			vars[x].repCount = 0
+		}
 
-		for i := 0; i < N; i++ {
-			x := VAR[i]
+		for l := 2; l <= 2*n+1; l++ {
+			CHILDREN[l] = CHILDREN[l][:0]
+		}
+
+		// // Add all candidates
+		// for i := 0; i < C; i++ {
+		// 	x := CAND[i].x
+		// 	vars[x].isRepArc = true
+		// }
+
+		// Add all arcs
+		for i := 0; i < C; i++ {
+			x := CAND[i].x
+			vars[x].isRepArc = true
+
 			for _, l := range []int{2 * x, 2*x + 1} {
-				vertices[l] = true
-				CHILDREN[l] = CHILDREN[l][:0]
+
 				for i := 0; i < BSIZE[l]; i++ {
-					lp := BIMP[l][i]
-					vertices[lp] = true
-					CHILDREN[lp] = CHILDREN[lp][:0]
+					u := BIMP[l][i]
+
+					if u < l {
+						vars[l>>1].isRepArc = true
+					}
 				}
 			}
 		}
 
-		reps = reps[:0] // representatives of each SCC
+		// Vertices for SCC extraction
+		vertices := make(map[int]bool, 2*n)
+
 		for x := 1; x <= n; x++ {
-			repsX[x] = 0
+			if vars[x].isRepArc {
+				vertices[2*x] = true
+				vertices[2*x+1] = true
+			}
 		}
+
+		reps = reps[:0] // representatives of each SCC
 
 		// Use Tarjan's algorithm to get strongly connected components
 		// TODO: determine if we can be faster without these maps
@@ -1546,18 +1585,27 @@ L2:
 
 		for v := range vertices {
 			if _, seen := data.indexes[v]; !seen {
-				_, contradiction := data.scc(v, BIMP, BSIZE, func(scc []int) bool {
+				_, contradiction := data.scc(v, vertices, BIMP, BSIZE, func(scc []int) bool {
 
 					var l int // selected representative
 
 					if len(scc) == 1 {
 						l = scc[0]
-						repsX[l>>1] += 1
 
 						if BSIZE[l] == 0 {
 							PARENT[l] = 0
 						} else {
-							lp := BIMP[l][0] // must select one parent for the subforest
+							// must select one parent for the subforest
+							lp := 0
+							for i := 0; i < BSIZE[l]; i++ {
+								lp = BIMP[l][i]
+								if _, found := vertices[lp]; found {
+									break
+								}
+							}
+							if sanity && lp == 0 {
+								log.Panicf("assertion failed: did not find arc from l=%d", l)
+							}
 							PARENT[l] = lp
 							CHILDREN[lp] = append(CHILDREN[lp], l)
 						}
@@ -1569,7 +1617,6 @@ L2:
 						// TODO: Determine if this would be faster with a map
 						// TODO: Merge with the following code
 						for i := 0; i < len(scc); i++ {
-							repsX[scc[i]>>1] += 1 // increment repsX count while we're at it
 							for j := i + 1; j < len(scc); j++ {
 								if scc[i] == scc[j]^1 {
 									// Contradiction found, halt the search
@@ -1602,17 +1649,18 @@ L2:
 
 							l = scc[maxi]
 
-							if repsX[l>>1] > 1 {
-								// Found the representative we are looking for
-								break
-							} else {
-								// ¬l is not a representative so swap l to the
-								// beginning of the list and try again with the
-								// remaining members of the SCC.
-								if maxi != i {
-									scc[i], scc[maxi] = scc[maxi], scc[i]
-								}
-							}
+							// if vars[l>>1].repCount > 1 {
+							// 	// Found the representative we are looking for
+							// 	break
+							// } else {
+							// 	// ¬l is not a representative so swap l to the
+							// 	// beginning of the list and try again with the
+							// 	// remaining members of the SCC.
+							// 	if maxi != i {
+							// 		scc[i], scc[maxi] = scc[maxi], scc[i]
+							// 	}
+							// }
+							break
 						}
 
 						if i == len(scc) {
@@ -1635,6 +1683,7 @@ L2:
 					}
 
 					reps = append(reps, l)
+					vars[l>>1].repCount += 1
 
 					return false
 				})
@@ -1647,22 +1696,31 @@ L2:
 
 		S = len(reps)
 
-		// Assert that every variable x has 0 or 2 literal representatives
-		// TODO: wrap this assertion in a debug
-		for _, x := range repsX {
-			if repsX[x] != 0 && repsX[x] != 2 {
+		if sanity {
+			// Assert that every variable x has 0 or 2 literal representatives
+			for x := 1; x <= n; x++ {
+				if vars[x].repCount != 0 && vars[x].repCount != 2 {
 
-				fmt.Printf("S=%d, representatives=%v\n", S, reps)
-				fmt.Print("PARENT: ")
-				for l := 2; l <= 2*n+1; l++ {
-					if l > 2 {
-						fmt.Print(", ")
+					dump()
+
+					fmt.Printf("CAND=%v\n", CAND[0:S])
+					fmt.Printf("vertices=%v\n", vertices)
+					for l, children := range CHILDREN {
+						fmt.Printf("CHILDREN[%d]=%v\n", l, children)
+
 					}
-					fmt.Printf("%d=%d", l, PARENT[l])
-				}
-				fmt.Println()
+					fmt.Printf("S=%d, representatives=%v\n", S, reps)
+					fmt.Print("PARENT: ")
+					for l := 2; l <= 2*n+1; l++ {
+						if l > 2 {
+							fmt.Print(", ")
+						}
+						fmt.Printf("%d=%d", l, PARENT[l])
+					}
+					fmt.Println()
 
-				log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, repsX[x])
+					log.Panicf("assertion failed: x=%d has %d representatives of l or ¬l", x, vars[x].repCount)
+				}
 			}
 		}
 
