@@ -36,6 +36,7 @@ type SatStats struct {
 
 // SatOptions provides SAT runtime options
 type SatOptions struct {
+	Sanity bool // Run sanity checks and assertions
 }
 
 // String returns a String representation of type SATStats struct

@@ -420,6 +420,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		// are we using "big" clauses?
 		bigClauses bool
+
+		// are we running sanity checks?
+		sanity bool
 	)
 
 	// // assertKinxIntegrity
@@ -721,6 +724,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		if optionsL == nil {
 			optionsL = NewSatAlgorithmLOptions()
+		}
+
+		if options != nil {
+			if options.Sanity {
+				sanity = true
+			}
 		}
 
 		if stats != nil {
