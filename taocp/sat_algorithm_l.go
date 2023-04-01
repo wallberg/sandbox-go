@@ -323,6 +323,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// U - number of distinct variables in unit clauses (at the current depth)
 		U int
 
+		// U' - number of distinct variables in unit clauses (Algorithm X)
+		Up int
+
 		// FORCE - stack of U unit variables which have a forced value at the current depth
 		FORCE []int
 
@@ -364,6 +367,9 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// T - truth context
 		T int
 
+		// T' - truth context (Algorithm X)
+		Tp int
+
 		// L - nearly true literal l
 		L int
 
@@ -386,13 +392,16 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		x int
 
 		// index
-		k, j int
+		k, j, jp int
 
 		// h - heuristic value for Algorithm X preselection (depth, literal indexed)
 		h [][]float64
 
 		// hp - h' heuristic value for Algorithm X preselection (literal indexed)
 		hp []float64
+
+		// H - H heuristic score, sum of h(u)h(v) for asserting l in L4 leads to asserting u ∨ v in L9 (Algorithm X)
+		H []float64
 
 		// C - number of free variable candidates for Algorithm X preselection
 		C int
@@ -840,6 +849,21 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		return false
 	}
 
+	x12 := func(l int) {
+		//
+		// @note X12 [Force l.]
+		//
+
+		if debug {
+			log.Printf("X12. Force l=%d", l)
+		}
+
+		FORCE[U] = l
+		U += 1
+		Tp = T
+
+	}
+
 	// lvisit prepares the solution
 	// @note lvisit()
 	lvisit := func() []int {
@@ -1140,6 +1164,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 
 		hp = make([]float64, 2*n+2)
+		H = make([]float64, 2*n+2)
 
 		SIG = make([]string, n+1)
 		for x := 1; x <= n; x++ {
@@ -1687,6 +1712,50 @@ L2:
 			}
 			fmt.Println()
 		}
+
+		//
+		// @note X5 [Prepare to explore.]
+		//
+
+		if debug {
+			log.Printf("X5. Prepare to explore")
+		}
+
+		Up = 0    // U' - number of distinct variables in unit clauses
+		jp = 0    // j'
+		BASE := 0 // BASE - base truth level
+		j = 0
+
+		if debug {
+			log.Print(Up, jp, Tp)
+		}
+
+		//
+		// @note X6 [Choose l for lookahead.]
+		//
+
+		if debug {
+			log.Printf("X6. Choose l for lookahead")
+		}
+
+		l = LL[j]
+		T = BASE + LO[j]
+		H[l] = H[PARENT[l]]
+
+		if VAL[l>>1] < T {
+			// l is not fixed in context T
+			goto X8
+		}
+
+		if VAL[l>>1] < pt && VAL[(l^1)>>1]&1 == (l^1)&1 {
+			// l is fixed false, but not in context PT
+			x12(l ^ 1)
+		}
+
+		//
+		// @note X8 [Compute sharper heuristic.]
+		//
+	X8:
 
 		// @note X - temporary branching
 		// TODO: Remove this temporary branching
