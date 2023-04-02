@@ -441,7 +441,16 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// LO - lookahead offset in the Algrorithm X dependency subforest
 		LO []int
 
+		// W - array of literals for new binary clause generation in truth_propogation()
+		W []int
+
+		// w - weight of new binary clauses
+		w float64
+
+		// l0 - new value of l under consideration? used in truth_propagation() and Algorithm X
 		// is debugging enabled?
+		l0 int
+
 		debug bool
 
 		// is progress tracking enabled?
@@ -788,15 +797,43 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 	}
 
+	// appendBimp adds u to BIMP[l]
+	// @note appendBimp
+	appendBimp := func(l, u int) {
+
+		// Update private stamp IST, if necessary. Formula (63)
+		if IST[l] != ISTAMP {
+			IST[l] = ISTAMP
+			if I == len(ISTACK) {
+				ISTACK = append(ISTACK, [2]int{l, BSIZE[l]})
+			} else {
+				ISTACK[I][0] = l
+				ISTACK[I][1] = BSIZE[l]
+			}
+			I += 1
+		}
+
+		// Append u to BIMP[l]
+		if BSIZE[l] == len(BIMP[l]) {
+			BIMP[l] = append(BIMP[l], u)
+		} else {
+			BIMP[l][BSIZE[l]] = u
+		}
+		BSIZE[l] += 1
+	}
+
 	// binary_propogation uses a simple breadth-first search procedure
 	// to propagate the binarary consequences of a literal l in context T.
 	// Returns false if no conflict, true if there is conflict.
 	// Formula (62), p. 221
 	// @note binary_propogation()
-	binary_propagation := func(l int) bool {
+	binary_propagation := func(l int, T int) bool {
 
 		if debug {
-			log.Printf("  binary_propagation l=%d, t=%s", l, truth(T))
+			log.Printf("  binary_propagation l=%d, T=%s", l, truth(T))
+		}
+
+		if sanity {
 			assertRStackInvariant()
 		}
 
@@ -849,14 +886,129 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			}
 		}
 
-		if debug {
+		if sanity {
 			assertRStackInvariant()
 		}
 
 		return false
 	}
 
-	x12 := func(l int) {
+	// truth_propogation uses a simple breadth-first search procedure based
+	// on steps L5, L6, and L8 to propogate truth values of degree T and also
+	// computes w, the weight of new binary clauses that would be spawned by
+	// branching on l.
+	// Returns false if no conflict, true if there is conflict.
+	// Formula (72), p. 227
+	// @note truth_propogation()
+	truth_propagation := func(l int, T int) bool {
+
+		if debug {
+			log.Printf("  truth_propagation l=%d, T=%s", l, truth(T))
+		}
+
+		l0 = l
+		i := 0
+		w = 0.0
+		G = F
+		E = F
+
+		if binary_propagation(l, T) {
+			// There was a conflict
+			return true
+		}
+
+		for G < E {
+			L = R[G]
+			G += 1
+
+			// Iterate over (u, v) ∈ TIMP[L]
+			for j := 0; j < TSIZE[L]; j++ {
+				p := TIMP[L] + 2*j
+				u, v := TIMP[p], TIMP[p+1]
+
+				uFixed := VAL[u>>1] >= T
+				uFixedTrue := uFixed && VAL[u>>1]&1 == u&1
+
+				if uFixedTrue {
+					// Case 1. u or v is fixed true, do nothing
+					if debug && stats.Verbosity > 0 {
+						log.Printf(" Case 1. u=%d is fixed true", u)
+					}
+					continue
+				}
+
+				vFixed := VAL[v>>1] >= T
+				vFixedTrue := vFixed && VAL[v>>1]&1 == v&1
+
+				if vFixedTrue {
+					// Case 1. u or v is fixed true, do nothing
+					if debug && stats.Verbosity > 0 {
+						log.Printf(" Case 1. v=%d is fixed true", v)
+					}
+					continue
+				}
+
+				uFixedFalse := uFixed && VAL[(u^1)>>1]&1 == (u^1)&1
+				vFixedFalse := vFixed && VAL[(v^1)>>1]&1 == (v^1)&1
+
+				if uFixedFalse && vFixedFalse {
+
+					// Case 2. u and v are fixed false
+					if debug && stats.Verbosity > 0 {
+						log.Printf(" Case 2. u=%d and v=%d are fixed false; CONFLICT", u, v)
+					}
+					return true
+
+				} else if uFixedFalse && !vFixed {
+
+					// Case 3. u is fixed false but v isn't fixed
+					if debug && stats.Verbosity > 0 {
+						log.Printf(" Case 3. u=%d is fixed false but v=%d isn't fixed", u, v)
+					}
+
+					W[i] = v
+					i += 1
+
+					if binary_propagation(v, T) {
+						return true
+					}
+
+				} else if vFixedFalse && !uFixed {
+
+					// Case 4. v is fixed false but u isn't fixed
+					if debug && stats.Verbosity > 0 {
+						log.Printf(" Case 4. v=%d is fixed false but u=%d isn't fixed", v, u)
+					}
+
+					W[i] = u
+					i += 1
+
+					if binary_propagation(u, T) {
+						return true
+					}
+
+				} else {
+
+					// Case 5. Neither u nor v is fixed
+					if debug && stats.Verbosity > 0 {
+						log.Printf(" Case 5. Neither u=%d nor v=%d is fixed", u, v)
+					}
+
+					w += h[d][u] * h[d][v]
+				}
+			}
+		}
+
+		for k := 0; k < i; k++ {
+			appendBimp(l0, W[k])
+			appendBimp(W[k]^1, l0^1)
+		}
+
+		return false
+	}
+
+	// x12 performans step X12. Returns true if conflict, else false.
+	x12 := func(l int) bool {
 		//
 		// @note X12 [Force l.]
 		//
@@ -867,8 +1019,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 		FORCE[U] = l
 		U += 1
-		Tp = T
 
+		if truth_propagation(l, pt) {
+			return true
+		}
+
+		return false
 	}
 
 	// lvisit prepares the solution
@@ -886,30 +1042,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		}
 
 		return solution[:nOrig]
-	}
-
-	// appendBimp adds u to BIMP[l]
-	appendBimp := func(l, u int) {
-
-		// Update private stamp IST, if necessary. Formula (63)
-		if IST[l] != ISTAMP {
-			IST[l] = ISTAMP
-			if I == len(ISTACK) {
-				ISTACK = append(ISTACK, [2]int{l, BSIZE[l]})
-			} else {
-				ISTACK[I][0] = l
-				ISTACK[I][1] = BSIZE[l]
-			}
-			I += 1
-		}
-
-		// Append u to BIMP[l]
-		if BSIZE[l] == len(BIMP[l]) {
-			BIMP[l] = append(BIMP[l], u)
-		} else {
-			BIMP[l][BSIZE[l]] = u
-		}
-		BSIZE[l] += 1
 	}
 
 	//
@@ -1191,6 +1323,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		reps = make([]int, 0, 2*n)
 		LL = make([]int, 0, 2*n)
 		LO = make([]int, 0, 2*n)
+		W = make([]int, 2*n)
 	}
 
 	if debug && stats.Verbosity > 0 {
@@ -1728,14 +1861,14 @@ L2:
 		BASE := 0 // BASE - base truth level
 		j = 0
 
-		if debug {
+		if debug && stats.Verbosity > 0 {
 			log.Print(Up, jp, Tp)
 		}
 
 		//
 		// @note X6 [Choose l for lookahead.]
 		//
-
+	X6:
 		if debug {
 			log.Printf("X6. Choose l for lookahead")
 		}
@@ -1751,33 +1884,142 @@ L2:
 
 		if VAL[l>>1] < pt && VAL[(l^1)>>1]&1 == (l^1)&1 {
 			// l is fixed false, but not in context PT
-			x12(l ^ 1)
+			if x12(l ^ 1) {
+				goto X13
+			}
 		}
+
+		//
+		// @note X7 [Move to next.]
+		//
+	X7:
+		if debug {
+			log.Printf("X7. Move to next")
+		}
+
+		if U > Up {
+			Up = U
+			jp = j
+		}
+		j += 1
+
+		if j == S {
+			j = 0
+			BASE += 2 * S
+		}
+
+		if j == jp || (j == 0 && BASE+2*S >= pt) {
+			// Terminate normally
+			goto XTermination
+		}
+
+		goto X6
 
 		//
 		// @note X8 [Compute sharper heuristic.]
 		//
 	X8:
+		if debug {
+			log.Printf("X8. Compute sharper heuristic")
+		}
 
-		// @note X - temporary branching
-		// TODO: Remove this temporary branching
-		switch F {
-		// case 0:
-		// 	x = 5
-		// 	l = 2*x + 1
-		default:
-			if C > 0 {
-				// Select by candidate x score, then literal score
-				x = CAND[0].x
-				l = 2 * x
-				if h[d][l+1] > h[d][l] {
-					l += 1
+		if truth_propagation(l, T) {
+			// Conflict
+			goto X13
+		}
+
+		if w > 0 {
+			H[l0] += w
+			goto X10
+		}
+
+		//
+		// @note X9 [Exploit an autarky.]
+		//
+		if debug {
+			log.Printf("X9. Exploit an autarky")
+		}
+
+		if H[l0] == 0 {
+			if x12(l0) {
+				goto X13
+			}
+		} else {
+			appendBimp(l0^1, PARENT[l0]^1)
+			appendBimp(PARENT[l0], l0)
+		}
+
+		//
+		// @note X10 [Optionally look deeper.]
+		//
+	X10:
+		if debug {
+			log.Printf("X10. Optionally look deeper")
+		}
+
+		// TODO: Implement Algorithm Y
+
+		//
+		// @note X11 [Exploit necessary assignments.]
+		//
+		if debug {
+			log.Printf("X11. Exploit necessary assignments")
+		}
+
+		for i := 0; i < BSIZE[l0^1]; i++ {
+			l := BIMP[l0^1][i]
+
+			// Check if l is fixed true but not proto true
+			if VAL[l>>1] < pt && VAL[l>>1]&1 == l&1 {
+				if x12(l) {
+					// Conflict
+					goto X13
 				}
-			} else {
-				x = VAR[0]
-				l = 2 * x
 			}
 		}
+
+		goto X7
+
+		//
+		// @note X13 [Recover from conflict.]
+		//
+	X13:
+		if debug {
+			log.Printf("X13. Recover from conflict")
+		}
+
+		if T < pt {
+			if x12(l0 ^ 1) {
+				// Conflict, terminate Algorithm X?
+				goto L11
+			} else {
+				goto X7
+			}
+		}
+
+		// Contradiction, terminate Algorithm X
+		goto L11
+
+	XTermination:
+		// // @note X - temporary branching
+		// // TODO: Remove this temporary branching
+		// switch F {
+		// // case 0:
+		// // 	x = 5
+		// // 	l = 2*x + 1
+		// default:
+		// 	if C > 0 {
+		// 		// Select by candidate x score, then literal score
+		// 		x = CAND[0].x
+		// 		l = 2 * x
+		// 		if h[d][l+1] > h[d][l] {
+		// 			l += 1
+		// 		}
+		// 	} else {
+		// 		x = VAR[0]
+		// 		l = 2 * x
+		// 	}
+		// }
 
 	}
 
@@ -1861,7 +2103,7 @@ L5:
 		l := FORCE[i]
 
 		// Perform the binary propogation routine
-		if binary_propagation(l) {
+		if binary_propagation(l, T) {
 			// There was a conflict
 			goto L11
 		}
@@ -2158,7 +2400,7 @@ L6:
 				log.Printf(" Case 3. u=%d is fixed false but v=%d isn't fixed", u, v)
 			}
 
-			if binary_propagation(v) {
+			if binary_propagation(v, T) {
 				// Conflict
 				goto L11
 			}
@@ -2169,7 +2411,7 @@ L6:
 			if debug && stats.Verbosity > 0 {
 				log.Printf(" Case 4. v=%d is fixed false but u=%d isn't fixed", v, u)
 			}
-			if binary_propagation(u) {
+			if binary_propagation(u, T) {
 				// Conflict
 				goto L11
 			}
@@ -2233,7 +2475,7 @@ L6:
 
 							} else if BST[w^1] == BSTAMP {
 								// ¬u implies both w and ¬w, so let's try and propagate u
-								if binary_propagation(u) {
+								if binary_propagation(u, T) {
 									// Conflict
 									goto L11
 								}
@@ -2265,7 +2507,7 @@ L6:
 
 			if notvInBimp {
 				// ¬v ∈ BIMP[¬u], so select u as true
-				if binary_propagation(u) {
+				if binary_propagation(u, T) {
 					// Conflict
 					goto L11
 				}
@@ -2285,7 +2527,7 @@ L6:
 
 				if notuInBimp {
 					// ¬u ∈ BIMP[¬v], so select v as true
-					if binary_propagation(v) {
+					if binary_propagation(v, T) {
 						// Conflict
 						goto L11
 					}
