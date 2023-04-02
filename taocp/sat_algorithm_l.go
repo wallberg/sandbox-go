@@ -371,9 +371,6 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// T - truth context
 		T int
 
-		// T' - truth context (Algorithm X)
-		Tp int
-
 		// L - nearly true literal l
 		L int
 
@@ -630,9 +627,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			if k > 0 {
 				b.WriteString(",")
 			}
-			l := R[k]
-			x := l >> 1
-			b.WriteString(fmt.Sprintf(" {%d}=%s", l, truth(VAL[x])))
+			b.WriteString(fmt.Sprintf(" %d", R[k]))
 		}
 		b.WriteString("\n\n")
 
@@ -1050,7 +1045,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	// If this is a kSAT problem where k > 3 then either convert to 3SAT or use optional "big" clauses.
 	nOrig = n
-
+	clausesOrig := len(clauses)
 	sat3, nSat3, clausesSat3 := Sat3(n, clauses)
 
 	if !sat3 {
@@ -1063,6 +1058,26 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	}
 
 	initialize()
+
+	if debug {
+		b := strings.Builder{}
+		b.WriteString("===\n")
+		b.WriteString(fmt.Sprintf("| CompensationResolvants: %t\n", optionsL.CompensationResolvants))
+		b.WriteString(fmt.Sprintf("| BigClauses:             %t\n", bigClauses))
+		b.WriteString(fmt.Sprintf("| Theta:                  %f\n", optionsL.Theta))
+		b.WriteString(fmt.Sprintf("| AlgorithmX:             %t\n", optionsL.AlgorithmX))
+		b.WriteString(fmt.Sprintf("| AlgorithmY:             %t\n", optionsL.AlgorithmY))
+		b.WriteString(fmt.Sprintf("| Alpha:                  %f\n", optionsL.Alpha))
+		b.WriteString(fmt.Sprintf("| C0:                     %d\n", optionsL.C0))
+		b.WriteString(fmt.Sprintf("| C1:                     %d\n", optionsL.C1))
+		b.WriteString("|\n")
+		b.WriteString(fmt.Sprintf("| n                  = %d\n", n))
+		b.WriteString(fmt.Sprintf("| n (original)       = %d\n", nOrig))
+		b.WriteString(fmt.Sprintf("| clauses            = %d\n", len(clauses)))
+		b.WriteString(fmt.Sprintf("| clauses (original) = %d\n", clausesOrig))
+		b.WriteString("===\n")
+		log.Print(b.String())
+	}
 
 	if debug {
 		log.Printf("L1. Initialize")
@@ -1336,6 +1351,43 @@ func SatAlgorithmL(n int, clauses SatClauses,
 L2:
 	if debug {
 		log.Printf("L2. New node")
+
+		var b strings.Builder
+
+		b.WriteString(fmt.Sprintf("  d=%d, F=%d, N=%d, E=%d, G=%d\n", d, F, N, E, G))
+
+		// VAR
+		b.WriteString("VAR:")
+		for k := 0; k < n; k++ {
+			if k == N {
+				b.WriteString(" |")
+			} else if k > 0 {
+				b.WriteString(",")
+			}
+			b.WriteString(fmt.Sprintf(" {%d}", VAR[k]))
+		}
+		b.WriteString("\n")
+
+		// R
+		b.WriteString("  R:")
+		for k := 0; k < E; k++ {
+			if k > 0 {
+				b.WriteString(",")
+			}
+			l := R[k]
+			b.WriteString(fmt.Sprintf(" %d", l))
+		}
+		b.WriteString("\n")
+
+		// VAL
+		b.WriteString("  VAL:")
+		for x := 1; x <= n; x++ {
+			if x > 1 {
+				b.WriteString(",")
+			}
+			b.WriteString(fmt.Sprintf(" {%d}=%s", x, truth(VAL[x])))
+		}
+		log.Print(b.String())
 	}
 
 	BRANCH[d] = -1 // No decision yet
@@ -1836,16 +1888,19 @@ L2:
 		}
 
 		if debug {
-			fmt.Printf("\nS:%d", S)
-			fmt.Print("\nLL: ")
+			var b strings.Builder
+
+			b.WriteString(fmt.Sprintf("  S: %d\n", S))
+			b.WriteString("  LL:")
 			for i := 0; i < len(LL); i++ {
-				fmt.Printf("%2d ", LL[i])
+				b.WriteString(fmt.Sprintf(" %2d", LL[i]))
 			}
-			fmt.Print("\nLO: ")
+			b.WriteString("\n  LO:")
 			for i := 0; i < len(LO); i++ {
-				fmt.Printf("%2d ", LO[i])
+				b.WriteString(fmt.Sprintf(" %2d", LO[i]))
 			}
-			fmt.Println()
+			b.WriteString("\n")
+			log.Print(b.String())
 		}
 
 		//
@@ -1860,10 +1915,6 @@ L2:
 		jp = 0    // j'
 		BASE := 0 // BASE - base truth level
 		j = 0
-
-		if debug && stats.Verbosity > 0 {
-			log.Print(Up, jp, Tp)
-		}
 
 		//
 		// @note X6 [Choose l for lookahead.]
@@ -1920,12 +1971,16 @@ L2:
 		//
 	X8:
 		if debug {
-			log.Printf("X8. Compute sharper heuristic")
+			log.Printf("X8. Compute sharper heuristic, w=%f", w)
 		}
 
 		if truth_propagation(l, T) {
 			// Conflict
 			goto X13
+		}
+
+		if debug && stats.Verbosity > 0 {
+			log.Printf("  w=%f", w)
 		}
 
 		if w > 0 {
@@ -1937,7 +1992,7 @@ L2:
 		// @note X9 [Exploit an autarky.]
 		//
 		if debug {
-			log.Printf("X9. Exploit an autarky")
+			log.Printf("X9. Exploit an autarky, l0=%d, H[%d]=%f", l0, l0, H[l0])
 		}
 
 		if H[l0] == 0 {
@@ -2001,39 +2056,12 @@ L2:
 		goto L11
 
 	XTermination:
-		// // @note X - temporary branching
-		// // TODO: Remove this temporary branching
-		// switch F {
-		// // case 0:
-		// // 	x = 5
-		// // 	l = 2*x + 1
-		// default:
-		// 	if C > 0 {
-		// 		// Select by candidate x score, then literal score
-		// 		x = CAND[0].x
-		// 		l = 2 * x
-		// 		if h[d][l+1] > h[d][l] {
-		// 			l += 1
-		// 		}
-		// 	} else {
-		// 		x = VAR[0]
-		// 		l = 2 * x
-		// 	}
-		// }
-
 	}
 
 	stats.Levels[d]++
 	stats.Nodes++
 	if d > stats.MaxLevel {
 		stats.MaxLevel = d
-	}
-
-	if debug {
-		log.Printf("  Selected d=%d, branch=%v, l=%d from free variable list", d, BRANCH[0:d], l)
-		if stats.Verbosity > 0 {
-			dump()
-		}
 	}
 
 	//

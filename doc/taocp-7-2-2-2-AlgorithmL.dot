@@ -3,18 +3,41 @@ digraph G {
     node [fontname = "verdana"];
     edge [fontname = "verdana"];
 
+    label = "Algorithm L"
+
     L1 [label="L1. Initialize"]
-    L2 [label="L2. New node\nBRANCH[d]←-1\nAlgorithm X"]
+    L2 [label="L2. New node\nBRANCH[d]←-1"]
     L3 [label="L3. Choose l"]
     L4 [label="L4. Try l"]
     L5 [label="L5. Accept NTs\nbp(l) ∀ FORCE[0...U-1]"]
 
     subgraph cluster_0 {
         label="Promote all NT to RT"
+        style="dashed"
+
         L6 [label="L6. Choose NT L"];
         L7 [label="L7. Promote L to RT"];
         L8 [label="L8. Consider u or v"];
         L9 [label="L9. Exploit u or v"];
+    }
+
+    subgraph cluster_x {
+        label = "Algorithm X"
+        style="dashed"
+
+        X1 [label="X1. Satisfied?"]
+        X2 [label="X2. Compile rough heuristics"]
+        X3 [label="X3. Preselect candidates"]
+        X4 [label="X4. Nest the candidates"]
+        X5 [label="X5. Prepare to explore"]
+        X6 [label="X6. Choose l for lookahead\nif l fixed false, not PF\nthen X12(¬l, T)"]
+        X7 [label="X7. Move to next"]
+        X8 [label="X8. Compute sharper heuristic f"]
+        X9 [label="X9. Exploit an autarky\nif H(l0)=0 then X12(l0, T)"]
+        X10 [label="X10. Optionally look deeper"]
+        X11 [label="X11. Exploit necesssary assignments\n∀ l∈BIMP(¬l0) X12(l,T)"]
+        X12 [label="X12. Force l"]
+        X13 [label="X13. Recover from conflict\nif T<PT then X12(¬l0, T)"]
     }
 
     L10 [label="L10. Accept RT\nF←E"]
@@ -25,7 +48,7 @@ digraph G {
     L15 [label="L15. Backtrack"]
 
     L1 -> L2
-    L2 -> Terminate [label="F=n; satisfied"]
+    L2 -> X1
     L2 -> L15 [label="U=0 and\nX conflict"]
     L2 -> L3 [label="U=0 and\nX proceed"]
     L2 -> L5 [label="U>0"]
@@ -41,7 +64,7 @@ digraph G {
     L8 -> L11 [label="bp() conflict"]
     L9 -> L11 [label="bp() conflict"]
     L10 -> L2 [label="if BRANCH[d]>=0\nd←d+1"]
-    #L10 -> L3 [label="else if d>0"] // Does not occur for L^0
+    L10 -> L3 [label="else if d>0\n(only L^0)"]
     L10 -> L2 [label="else if d=0\nunits in input"; style="dotted"]
     L11 -> L12 -> L13 -> L14
     L14 -> L4 [label="if BRANCH[d]=0\nBRANCH[d]←1\nl←^l"]
@@ -49,6 +72,22 @@ digraph G {
     L15 -> Terminate [label="d=0; unsatisfiable"]
     L15 -> L12 [label="d←d-1"]
 
-    // {rank = same; L1; L2;}
-    // {rank = same; L15; Terminate;}
+    X1 -> Terminate [label="F=n; satisfied"]
+    X1 -> X2
+    X2 -> X3
+    X3 -> X4
+    X4 -> X5
+    X5 -> X6
+    X6 -> X7
+    X6 -> X8 [label="l not fixed in T"]
+    X7 -> L3 [label="j=j'"]
+    X7 -> X6 [label="else"]
+    X8 -> X13 [label="tp() conflict"]
+    X8 -> X10 [label="w > 0"]
+    X8 -> X9 [label="else"]
+    X9 -> X10 [label="else"]
+    X10 -> X11
+    X11 -> X7
+    X13 -> X7
+    X13 -> L11 [label="conflict"]
 }
