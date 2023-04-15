@@ -117,6 +117,15 @@ type litType struct {
 	index int
 }
 
+// dlit converts a literal to a string representation
+func dlit(l int) string {
+	if l&1 == 1 {
+		return fmt.Sprintf("~%d", l>>1)
+	} else {
+		return fmt.Sprintf("%d", l>>1)
+	}
+}
+
 // scc runs Tarjan's algorithm recursively and outputs a grouping of
 // strongly connected vertices.
 //
@@ -474,30 +483,30 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	// 	}
 	// }
 
-	// // assertTimpIntegrity
-	// assertTimpIntegrity := func() {
-	// 	if bigClauses {
-	// 		return
-	// 	}
+	// assertTimpIntegrity
+	assertTimpIntegrity := func() {
+		if bigClauses {
+			return
+		}
 
-	// 	for l := 2; l <= 2*n+1; l++ {
-	// 		boundary := 0
+		for l := 2; l <= 2*n+1; l++ {
+			boundary := 0
 
-	// 		// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
-	// 		for lp := l + 1; lp < 2*n+1; lp++ {
-	// 			if TIMP[lp] > 0 {
-	// 				boundary = TIMP[lp]
-	// 				break
-	// 			}
-	// 		}
-	// 		if boundary == 0 {
-	// 			boundary = len(TIMP)
-	// 		}
-	// 		if TIMP[l]+2*TSIZE[l] > boundary {
-	// 			log.Panicf("l=%d, boundary=%d, TSIZE[l]=%d", l, boundary, TSIZE[l])
-	// 		}
-	// 	}
-	// }
+			// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
+			for lp := l + 1; lp < 2*n+1; lp++ {
+				if TIMP[lp] > 0 {
+					boundary = TIMP[lp]
+					break
+				}
+			}
+			if boundary == 0 {
+				boundary = len(TIMP)
+			}
+			if TIMP[l]+2*TSIZE[l] > boundary {
+				log.Panicf("l=%d, boundary=%d, TSIZE[l]=%d", l, boundary, TSIZE[l])
+			}
+		}
+	}
 
 	// truth returns a string description of truth values
 	truth := func(t int) string {
@@ -603,7 +612,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			if i > 0 {
 				b.WriteString(",")
 			}
-			b.WriteString(fmt.Sprintf(" {%d}", FORCE[i]))
+			b.WriteString(fmt.Sprintf(" %s", dlit(FORCE[i])))
 		}
 		b.WriteString("\n\n")
 
@@ -616,7 +625,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			} else if k > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(fmt.Sprintf("{%d}", VAR[k]))
+			b.WriteString(fmt.Sprintf("%d", VAR[k]))
 		}
 		b.WriteString("\n\n")
 
@@ -627,7 +636,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			if k > 0 {
 				b.WriteString(",")
 			}
-			b.WriteString(fmt.Sprintf(" %d", R[k]))
+			b.WriteString(fmt.Sprintf(" %s", dlit(R[k])))
 		}
 		b.WriteString("\n\n")
 
@@ -644,12 +653,12 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		// BIMP
 		b.WriteString("BIMP\n")
 		for l := 2; l <= 2*n+1; l++ {
-			b.WriteString(fmt.Sprintf("%d:", l))
+			b.WriteString(fmt.Sprintf("%3s:", dlit(l)))
 			for i := 0; i < BSIZE[l]; i++ {
 				if i > 0 {
 					b.WriteString(",")
 				}
-				b.WriteString(fmt.Sprintf(" %d", BIMP[l][i]))
+				b.WriteString(fmt.Sprintf(" %s", dlit(BIMP[l][i])))
 			}
 			b.WriteString("\n")
 		}
@@ -728,7 +737,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			b.WriteString("TIMP\n")
 			for l := 2; l <= 2*n+1; l++ {
 
-				b.WriteString(fmt.Sprintf("l=%d:", l))
+				b.WriteString(fmt.Sprintf("%3s:", dlit(l)))
 
 				for i := 0; i < TSIZE[l]; i++ {
 					p := TIMP[l] + 2*i
@@ -739,7 +748,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 						b.WriteString(",")
 					}
 
-					b.WriteString(fmt.Sprintf(" {%d,%d}", TIMP[p], TIMP[p+1]))
+					b.WriteString(fmt.Sprintf(" {%s,%s}", dlit(TIMP[p]), dlit(TIMP[p+1])))
 					// pp = LINK[p]
 					// b.WriteString(fmt.Sprintf("->{%d,%d}", TIMP[pp], TIMP[pp+1]))
 					// ppp = LINK[pp]
@@ -1279,6 +1288,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				LINK[ppp] = p
 			}
 		}
+
+		if sanity {
+			assertTimpIntegrity()
+		}
 	}
 
 	// Configure initial permutation of the "free variable" list, that is,
@@ -1721,6 +1734,10 @@ L2:
 			// log.Printf("CAND=%v", CAND[0:C])
 		}
 
+		if debug && stats.Verbosity > 1 {
+			log.Printf("   C=%d, CAND=%v", C, CAND[:C])
+		}
+
 		//
 		// @note X4 [Nest the candidates.]
 		//
@@ -1893,11 +1910,11 @@ L2:
 			b.WriteString(fmt.Sprintf("  S: %d\n", S))
 			b.WriteString("  LL:")
 			for i := 0; i < len(LL); i++ {
-				b.WriteString(fmt.Sprintf(" %2d", LL[i]))
+				b.WriteString(fmt.Sprintf(" %3s", dlit(LL[i])))
 			}
 			b.WriteString("\n  LO:")
 			for i := 0; i < len(LO); i++ {
-				b.WriteString(fmt.Sprintf(" %2d", LO[i]))
+				b.WriteString(fmt.Sprintf(" %3d", LO[i]))
 			}
 			b.WriteString("\n")
 			log.Print(b.String())
@@ -2352,6 +2369,10 @@ L6:
 				}
 			}
 		}
+
+		if sanity {
+			assertTimpIntegrity()
+		}
 	}
 
 	// ∀ (u,v) ready for BIMP consideration
@@ -2697,6 +2718,10 @@ L12:
 					TSIZE[v^1] += 1
 					TSIZE[u^1] += 1
 				}
+			}
+
+			if sanity {
+				assertTimpIntegrity()
 			}
 		}
 
