@@ -1817,20 +1817,19 @@ L2:
 					if len(scc) == 1 {
 						l = scc[0]
 
-						if BSIZE[l] == 0 {
+						// must select one parent for the subforest
+						lp := 0
+						for i := 0; i < BSIZE[l]; i++ {
+							u := BIMP[l][i]
+							if lits[u].isVertex {
+								lp = u
+								break
+							}
+						}
+
+						if lp == 0 {
 							PARENT[l] = 0
 						} else {
-							// must select one parent for the subforest
-							lp := 0
-							for i := 0; i < BSIZE[l]; i++ {
-								lp = BIMP[l][i]
-								if lits[lp].isVertex {
-									break
-								}
-							}
-							if sanity && lp == 0 {
-								log.Panicf("assertion failed: did not find arc from l=%d", l)
-							}
 							PARENT[l] = lp
 							CHILDREN[lp] = append(CHILDREN[lp], l)
 						}
