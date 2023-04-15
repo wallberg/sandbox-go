@@ -503,7 +503,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				boundary = len(TIMP)
 			}
 			if TIMP[l]+2*TSIZE[l] > boundary {
-				log.Panicf("l=%d, boundary=%d, TSIZE[l]=%d", l, boundary, TSIZE[l])
+				log.Panicf("l=%s, boundary=%d, TSIZE[l]=%d", dlit(l), boundary, TSIZE[l])
 			}
 		}
 	}
@@ -583,7 +583,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				}
 				l := R[k]
 				x := l >> 1
-				b.WriteString(fmt.Sprintf("{%d}=%s", l, truth(VAL[x])))
+				b.WriteString(fmt.Sprintf("{%s}=%s", dlit(l), truth(VAL[x])))
 			}
 			b.WriteString("\n")
 
@@ -682,7 +682,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 						}
 					}
 				}
-				b.WriteString(fmt.Sprintf("l=%s%d: ", x, l))
+				b.WriteString(fmt.Sprintf("l=%s%s: ", x, dlit(l)))
 
 				for i, c := range KINX[l] {
 					if x != "f" && i < KSIZE[l] {
@@ -726,7 +726,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 						// }
 						x = "x"
 					}
-					b.WriteString(fmt.Sprintf("%s%d", x, l))
+					b.WriteString(fmt.Sprintf("%s%s", x, dlit(l)))
 				}
 				b.WriteString("\n")
 			}
@@ -834,7 +834,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	binary_propagation := func(l int, T int) bool {
 
 		if debug {
-			log.Printf("  binary_propagation l=%d, T=%s", l, truth(T))
+			log.Printf("  binary_propagation l=%s, T=%s", dlit(l), truth(T))
 		}
 
 		if sanity {
@@ -907,7 +907,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	truth_propagation := func(l int, T int) bool {
 
 		if debug {
-			log.Printf("  truth_propagation l=%d, T=%s", l, truth(T))
+			log.Printf("  truth_propagation l=%s, T=%s", dlit(l), truth(T))
 		}
 
 		l0 = l
@@ -936,7 +936,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				if uFixedTrue {
 					// Case 1. u or v is fixed true, do nothing
 					if debug && stats.Verbosity > 0 {
-						log.Printf(" Case 1. u=%d is fixed true", u)
+						log.Printf(" Case 1. u=%s is fixed true", dlit(u))
 					}
 					continue
 				}
@@ -947,7 +947,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 				if vFixedTrue {
 					// Case 1. u or v is fixed true, do nothing
 					if debug && stats.Verbosity > 0 {
-						log.Printf(" Case 1. v=%d is fixed true", v)
+						log.Printf(" Case 1. v=%s is fixed true", dlit(v))
 					}
 					continue
 				}
@@ -959,7 +959,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 					// Case 2. u and v are fixed false
 					if debug && stats.Verbosity > 0 {
-						log.Printf(" Case 2. u=%d and v=%d are fixed false; CONFLICT", u, v)
+						log.Printf(" Case 2. u=%s and v=%s are fixed false; CONFLICT", dlit(u), dlit(v))
 					}
 					return true
 
@@ -967,7 +967,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 					// Case 3. u is fixed false but v isn't fixed
 					if debug && stats.Verbosity > 0 {
-						log.Printf(" Case 3. u=%d is fixed false but v=%d isn't fixed", u, v)
+						log.Printf(" Case 3. u=%s is fixed false but v=%s isn't fixed", dlit(u), dlit(v))
 					}
 
 					W[i] = v
@@ -981,7 +981,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 					// Case 4. v is fixed false but u isn't fixed
 					if debug && stats.Verbosity > 0 {
-						log.Printf(" Case 4. v=%d is fixed false but u=%d isn't fixed", v, u)
+						log.Printf(" Case 4. v=%s is fixed false but u=%s isn't fixed", dlit(v), dlit(u))
 					}
 
 					W[i] = u
@@ -995,7 +995,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 					// Case 5. Neither u nor v is fixed
 					if debug && stats.Verbosity > 0 {
-						log.Printf(" Case 5. Neither u=%d nor v=%d is fixed", u, v)
+						log.Printf(" Case 5. Neither u=%s nor v=%s is fixed", dlit(u), dlit(v))
 					}
 
 					w += h[d][u] * h[d][v]
@@ -1018,7 +1018,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		//
 
 		if debug {
-			log.Printf("X12. Force l=%d", l)
+			log.Printf("X12. Force l=%s", dlit(l))
 		}
 
 		FORCE[U] = l
@@ -1363,11 +1363,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 	//
 L2:
 	if debug {
-		log.Printf("L2. New node")
 
 		var b strings.Builder
 
-		b.WriteString(fmt.Sprintf("  d=%d, F=%d, N=%d, E=%d, G=%d\n", d, F, N, E, G))
+		b.WriteString(fmt.Sprintf("L2. New node, d=%d, F=%d, N=%d, E=%d, G=%d\n", d, F, N, E, G))
 
 		// VAR
 		b.WriteString("VAR:")
@@ -1388,7 +1387,7 @@ L2:
 				b.WriteString(",")
 			}
 			l := R[k]
-			b.WriteString(fmt.Sprintf(" %d", l))
+			b.WriteString(fmt.Sprintf(" %s", dlit(l)))
 		}
 		b.WriteString("\n")
 
@@ -1440,7 +1439,7 @@ L2:
 							// A contradiction
 							if debug && stats.Verbosity > 0 {
 								dump()
-								log.Printf("L2. BIMP table for %d in R contains %d, which contradicts %d in R", l, lp, lpp)
+								log.Printf("L2. BIMP table for %s in R contains %s, which contradicts %s in R", dlit(l), dlit(lp), dlit(lpp))
 							}
 							goto L15
 						}
@@ -1961,7 +1960,7 @@ L2:
 		//
 	X7:
 		if debug {
-			log.Printf("X7. Move to next")
+			log.Printf("X7. Move to next, l=%s", dlit(l))
 		}
 
 		if U > Up {
@@ -1987,7 +1986,7 @@ L2:
 		//
 	X8:
 		if debug {
-			log.Printf("X8. Compute sharper heuristic, w=%f", w)
+			log.Printf("X8. Compute sharper heuristic, l=%s, w=%f", dlit(l), w)
 		}
 
 		if truth_propagation(l, T) {
@@ -2008,7 +2007,7 @@ L2:
 		// @note X9 [Exploit an autarky.]
 		//
 		if debug {
-			log.Printf("X9. Exploit an autarky, l0=%d, H[%d]=%f", l0, l0, H[l0])
+			log.Printf("X9. Exploit an autarky, l0=%s, H[%d]=%f", dlit(l0), l0, H[l0])
 		}
 
 		if H[l0] == 0 {
@@ -2056,7 +2055,7 @@ L2:
 		//
 	X13:
 		if debug {
-			log.Printf("X13. Recover from conflict")
+			log.Printf("X13. Recover from conflict, T=%d", T)
 		}
 
 		if T < pt {
@@ -2094,7 +2093,7 @@ L3:
 	}
 
 	if debug {
-		log.Printf("  d=%d, l=%d", d, l)
+		log.Printf("  d=%d, l=%s", d, dlit(l))
 	}
 
 	DEC[d] = l
@@ -2108,7 +2107,7 @@ L3:
 L4:
 
 	if debug {
-		log.Printf("L4. Try l")
+		log.Printf("L4. Try l=%s", dlit(l))
 	}
 
 	U = 1
@@ -2197,7 +2196,7 @@ L6:
 	//
 
 	if debug {
-		log.Printf("L7. Promote L=%d to real truth", L)
+		log.Printf("L7. Promote L=%s to real truth", dlit(L))
 	}
 
 	X = L >> 1
@@ -2402,7 +2401,7 @@ L6:
 		//
 
 		if debug {
-			log.Printf("L8. Consider u=%d or v=%d", u, v)
+			log.Printf("L8. Consider u=%s or v=%s", dlit(u), dlit(v))
 		}
 
 		// We have deduced that u or v must be true; five cases arise.
@@ -2413,7 +2412,7 @@ L6:
 		if uFixedTrue {
 			// Case 1. u or v is fixed true, do nothing
 			if debug && stats.Verbosity > 0 {
-				log.Printf(" Case 1. u=%d is fixed true", u)
+				log.Printf(" Case 1. u=%s is fixed true", dlit(u))
 			}
 			continue
 		}
@@ -2424,7 +2423,7 @@ L6:
 		if vFixedTrue {
 			// Case 1. u or v is fixed true, do nothing
 			if debug && stats.Verbosity > 0 {
-				log.Printf(" Case 1. v=%d is fixed true", v)
+				log.Printf(" Case 1. v=%s is fixed true", dlit(v))
 			}
 			continue
 		}
@@ -2436,7 +2435,7 @@ L6:
 
 			// Case 2. u and v are fixed false
 			if debug && stats.Verbosity > 0 {
-				log.Printf(" Case 2. u=%d and v=%d are fixed false; CONFLICT", u, v)
+				log.Printf(" Case 2. u=%s and v=%s are fixed false; CONFLICT", dlit(u), dlit(v))
 			}
 			// Conflict
 			goto L11
@@ -2445,7 +2444,7 @@ L6:
 
 			// Case 3. u is fixed false but v isn't fixed
 			if debug && stats.Verbosity > 0 {
-				log.Printf(" Case 3. u=%d is fixed false but v=%d isn't fixed", u, v)
+				log.Printf(" Case 3. u=%s is fixed false but v=%s isn't fixed", dlit(u), dlit(v))
 			}
 
 			if binary_propagation(v, T) {
@@ -2457,7 +2456,7 @@ L6:
 
 			// Case 4. v is fixed false but u isn't fixed
 			if debug && stats.Verbosity > 0 {
-				log.Printf(" Case 4. v=%d is fixed false but u=%d isn't fixed", v, u)
+				log.Printf(" Case 4. v=%s is fixed false but u=%s isn't fixed", dlit(v), dlit(u))
 			}
 			if binary_propagation(u, T) {
 				// Conflict
@@ -2468,14 +2467,14 @@ L6:
 
 			// Case 5. Neither u nor v is fixed
 			if debug && stats.Verbosity > 0 {
-				log.Printf(" Case 5. Neither u=%d nor v=%d is fixed", u, v)
+				log.Printf(" Case 5. Neither u=%s nor v=%s is fixed", dlit(u), dlit(v))
 			}
 
 			//
 			// @note L9 [Exploit u or v.]
 			//
 			if debug {
-				log.Printf("L9. Exploit u=%d or v=%d", u, v)
+				log.Printf("L9. Exploit u=%s or v=%s", dlit(u), dlit(v))
 			}
 
 			// Store sigma values (Exercise 149)
@@ -2709,6 +2708,7 @@ L12:
 			// Reactivate the TIMP pairs that involve X
 			// (Exercise 137)
 			// @note L12 - TIMP
+
 			for _, l = range []int{2*X + 1, 2 * X} {
 				for i := TSIZE[l] - 1; i >= 0; i-- {
 					p := TIMP[l] + 2*i
@@ -2762,7 +2762,7 @@ L12:
 		BRANCH[d] = 1 // l didn't work out, so try ^l
 
 		if debug {
-			log.Printf("  Trying again, d=%d, branch=%v, l=%d", d, BRANCH[0:d], l)
+			log.Printf("  Trying again, d=%d, branch=%v, l=%s", d, BRANCH[0:d], dlit(l))
 		}
 
 		goto L4
