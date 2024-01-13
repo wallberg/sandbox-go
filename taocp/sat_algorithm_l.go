@@ -493,7 +493,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			boundary := 0
 
 			// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
-			for lp := l + 1; lp < 2*n+1; lp++ {
+			for lp := l + 1; lp <= 2*n+1; lp++ {
 				if TIMP[lp] > 0 {
 					boundary = TIMP[lp]
 					break
@@ -739,8 +739,20 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 				b.WriteString(fmt.Sprintf("%3s:", dlit(l)))
 
-				for i := 0; i < TSIZE[l]; i++ {
-					p := TIMP[l] + 2*i
+				boundary := 0
+
+				// Set boundary to value of the next l' with clauses, ie TIMP[lp] > 0
+				for lp := l + 1; lp <= 2*n+1; lp++ {
+					if TIMP[lp] > 0 {
+						boundary = TIMP[lp]
+						break
+					}
+				}
+				if boundary == 0 {
+					boundary = len(TIMP)
+				}
+
+				for i, p := 0, TIMP[l]; p < boundary; i, p = i+1, p+2 {
 
 					if i == TSIZE[l] {
 						b.WriteString(" |")
@@ -1024,11 +1036,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 		FORCE[U] = l
 		U += 1
 
-		if truth_propagation(l, pt) {
-			return true
-		}
-
-		return false
+		return truth_propagation(l, pt)
 	}
 
 	// lvisit prepares the solution
@@ -1090,6 +1098,10 @@ func SatAlgorithmL(n int, clauses SatClauses,
 
 	if debug {
 		log.Printf("L1. Initialize")
+	}
+
+	if debug {
+		log.Printf("n=%d, Clauses: %v", n, clauses)
 	}
 
 	// Convert the literals in each clause from external to internal format
@@ -1973,7 +1985,7 @@ L2:
 			j = 0
 			BASE += 2 * S
 		}
-
+		log.Print("xxx", BASE, 2*S, pt)
 		if j == jp || (j == 0 && BASE+2*S >= pt) {
 			// Terminate normally
 			goto XTermination
@@ -2129,7 +2141,7 @@ L4:
 	//
 L5:
 	if debug {
-		log.Printf("L5. Accept near truths")
+		log.Printf("L5. Accept near truths, U=%d", U)
 	}
 
 	T = nt
@@ -2144,6 +2156,9 @@ L5:
 		}
 
 		l := FORCE[i]
+		if debug {
+			log.Printf("  forcing l=%s", dlit(l))
+		}
 
 		// Perform the binary propogation routine
 		if binary_propagation(l, T) {
@@ -2167,8 +2182,8 @@ L6:
 
 	// At this point the stacked literals R_k are "really true" for 0 <= k < G,
 	// and "nearly true" for G <= k < E. We want them all to be really true.
-
-	if debug {
+	dump()
+	if sanity {
 		// assertion
 		for k := 0; k < E; k++ {
 			l := R[k]
@@ -2655,6 +2670,8 @@ L12:
 		E -= 1
 		L = R[E]
 		X = L >> 1
+
+		log.Printf("unfixing L=%s", dlit(L))
 
 		if bigClauses {
 			// Restore variable X to all CINX/KINX clauses (Exercise 143)
