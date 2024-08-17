@@ -29,11 +29,8 @@ func TestWordRectangles2by3(t *testing.T) {
 	nTrie.Add("bop")
 	nTrie.Add("qrs")
 
-	results := make(chan string, n)
-	go WordRectangles(&mTrie, &nTrie, results, 0, nil)
-
 	count := 0
-	for range results {
+	for range WordRectangles(&mTrie, &nTrie, 0, nil) {
 		count++
 	}
 
@@ -42,11 +39,9 @@ func TestWordRectangles2by3(t *testing.T) {
 	}
 
 	mTrie.Add("cd")
-	results = make(chan string, n)
-	go WordRectangles(&mTrie, &nTrie, results, 0, nil)
 
 	count = 0
-	for result := range results {
+	for result := range WordRectangles(&mTrie, &nTrie, 0, nil) {
 		count++
 
 		if count == 1 {
@@ -85,13 +80,8 @@ func TestWordRectangles5x6(t *testing.T) {
 
 func singleWordRectangles5x6(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie) {
 
-	n := 6
-
-	results := make(chan string, n)
-	go WordRectangles(mTrie, nTrie, results, 200, nil)
-
 	count := 0
-	for result := range results {
+	for result := range WordRectangles(mTrie, nTrie, 200, nil) {
 		count++
 
 		expected := ""
@@ -113,11 +103,8 @@ func singleWordRectangles5x6(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie
 
 func multiWordRectangles(t *testing.T, mTrie *CPrefixTrie, nTrie *PrefixTrie) {
 
-	results := make(chan string)
-	go MultiWordRectangles(mTrie, nTrie, results, 5, 26, 0)
-
 	count := 0
-	for range results {
+	for range MultiWordRectangles(mTrie, nTrie, 5, 26, 0) {
 		count++
 	}
 

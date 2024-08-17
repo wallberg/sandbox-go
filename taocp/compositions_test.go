@@ -30,12 +30,11 @@ func TestCompositions(t *testing.T) {
 	for i, c := range cases {
 
 		got := make([][]int, 0)
-		Compositions(c.n, func(x []int) bool {
+		for x := range Compositions(c.n) {
 			y := make([]int, len(x))
 			copy(y, x)
 			got = append(got, y)
-			return true
-		})
+		}
 
 		if !reflect.DeepEqual(got, c.expected) {
 			t.Errorf("Expected %v for case %d; got %v", c.expected, i, got)

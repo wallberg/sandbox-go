@@ -49,12 +49,9 @@ func (command wrCommand) Execute(args []string) error {
 		taocp.LoadOSPD4Words(&trie, command.N)
 	}
 
-	words := make(chan string)
+	for word := range taocp.MultiWordRectangles(&mTrie, &nTrie,
+		command.Limit, command.Threads, command.Index) {
 
-	go taocp.MultiWordRectangles(&mTrie, &nTrie, words,
-		command.Limit, command.Threads, command.Index)
-
-	for word := range words {
 		fmt.Println(word)
 	}
 
