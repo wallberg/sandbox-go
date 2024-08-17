@@ -1,6 +1,6 @@
 module github.com/wallberg/sandbox-go
 
-go 1.20
+go 1.23
 
 require (
 	codeberg.org/ac/base62 v0.0.0-20210305150220-e793b546833a
