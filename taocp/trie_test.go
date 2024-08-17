@@ -110,10 +110,8 @@ func TestPrefixTrieTraverse(t *testing.T) {
 	trie.Add("gol")
 	trie.Add("aaa")
 
-	wordsChannel := make(chan string)
 	words := make([]string, 0)
-	go trie.Traverse(wordsChannel)
-	for word := range wordsChannel {
+	for word := range trie.Traverse() {
 		words = append(words, word)
 	}
 
@@ -156,10 +154,8 @@ func TestCPrefixTrieTraverse(t *testing.T) {
 	trie.Add("gol")
 	trie.Add("aaa")
 
-	wordsChannel := make(chan string)
 	words := make([]string, 0)
-	go trie.Traverse(wordsChannel)
-	for word := range wordsChannel {
+	for word := range trie.Traverse() {
 		words = append(words, word)
 	}
 
@@ -220,11 +216,8 @@ func TestCPrefixTrieLoadSGBWords(t *testing.T) {
 		t.Errorf("Expected trie.Count of 5757; got %d", cPrefixTrie.Count)
 	}
 
-	words := make(chan string)
-	go trie.Traverse(words)
-
 	i := 0
-	for word := range words {
+	for word := range trie.Traverse() {
 		expected := ""
 		switch i {
 		case 0:

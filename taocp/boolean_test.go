@@ -26,7 +26,7 @@ func TestBitPairs(t *testing.T) {
 func testBitPairs(t *testing.T, v []int, j int, expected []int) {
 
 	i := 0
-	BitPairs(v, j, func(k int, kp int) {
+	for k, kp := range BitPairs(v, j) {
 		for _, result := range []int{k, kp} {
 			if result != expected[i] {
 				t.Errorf("For case v=%d and j=%d, expected %d for i=%d; got %d",
@@ -34,7 +34,7 @@ func testBitPairs(t *testing.T, v []int, j int, expected []int) {
 			}
 			i++
 		}
-	})
+	}
 
 	if i != len(expected) {
 		t.Errorf("For case v=%d and j=%d, expected %d results; got %d",
@@ -64,7 +64,7 @@ func TestMaximalSubcubes(t *testing.T) {
 func testMaximalSubcubes(t *testing.T, n int, v []int, expected []int) {
 
 	i := 0
-	MaximalSubcubes(n, v, func(a int, b int) {
+	for a, b := range MaximalSubcubes(n, v) {
 		for _, result := range []int{a, b} {
 			if result != expected[i] {
 				t.Errorf("For case v=%d and n=%d, expected %d for i=%d; got %d",
@@ -72,7 +72,7 @@ func testMaximalSubcubes(t *testing.T, n int, v []int, expected []int) {
 			}
 			i++
 		}
-	})
+	}
 
 	if i != len(expected) {
 		t.Errorf("For case v=%d and n=%d, expected %d results; got %d",
@@ -89,7 +89,8 @@ func BenchmarkMaximalSubcubes(b *testing.B) {
 				for i := range v {
 					v[i] = i
 				}
-				MaximalSubcubes(n, v, func(a int, b int) {})
+				for range MaximalSubcubes(n, v) {
+				}
 			}
 		})
 	}

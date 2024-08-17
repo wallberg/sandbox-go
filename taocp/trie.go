@@ -2,6 +2,7 @@ package taocp
 
 import (
 	"fmt"
+	"iter"
 	"strings"
 
 	"github.com/gobuffalo/packr"
@@ -11,7 +12,7 @@ import (
 // Trie represents a trie for words of all the same size
 type Trie interface {
 	Add(string)
-	Traverse(chan string)
+	Traverse() iter.Seq[string]
 }
 
 // PrefixTrie represents a trie for words with the full prefix path
@@ -96,55 +97,56 @@ func (trie *PrefixTrie) Add(word string) {
 	trie.Count++
 }
 
-// Traverse sends to the out channel all words of the trie, in lexicographic
-// order
-func (trie *PrefixTrie) Traverse(out chan string) {
-	// Close the output channel on exit
-	defer close(out)
+// Traverse iterates over all words of the trie, in lexicographic order
+func (trie *PrefixTrie) Traverse() iter.Seq[string] {
 
-	// node pointers, one per letter in the word
-	node := make([]int, trie.Size)
-	letter := make([]byte, trie.Size)
-	word := make([]byte, trie.Size)
+	return func(yield func(string) bool) {
+		// node pointers, one per letter in the word
+		node := make([]int, trie.Size)
+		letter := make([]byte, trie.Size)
+		word := make([]byte, trie.Size)
 
-	i := 0 // index of letter in the word, node, and letter arrays
-	letter[i] = 0
-	node[i] = 0
+		i := 0 // index of letter in the word, node, and letter arrays
+		letter[i] = 0
+		node[i] = 0
 
-	for {
-		switch {
+		for {
+			switch {
 
-		case i < 0:
-			// Traversal complete
-			return
+			case i < 0:
+				// Traversal complete
+				return
 
-		case letter[i] == 26:
-			// Finished looking at all letters for this node
-			i--
-			if i >= 0 {
-				letter[i]++
-			}
+			case letter[i] == 26:
+				// Finished looking at all letters for this node
+				i--
+				if i >= 0 {
+					letter[i]++
+				}
 
-		case trie.Nodes[node[i]][letter[i]] == 0:
-			// Advance to next letter
-			letter[i]++
-
-		default:
-			// Assign letter to the word
-			word[i] = letter[i] + 97
-			if i == trie.Size-1 {
-				// Visit the complete word
-				out <- string(word)
-			}
-
-			if i < trie.Size-1 {
-				// Advance to next node
-				i++
-				node[i] = trie.Nodes[node[i-1]][letter[i-1]]
-				letter[i] = 0
-			} else {
+			case trie.Nodes[node[i]][letter[i]] == 0:
 				// Advance to next letter
 				letter[i]++
+
+			default:
+				// Assign letter to the word
+				word[i] = letter[i] + 97
+				if i == trie.Size-1 {
+					// Visit the complete word
+					if !yield(string(word)) {
+						return
+					}
+				}
+
+				if i < trie.Size-1 {
+					// Advance to next node
+					i++
+					node[i] = trie.Nodes[node[i-1]][letter[i-1]]
+					letter[i] = 0
+				} else {
+					// Advance to next letter
+					letter[i]++
+				}
 			}
 		}
 	}
@@ -204,48 +206,49 @@ func (trie *CPrefixTrie) Add(word string) {
 	}
 }
 
-// Traverse sends to the out channel all words of the trie, in lexicographic
-// order
-func (trie *CPrefixTrie) Traverse(out chan string) {
-	// Close the output channel on exit
-	defer close(out)
+// Traverse iterates over all words of the trie, in lexicographic order
+func (trie *CPrefixTrie) Traverse() iter.Seq[string] {
 
-	// node pointers, one per letter in the word
-	link := make([]*Link, trie.Size)
-	word := make([]byte, trie.Size)
+	return func(yield func(string) bool) {
+		// node pointers, one per letter in the word
+		link := make([]*Link, trie.Size)
+		word := make([]byte, trie.Size)
 
-	i := 0 // index of letter in the word, node, and letter arrays
-	link[i] = &trie.Nodes[0]
+		i := 0 // index of letter in the word, node, and letter arrays
+		link[i] = &trie.Nodes[0]
 
-	for {
-		switch {
+		for {
+			switch {
 
-		case i < 0:
-			// Traversal complete
-			return
+			case i < 0:
+				// Traversal complete
+				return
 
-		case link[i].Right == nil:
-			// Finished looking at all letters for this node
-			i--
-			if i >= 0 {
-				link[i] = link[i].Right
-			}
+			case link[i].Right == nil:
+				// Finished looking at all letters for this node
+				i--
+				if i >= 0 {
+					link[i] = link[i].Right
+				}
 
-		default:
-			// Assign letter to the word
-			word[i] = link[i].Letter + 97
-			if i == trie.Size-1 {
-				// Visit the complete word
-				out <- string(word)
-			}
+			default:
+				// Assign letter to the word
+				word[i] = link[i].Letter + 97
+				if i == trie.Size-1 {
+					// Visit the complete word
+					if !yield(string(word)) {
+						return
+					}
+				}
 
-			if i < trie.Size-1 {
-				// Advance to next node
-				i++
-				link[i] = &trie.Nodes[link[i-1].Node]
-			} else {
-				// Advance to next letter
-				link[i] = link[i].Right
+				if i < trie.Size-1 {
+					// Advance to next node
+					i++
+					link[i] = &trie.Nodes[link[i-1].Node]
+				} else {
+					// Advance to next letter
+					link[i] = link[i].Right
+				}
 			}
 		}
 	}
