@@ -297,7 +297,7 @@ func PolyominoPacking(x int, y int, n int, includeStraight bool,
 	g := graph.CartesianProduct(graph.Path(x), graph.Path(y))
 
 	// Generate shapes which fit into the grid
-	graph.ConnectedSubsets(g, n, func(solution []int) bool {
+	for solution := range graph.ConnectedSubsets(g, n) {
 
 		// Translate the subgraph into a polyomino shape
 		var po Polyomino
@@ -311,9 +311,7 @@ func PolyominoPacking(x int, y int, n int, includeStraight bool,
 				pos = append(pos, po)
 			}
 		}
-
-		return false
-	})
+	}
 
 	return pos
 }

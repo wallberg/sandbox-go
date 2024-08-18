@@ -156,12 +156,11 @@ func TestConnectedSubsetsVertex(t *testing.T) {
 	for _, c := range cases {
 		var got [][]int
 
-		ConnectedSubsetsVertex(c.g, c.n, c.v, func(solution []int) bool {
+		for solution := range ConnectedSubsetsVertex(c.g, c.n, c.v) {
 			cp := make([]int, c.n)
 			copy(cp, solution)
 			got = append(got, cp)
-			return false
-		})
+		}
 
 		if !reflect.DeepEqual(got, c.want) {
 			t.Errorf("Got %v; want %v", got, c.want)
@@ -191,10 +190,9 @@ func TestConnectedSubsets(t *testing.T) {
 		g := CartesianProduct(Path(c.n), Path(c.n))
 		count := 0
 
-		ConnectedSubsets(g, c.n, func(solution []int) bool {
+		for range ConnectedSubsets(g, c.n) {
 			count++
-			return false
-		})
+		}
 
 		if !reflect.DeepEqual(count, c.count) {
 			t.Errorf("Got %v; want %v", count, c.count)

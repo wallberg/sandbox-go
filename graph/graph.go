@@ -2,6 +2,7 @@ package graph
 
 import (
 	"fmt"
+	"iter"
 	"log"
 	"sort"
 	"strings"
@@ -125,339 +126,232 @@ func init() {
 
 // ConnectedSubsetsVertex generates all connected subsets in g of size n which
 // contain vertex v. Implements TAOCP Algorithm R from 7.2.2 Exercise 75.
-func ConnectedSubsetsVertex(g graph.Iterator, n int, v int,
-	visit func([]int) (halt bool)) {
+func ConnectedSubsetsVertex(g graph.Iterator, n int, v int) iter.Seq[[]int] {
 
-	// This algorithm does not handle n=1 so treat as a special case.
-	if n == 1 {
-		visit([]int{v})
-		return
-	}
+	return func(yield func(solution []int) bool) {
 
-	var (
-		l   int    // backtrack level
-		i   int    // an index
-		a   *Arc   // a linked list of edges to neighbor
-		u   int    // a vertex
-		vs  []int  // list of vertices
-		is  []int  // list of indices
-		as  []*Arc // list of linked list of edges to neightbors
-		tag []int  // number of times a vertex has been tagged
-	)
-
-	dump := func() {
-		log.Printf("| i=%d, a=%v, v=%d, u=%d", i, a, v, u)
-		log.Printf("| is=%v, as=%v, vs=%v",
-			is[0:l], as[0:l], vs[0:l])
-		log.Printf("| tag=%v", tag)
-	}
-
-	if debug {
-		log.Printf("R1. input graph g")
-		for v := 0; v < g.Order(); v++ {
-			var l strings.Builder
-			l.WriteString(fmt.Sprintf("  v=%d ->", v))
-			for a := Arcs(g, v); a != nil; a = a.next {
-				l.WriteString((fmt.Sprintf(" %d", a.v)))
-			}
-			log.Print(l.String())
-		}
-	}
-
-	// R1. [Initialize.]
-
-	vs = make([]int, n)
-	is = make([]int, n)
-	as = make([]*Arc, n)
-
-	tag = make([]int, g.Order())
-	vs[0] = v
-	i = 0
-	a = Arcs(g, v)
-	as[0] = a
-	tag[v] = 1
-	l = 1
-
-	if debug {
-		log.Printf("R1. Initialized at level %d", l)
-		dump()
-	}
-
-	goto R4
-
-R2:
-	// R2. [Enter level l.]
-
-	if debug {
-		log.Printf("R2. Enter level %d", l)
-		dump()
-	}
-
-	if l == n {
-		if done := visit(vs); done {
+		// This algorithm does not handle n=1 so treat as a special case.
+		if n == 1 {
+			yield([]int{v})
 			return
 		}
-		l = n - 1
-	}
 
-R3:
-	// R3. [Advance a.]
-	if debug {
-		if a.next != nil {
-			log.Printf("R3. Advance a from %v to %v", a, a.next)
+		var (
+			l   int    // backtrack level
+			i   int    // an index
+			a   *Arc   // a linked list of edges to neighbor
+			u   int    // a vertex
+			vs  []int  // list of vertices
+			is  []int  // list of indices
+			as  []*Arc // list of linked list of edges to neightbors
+			tag []int  // number of times a vertex has been tagged
+		)
+
+		dump := func() {
+			log.Printf("| i=%d, a=%v, v=%d, u=%d", i, a, v, u)
+			log.Printf("| is=%v, as=%v, vs=%v",
+				is[0:l], as[0:l], vs[0:l])
+			log.Printf("| tag=%v", tag)
+		}
+
+		if debug {
+			log.Printf("R1. input graph g")
+			for v := 0; v < g.Order(); v++ {
+				var l strings.Builder
+				l.WriteString(fmt.Sprintf("  v=%d ->", v))
+				for a := Arcs(g, v); a != nil; a = a.next {
+					l.WriteString((fmt.Sprintf(" %d", a.v)))
+				}
+				log.Print(l.String())
+			}
+		}
+
+		// R1. [Initialize.]
+
+		vs = make([]int, n)
+		is = make([]int, n)
+		as = make([]*Arc, n)
+
+		tag = make([]int, g.Order())
+		vs[0] = v
+		i = 0
+		a = Arcs(g, v)
+		as[0] = a
+		tag[v] = 1
+		l = 1
+
+		if debug {
+			log.Printf("R1. Initialized at level %d", l)
 			dump()
 		}
-	}
 
-	a = a.next
+		goto R4
 
-R4:
-	// R4. [Done with level?]
-	if a != nil {
-		goto R5
-	}
+	R2:
+		// R2. [Enter level l.]
 
-	if i == l-1 {
-		goto R6
-	}
-
-	i++
-	v = vs[i]
-	a = Arcs(g, v)
-
-	if debug {
-		log.Printf("R4. Advance i=%d, v=%d, a=%v", i, v, a)
-		dump()
-	}
-
-R5:
-	// R5. [Try a.]
-	u = a.v
-	tag[u]++
-
-	if debug {
-		log.Printf("R5. Try a=%v", a)
-		dump()
-	}
-
-	if tag[u] > 1 {
 		if debug {
-			log.Printf("R5. tag[%d]=%d > 1", u, tag[u])
+			log.Printf("R2. Enter level %d", l)
+			dump()
 		}
+
+		if l == n {
+			if !yield(vs) {
+				return
+			}
+			l = n - 1
+		}
+
+	R3:
+		// R3. [Advance a.]
+		if debug {
+			if a.next != nil {
+				log.Printf("R3. Advance a from %v to %v", a, a.next)
+				dump()
+			}
+		}
+
+		a = a.next
+
+	R4:
+		// R4. [Done with level?]
+		if a != nil {
+			goto R5
+		}
+
+		if i == l-1 {
+			goto R6
+		}
+
+		i++
+		v = vs[i]
+		a = Arcs(g, v)
+
+		if debug {
+			log.Printf("R4. Advance i=%d, v=%d, a=%v", i, v, a)
+			dump()
+		}
+
+	R5:
+		// R5. [Try a.]
+		u = a.v
+		tag[u]++
+
+		if debug {
+			log.Printf("R5. Try a=%v", a)
+			dump()
+		}
+
+		if tag[u] > 1 {
+			if debug {
+				log.Printf("R5. tag[%d]=%d > 1", u, tag[u])
+			}
+			goto R3
+		}
+
+		is[l] = i
+		as[l] = a
+		vs[l] = u
+		l++
+
+		goto R2
+
+	R6:
+		// R6. [Backtrack.]
+		if debug {
+			log.Printf("R6. Backtrack")
+			dump()
+		}
+
+		l--
+		if l == 0 {
+			return
+		}
+
+		i = is[l]
+
+		// untag all neighbors of v_k, for l >= k > i
+		for k := i + 1; k <= l; k++ {
+			if debug {
+				log.Printf("|  Untagging neighbors of vs[%d]=%d", k, vs[k])
+			}
+			g.Visit(vs[k], func(w int, c int64) bool {
+				tag[w]--
+				return false
+			})
+		}
+
+		a = as[l].next
+		for a != nil {
+			tag[a.v]--
+			a = a.next
+		}
+
+		a = as[l]
+
+		if debug {
+			log.Printf("R6. Untagging complete")
+			dump()
+		}
+
 		goto R3
 	}
-
-	is[l] = i
-	as[l] = a
-	vs[l] = u
-	l++
-
-	goto R2
-
-R6:
-	// R6. [Backtrack.]
-	if debug {
-		log.Printf("R6. Backtrack")
-		dump()
-	}
-
-	l--
-	if l == 0 {
-		return
-	}
-
-	i = is[l]
-
-	// untag all neighbors of v_k, for l >= k > i
-	for k := i + 1; k <= l; k++ {
-		if debug {
-			log.Printf("|  Untagging neighbors of vs[%d]=%d", k, vs[k])
-		}
-		g.Visit(vs[k], func(w int, c int64) bool {
-			tag[w]--
-			return false
-		})
-	}
-
-	a = as[l].next
-	for a != nil {
-		tag[a.v]--
-		a = a.next
-	}
-
-	a = as[l]
-
-	if debug {
-		log.Printf("R6. Untagging complete")
-		dump()
-	}
-
-	goto R3
 }
 
 // ConnectedSubsets generates all connected subsets in g of size n.
 // Implements TAOCP Algorithm R from 7.2.2 Exercise 76.
-func ConnectedSubsets(g graph.Iterator, n int,
-	visit func([]int) (halt bool)) {
+func ConnectedSubsets(g graph.Iterator, n int) iter.Seq[[]int] {
 
-	// This algorithm does not handle n=1 so treat as a special case.
-	if n == 1 {
-		for v := 0; v < g.Order(); v++ {
-			if done := visit([]int{v}); done {
-				return
+	return func(yield func([]int) bool) {
+
+		// This algorithm does not handle n=1 so treat as a special case.
+		if n == 1 {
+			for v := 0; v < g.Order(); v++ {
+				if !yield([]int{v}) {
+					return
+				}
 			}
-		}
-		return
-	}
-
-	var (
-		l   int    // backtrack level
-		i   int    // an index
-		a   *Arc   // a linked list of edges to neighbor
-		u   int    // a vertex
-		v   int    // current vertex for inclusion
-		vs  []int  // list of vertices
-		is  []int  // list of indices
-		as  []*Arc // list of linked list of edges to neightbors
-		tag []int  // number of times a vertex has been tagged
-	)
-
-	dump := func() {
-		log.Printf("| i=%d, a=%v, v=%d, u=%d", i, a, v, u)
-		log.Printf("| is=%v, as=%v, vs=%v",
-			is[0:l], as[0:l], vs[0:l])
-		log.Printf("| tag=%v", tag)
-	}
-
-	if debug {
-		log.Printf("R1. input graph g")
-		for v := 0; v < g.Order(); v++ {
-			var l strings.Builder
-			l.WriteString(fmt.Sprintf("  v=%d ->", v))
-			for a := Arcs(g, v); a != nil; a = a.next {
-				l.WriteString((fmt.Sprintf(" %d", a.v)))
-			}
-			log.Print(l.String())
-		}
-	}
-
-	// R1. [Initialize.]
-	v = 0
-	vs = make([]int, n)
-	is = make([]int, n)
-	as = make([]*Arc, n)
-
-	tag = make([]int, g.Order())
-
-	vs[0] = v
-	i = 0
-	a = Arcs(g, v)
-	as[0] = a
-	tag[v] = 1
-	l = 1
-
-	if debug {
-		log.Printf("R1. Initialized at level %d", l)
-		dump()
-	}
-
-	goto R4
-
-R2:
-	// R2. [Enter level l.]
-
-	if debug {
-		log.Printf("R2. Enter level %d", l)
-		dump()
-	}
-
-	if l == n {
-		visit(vs)
-		l = n - 1
-	}
-
-R3:
-	// R3. [Advance a.]
-	if debug {
-		if a.next != nil {
-			log.Printf("R3. Advance a from %v to %v", a, a.next)
-			dump()
-		}
-	}
-
-	a = a.next
-
-R4:
-	// R4. [Done with level?]
-	if a != nil {
-		goto R5
-	}
-
-	if i == l-1 {
-		goto R6
-	}
-
-	i++
-	v = vs[i]
-	a = Arcs(g, v)
-
-	if debug {
-		log.Printf("R4. Advance i=%d, v=%d, a=%v", i, v, a)
-		dump()
-	}
-
-R5:
-	// R5. [Try a.]
-	u = a.v
-	tag[u]++
-
-	if debug {
-		log.Printf("R5. Try a=%v", a)
-		dump()
-	}
-
-	if tag[u] > 1 {
-		if debug {
-			log.Printf("R5. tag[%d]=%d > 1", u, tag[u])
-		}
-		goto R3
-	}
-
-	is[l] = i
-	as[l] = a
-	vs[l] = u
-	l++
-
-	goto R2
-
-R6:
-	// R6. [Backtrack.]
-	if debug {
-		log.Printf("R6. Backtrack")
-		dump()
-	}
-
-	l--
-	if l == 0 {
-		if debug {
-			log.Printf("| STOP v=%d", v)
-		}
-
-		if v == g.Order()-1 {
 			return
 		}
 
-		// Untag the neighbors of v, thus leaving v tagged. Tricky.
-		g.Visit(v, func(w int, c int64) bool {
-			tag[w]--
-			return false
-		})
+		var (
+			l   int    // backtrack level
+			i   int    // an index
+			a   *Arc   // a linked list of edges to neighbor
+			u   int    // a vertex
+			v   int    // current vertex for inclusion
+			vs  []int  // list of vertices
+			is  []int  // list of indices
+			as  []*Arc // list of linked list of edges to neightbors
+			tag []int  // number of times a vertex has been tagged
+		)
 
-		v++
+		dump := func() {
+			log.Printf("| i=%d, a=%v, v=%d, u=%d", i, a, v, u)
+			log.Printf("| is=%v, as=%v, vs=%v",
+				is[0:l], as[0:l], vs[0:l])
+			log.Printf("| tag=%v", tag)
+		}
 
 		if debug {
-			log.Printf("R6. Initialize v=%d", v)
+			log.Printf("R1. input graph g")
+			for v := 0; v < g.Order(); v++ {
+				var l strings.Builder
+				l.WriteString(fmt.Sprintf("  v=%d ->", v))
+				for a := Arcs(g, v); a != nil; a = a.next {
+					l.WriteString((fmt.Sprintf(" %d", a.v)))
+				}
+				log.Print(l.String())
+			}
 		}
+
+		// R1. [Initialize.]
+		v = 0
+		vs = make([]int, n)
+		is = make([]int, n)
+		as = make([]*Arc, n)
+
+		tag = make([]int, g.Order())
 
 		vs[0] = v
 		i = 0
@@ -467,41 +361,154 @@ R6:
 		l = 1
 
 		if debug {
+			log.Printf("R1. Initialized at level %d", l)
 			dump()
 		}
 
 		goto R4
-	}
 
-	i = is[l]
-	v = vs[i]
+	R2:
+		// R2. [Enter level l.]
 
-	// untag all neighbors of v_k, for l >= k > i
-	for k := i + 1; k <= l; k++ {
 		if debug {
-			log.Printf("|  Untagging neighbors of vs[%d]=%d", k, vs[k])
+			log.Printf("R2. Enter level %d", l)
+			dump()
 		}
-		g.Visit(vs[k], func(w int, c int64) bool {
-			tag[w]--
-			return false
-		})
-	}
 
-	a = as[l].next
-	for a != nil {
-		tag[a.v]--
+		if l == n {
+			if !yield(vs) {
+				return
+			}
+			l = n - 1
+		}
+
+	R3:
+		// R3. [Advance a.]
+		if debug {
+			if a.next != nil {
+				log.Printf("R3. Advance a from %v to %v", a, a.next)
+				dump()
+			}
+		}
+
 		a = a.next
+
+	R4:
+		// R4. [Done with level?]
+		if a != nil {
+			goto R5
+		}
+
+		if i == l-1 {
+			goto R6
+		}
+
+		i++
+		v = vs[i]
+		a = Arcs(g, v)
+
+		if debug {
+			log.Printf("R4. Advance i=%d, v=%d, a=%v", i, v, a)
+			dump()
+		}
+
+	R5:
+		// R5. [Try a.]
+		u = a.v
+		tag[u]++
+
+		if debug {
+			log.Printf("R5. Try a=%v", a)
+			dump()
+		}
+
+		if tag[u] > 1 {
+			if debug {
+				log.Printf("R5. tag[%d]=%d > 1", u, tag[u])
+			}
+			goto R3
+		}
+
+		is[l] = i
+		as[l] = a
+		vs[l] = u
+		l++
+
+		goto R2
+
+	R6:
+		// R6. [Backtrack.]
+		if debug {
+			log.Printf("R6. Backtrack")
+			dump()
+		}
+
+		l--
+		if l == 0 {
+			if debug {
+				log.Printf("| STOP v=%d", v)
+			}
+
+			if v == g.Order()-1 {
+				return
+			}
+
+			// Untag the neighbors of v, thus leaving v tagged. Tricky.
+			g.Visit(v, func(w int, c int64) bool {
+				tag[w]--
+				return false
+			})
+
+			v++
+
+			if debug {
+				log.Printf("R6. Initialize v=%d", v)
+			}
+
+			vs[0] = v
+			i = 0
+			a = Arcs(g, v)
+			as[0] = a
+			tag[v] = 1
+			l = 1
+
+			if debug {
+				dump()
+			}
+
+			goto R4
+		}
+
+		i = is[l]
+		v = vs[i]
+
+		// untag all neighbors of v_k, for l >= k > i
+		for k := i + 1; k <= l; k++ {
+			if debug {
+				log.Printf("|  Untagging neighbors of vs[%d]=%d", k, vs[k])
+			}
+			g.Visit(vs[k], func(w int, c int64) bool {
+				tag[w]--
+				return false
+			})
+		}
+
+		a = as[l].next
+		for a != nil {
+			tag[a.v]--
+			a = a.next
+		}
+
+		a = as[l]
+
+		if debug {
+			log.Printf("R6. Untagging complete")
+			dump()
+		}
+
+		goto R3
+
 	}
-
-	a = as[l]
-
-	if debug {
-		log.Printf("R6. Untagging complete")
-		dump()
-	}
-
-	goto R3
-
 }
 
 // RemoveIsolated generates a new graph with isolated vertices (outdegree zero) removed.
