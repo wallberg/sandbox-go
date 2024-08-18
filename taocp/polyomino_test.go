@@ -170,11 +170,9 @@ func TestPolyominoes(t *testing.T) {
 		count := 0
 		if len(options) > 0 {
 			stats := &ExactCoverStats{Debug: false, Progress: true, Delta: 10000000}
-			ExactCover(items, options, sitems, stats,
-				func(solution [][]string) bool {
-					count++
-					return true
-				})
+			for range ExactCover(items, options, sitems, stats) {
+				count++
+			}
 		}
 
 		if count != c.count {

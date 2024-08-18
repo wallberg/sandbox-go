@@ -57,14 +57,12 @@ func TestExactCover(t *testing.T) {
 	count := 0
 	var stats ExactCoverStats
 
-	ExactCover(xcItems, xcOptions, []string{}, &stats,
-		func(solution [][]string) bool {
-			if !reflect.DeepEqual(solution, xcExpected) {
-				t.Errorf("Expected %v; got %v", xcExpected, solution)
-			}
-			count++
-			return true
-		})
+	for solution := range ExactCover(xcItems, xcOptions, []string{}, &stats) {
+		if !reflect.DeepEqual(solution, xcExpected) {
+			t.Errorf("Expected %v; got %v", xcExpected, solution)
+		}
+		count++
+	}
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -81,25 +79,22 @@ func TestLangfordPairs(t *testing.T) {
 
 	expected := []int{3, 1, 2, 1, 3, 2}
 	count = 0
-	LangfordPairs(3, nil,
-		func(solution []int) bool {
-			if !reflect.DeepEqual(solution, expected) {
-				t.Errorf("Expected %v; got %v", expected, solution)
-			}
-			count++
-			return true
-		})
+	for solution := range LangfordPairs(3, nil) {
+		if !reflect.DeepEqual(solution, expected) {
+			t.Errorf("Expected %v; got %v", expected, solution)
+		}
+		count++
+	}
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
 	}
 
 	count = 0
-	LangfordPairs(7, nil,
-		func(solution []int) bool {
-			count++
-			return false // halt after the first solution
-		})
+	for range LangfordPairs(7, nil) {
+		count++
+		break // halt after the first solution
+	}
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -114,7 +109,9 @@ func TestLangfordPairs(t *testing.T) {
 func testLangfordPairs(t *testing.T, n int, expected int) {
 
 	count := 0
-	LangfordPairs(n, nil, func(solution []int) bool { count++; return true })
+	for range LangfordPairs(n, nil) {
+		count++
+	}
 
 	if count != expected {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -125,7 +122,8 @@ func BenchmarkLangfordPairs(b *testing.B) {
 	for _, n := range []int{6, 8, 10, 12} {
 		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
-				LangfordPairs(n, nil, func([]int) bool { return true })
+				for range LangfordPairs(n, nil) {
+				}
 			}
 		})
 	}
@@ -148,17 +146,15 @@ func TestNQueens(t *testing.T) {
 	}
 
 	count := 0
-	NQueens(4, nil,
-		func(solution []string) bool {
-			if count == 0 && !reflect.DeepEqual(solution, expected0) {
-				t.Errorf("Expected %v; got %v", expected0, solution)
-			}
-			if count == 1 && !reflect.DeepEqual(solution, expected1) {
-				t.Errorf("Expected %v; got %v", expected1, solution)
-			}
-			count++
-			return true
-		})
+	for solution := range NQueens(4, nil) {
+		if count == 0 && !reflect.DeepEqual(solution, expected0) {
+			t.Errorf("Expected %v; got %v", expected0, solution)
+		}
+		if count == 1 && !reflect.DeepEqual(solution, expected1) {
+			t.Errorf("Expected %v; got %v", expected1, solution)
+		}
+		count++
+	}
 
 	if count != 2 {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -171,7 +167,9 @@ func TestNQueens(t *testing.T) {
 func testNQueens(t *testing.T, n int, expected int) {
 
 	count := 0
-	NQueens(n, nil, func(solution []string) bool { count++; return true })
+	for range NQueens(n, nil) {
+		count++
+	}
 
 	if count != expected {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -182,7 +180,8 @@ func BenchmarkNQueens(b *testing.B) {
 	for _, n := range []int{8, 11, 13} {
 		b.Run(fmt.Sprintf("%d", n), func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
-				NQueens(n, nil, func([]string) bool { return true })
+				for range NQueens(n, nil) {
+				}
 			}
 		})
 	}
@@ -322,14 +321,12 @@ func TestSudoku(t *testing.T) {
 
 func testSudoku(t *testing.T, input [9][9]int, expected [9][9]int) {
 	count := 0
-	Sudoku(input, nil,
-		func(solution [9][9]int) bool {
-			if !reflect.DeepEqual(solution, expected) {
-				t.Errorf("Expected %v; got %v", expected, solution)
-			}
-			count++
-			return true
-		})
+	for solution := range Sudoku(input, nil) {
+		if !reflect.DeepEqual(solution, expected) {
+			t.Errorf("Expected %v; got %v", expected, solution)
+		}
+		count++
+	}
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -339,32 +336,38 @@ func testSudoku(t *testing.T, input [9][9]int, expected [9][9]int) {
 func BenchmarkSudoku(b *testing.B) {
 	b.Run("input1", func(b *testing.B) {
 		for repeat := 0; repeat < b.N; repeat++ {
-			Sudoku(input1, nil, func([9][9]int) bool { return true })
+			for range Sudoku(input1, nil) {
+			}
 		}
 	})
 	b.Run("input2", func(b *testing.B) {
 		for repeat := 0; repeat < b.N; repeat++ {
-			Sudoku(input2, nil, func([9][9]int) bool { return true })
+			for range Sudoku(input2, nil) {
+			}
 		}
 	})
 	b.Run("input3", func(b *testing.B) {
 		for repeat := 0; repeat < b.N; repeat++ {
-			Sudoku(input3, nil, func([9][9]int) bool { return true })
+			for range Sudoku(input3, nil) {
+			}
 		}
 	})
 	b.Run("input4", func(b *testing.B) {
 		for repeat := 0; repeat < b.N; repeat++ {
-			Sudoku(input4, nil, func([9][9]int) bool { return true })
+			for range Sudoku(input4, nil) {
+			}
 		}
 	})
 	b.Run("input5", func(b *testing.B) {
 		for repeat := 0; repeat < b.N; repeat++ {
-			Sudoku(input5, nil, func([9][9]int) bool { return true })
+			for range Sudoku(input5, nil) {
+			}
 		}
 	})
 	b.Run("input6", func(b *testing.B) {
 		for repeat := 0; repeat < b.N; repeat++ {
-			Sudoku(input6, nil, func([9][9]int) bool { return true })
+			for range Sudoku(input6, nil) {
+			}
 		}
 	})
 }
