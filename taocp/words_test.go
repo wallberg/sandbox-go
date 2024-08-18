@@ -77,10 +77,9 @@ func TestDoubleWordSquare(t *testing.T) {
 		xccOptions := &XCCOptions{Exercise83: c.removeTranspose}
 
 		count := 0
-		DoubleWordSquare(c.words, stats, xccOptions, func(s []string) bool {
+		for range DoubleWordSquare(c.words, stats, xccOptions) {
 			count++
-			return true
-		})
+		}
 
 		if count != c.count {
 			t.Errorf("Got %d solutions for case #%d; want %d", count, i, c.count)
@@ -163,7 +162,7 @@ func TestDoubleWordSquareMinimax(t *testing.T) {
 		}
 
 		var got []string
-		DoubleWordSquare(c.words, stats, xccOptions, func(s []string) bool {
+		for s := range DoubleWordSquare(c.words, stats, xccOptions) {
 			got = s
 			if stats.Debug || stats.Progress {
 				// Determine max word position
@@ -180,8 +179,7 @@ func TestDoubleWordSquareMinimax(t *testing.T) {
 				}
 				log.Printf("m=%d, %v", m, s)
 			}
-			return true
-		})
+		}
 
 		if !reflect.DeepEqual(got, c.solution) {
 			t.Errorf("Got solution %v for case #%d; want %v", got, i, c.solution)
@@ -261,7 +259,7 @@ func TestExercise_7221_89(t *testing.T) {
 		}
 
 		var got []string
-		DoubleWordSquare(words, stats, xccOptions, func(s []string) bool {
+		for s := range DoubleWordSquare(words, stats, xccOptions) {
 			got = s
 			if stats.Debug || stats.Progress {
 				// Determine max word position
@@ -278,8 +276,7 @@ func TestExercise_7221_89(t *testing.T) {
 				}
 				log.Printf("m=%d, %v", m, s)
 			}
-			return true
-		})
+		}
 
 		if !reflect.DeepEqual(got, c.solution) {
 			t.Errorf("For case #%d got solution %v; want %v", i, got, c.solution)
@@ -491,7 +488,7 @@ func TestExercise_7221_90(t *testing.T) {
 		mMin := math.MaxInt64
 		var got [][]string // list of solutions with the minimum m value
 
-		WordStair(words, c.p, c.left, stats, xccOptions, func(s []string) bool {
+		for s := range WordStair(words, c.p, c.left, stats, xccOptions) {
 			// Determine max word position
 			m, mWords := getM(s)
 			if stats.Debug || stats.Progress {
@@ -504,8 +501,7 @@ func TestExercise_7221_90(t *testing.T) {
 			}
 
 			got = append(got, s)
-			return true
-		})
+		}
 
 		if mMin >= c.mMin {
 			t.Errorf("For case #%d, p=%d, left=%t, got m=%d; want m < %d",
