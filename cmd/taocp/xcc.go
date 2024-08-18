@@ -114,37 +114,37 @@ func (command xccCommand) Execute(args []string) error {
 	if !command.Compact {
 		output.WriteString("solutions:\n")
 	}
-	err = taocp.XCC(xcYaml.Items, options, xcYaml.SItems, stats, xccOptions,
-		func(solution [][]string) bool {
+	for solution, err := range taocp.XCC(xcYaml.Items, options, xcYaml.SItems, stats, xccOptions) {
 
-			if !command.Compact {
-				output.WriteString("  -\n")
-				for _, option := range solution {
-					output.WriteString("    - \"")
-					output.WriteString(strings.Join(option, " "))
-					output.WriteString("\"\n")
-				}
-			} else {
-				var s strings.Builder
-				for _, option := range solution {
-					if s.Len() > 0 {
-						s.WriteString(", ")
-					}
-					s.WriteString("\"")
-					s.WriteString(strings.Join(option, " "))
-					s.WriteString("\"")
-				}
-				s.WriteString("\n")
-				output.WriteString(s.String())
-			}
+		if err != nil {
+			return err
+		}
 
-			if command.Limit > 0 && stats.Solutions == command.Limit {
-				return false
+		if !command.Compact {
+			output.WriteString("  -\n")
+			for _, option := range solution {
+				output.WriteString("    - \"")
+				output.WriteString(strings.Join(option, " "))
+				output.WriteString("\"\n")
 			}
-			return true
-		})
-	if err != nil {
-		return err
+		} else {
+			var s strings.Builder
+			for _, option := range solution {
+				if s.Len() > 0 {
+					s.WriteString(", ")
+				}
+				s.WriteString("\"")
+				s.WriteString(strings.Join(option, " "))
+				s.WriteString("\"")
+			}
+			s.WriteString("\n")
+			output.WriteString(s.String())
+		}
+
+		if command.Limit > 0 && stats.Solutions == command.Limit {
+			return nil
+		}
+		return nil
 	}
 
 	return nil

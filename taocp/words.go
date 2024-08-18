@@ -83,31 +83,36 @@ func DoubleWordSquare(words []string, stats *ExactCoverStats,
 		}
 
 		// Get the solutions
-		XCC(items, options, sitems, stats, xccOptions,
-			func(solution [][]string) bool {
+		for solution, err := range XCC(items, options, sitems, stats, xccOptions) {
 
-				// Build the solution, a_1 .. a_n, then d_1 .. d_n
-				var x []string
-				for i := 1; i <= n; i++ {
-					a := fmt.Sprintf("a%d", i)
-					for _, option := range solution {
-						if option[0] == a {
-							x = append(x, option[n+1])
-							break
-						}
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Build the solution, a_1 .. a_n, then d_1 .. d_n
+			var x []string
+			for i := 1; i <= n; i++ {
+				a := fmt.Sprintf("a%d", i)
+				for _, option := range solution {
+					if option[0] == a {
+						x = append(x, option[n+1])
+						break
 					}
 				}
-				for i := 1; i <= n; i++ {
-					d := fmt.Sprintf("d%d", i)
-					for _, option := range solution {
-						if option[0] == d {
-							x = append(x, option[n+1])
-							break
-						}
+			}
+			for i := 1; i <= n; i++ {
+				d := fmt.Sprintf("d%d", i)
+				for _, option := range solution {
+					if option[0] == d {
+						x = append(x, option[n+1])
+						break
 					}
 				}
-				return yield(x)
-			})
+			}
+			if !yield(x) {
+				return
+			}
+		}
 	}
 }
 
@@ -207,31 +212,36 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 		}
 
 		// Get the solutions
-		XCC(items, options, sitems, stats, xccOptions,
-			func(solution [][]string) bool {
+		for solution, err := range XCC(items, options, sitems, stats, xccOptions) {
 
-				// Build the solution, a_0 .. a_(p-1), then d_0 .. d_(p-1)
-				var x []string
-				for i := 0; i < p; i++ {
-					a := fmt.Sprintf("a%d", i)
-					for _, option := range solution {
-						if option[0] == a {
-							x = append(x, option[n+1])
-							break
-						}
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			// Build the solution, a_0 .. a_(p-1), then d_0 .. d_(p-1)
+			var x []string
+			for i := 0; i < p; i++ {
+				a := fmt.Sprintf("a%d", i)
+				for _, option := range solution {
+					if option[0] == a {
+						x = append(x, option[n+1])
+						break
 					}
 				}
-				for i := 0; i < p; i++ {
-					d := fmt.Sprintf("d%d", i)
-					for _, option := range solution {
-						if option[0] == d {
-							x = append(x, option[n+1])
-							break
-						}
+			}
+			for i := 0; i < p; i++ {
+				d := fmt.Sprintf("d%d", i)
+				for _, option := range solution {
+					if option[0] == d {
+						x = append(x, option[n+1])
+						break
 					}
 				}
-				return yield(x)
-			})
+			}
+			if !yield(x) {
+				return
+			}
+		}
 	}
 }
 

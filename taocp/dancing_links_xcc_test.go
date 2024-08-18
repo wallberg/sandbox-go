@@ -41,14 +41,12 @@ func TestXCC(t *testing.T) {
 		// Verbosity: 2,
 	}
 
-	XCC(xcItems, xcOptions, []string{}, stats, nil,
-		func(solution [][]string) bool {
-			if !reflect.DeepEqual(solution, xcExpected) {
-				t.Errorf("Expected %v; got %v", xcExpected, solution)
-			}
-			count++
-			return true
-		})
+	for solution := range XCC(xcItems, xcOptions, []string{}, stats, nil) {
+		if !reflect.DeepEqual(solution, xcExpected) {
+			t.Errorf("Expected %v; got %v", xcExpected, solution)
+		}
+		count++
+	}
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -65,14 +63,12 @@ func TestXCC(t *testing.T) {
 		// Debug:     true,
 		// Verbosity: 2,
 	}
-	XCC(xccItems, xccOptions, xccSItems, stats, nil,
-		func(solution [][]string) bool {
-			if !reflect.DeepEqual(solution, xccExpected) {
-				t.Errorf("Expected %v; got %v", xccExpected, solution)
-			}
-			count++
-			return true
-		})
+	for solution := range XCC(xccItems, xccOptions, xccSItems, stats, nil) {
+		if !reflect.DeepEqual(solution, xccExpected) {
+			t.Errorf("Expected %v; got %v", xccExpected, solution)
+		}
+		count++
+	}
 
 	if count != 1 {
 		t.Errorf("Expected 1 solution; got %d", count)
@@ -152,20 +148,14 @@ func TestSudokuCards(t *testing.T) {
 		count := 0
 		stats := new(ExactCoverStats)
 
-		SudokuCards(c.cards, stats,
-			func(solution [9]int, grid [9][9]int) bool {
-				if !reflect.DeepEqual(solution, c.cardsExpected) {
-					t.Errorf("Expected card ordering %v; got %v", c.cardsExpected, solution)
-				}
-				if !reflect.DeepEqual(grid, c.gridExpected) {
-					t.Errorf("Expected grid %v; got %v", c.gridExpected, grid)
-				}
-				count++
-				return true
-			})
-
-		if count != 1 {
-			t.Errorf("Expected 1 solution; got %d", count)
+		for solution, grid := range SudokuCards(c.cards, stats) {
+			if !reflect.DeepEqual(solution, c.cardsExpected) {
+				t.Errorf("Expected card ordering %v; got %v", c.cardsExpected, solution)
+			}
+			if !reflect.DeepEqual(grid, c.gridExpected) {
+				t.Errorf("Expected grid %v; got %v", c.gridExpected, grid)
+			}
+			count++
 		}
 	}
 }
@@ -183,7 +173,8 @@ func BenchmarkSudokuCards(b *testing.B) {
 
 		b.Run(c.name, func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
-				SudokuCards(cards2, nil, func([9]int, [9][9]int) bool { return true })
+				for range SudokuCards(cards2, nil) {
+				}
 			}
 		})
 	}
@@ -335,14 +326,13 @@ func TestXCCminimax(t *testing.T) {
 				Minimax:       true,
 				MinimaxSingle: single,
 			}
-			err := XCC(c.items, c.options, c.secondary, stats, xccOptions,
-				func(solution [][]string) bool {
+			for solution, err := range XCC(c.items, c.options, c.secondary, stats, xccOptions) {
+				if err != nil {
+					t.Errorf("For case #%d, single=%t, XCC returned error %v", i, single, err)
+					break
+				} else {
 					got = append(got, solution)
-					return true
-				})
-
-			if err != nil {
-				t.Errorf("For case #%d, single=%t, XCC returned error %v", i, single, err)
+				}
 			}
 
 			if len(got) == 0 {

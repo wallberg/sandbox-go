@@ -239,11 +239,13 @@ func TestPolyominoXC(t *testing.T) {
 		items, options := PolyominoXC(board, shapes)
 
 		count := 0
-		XCC(items, options, []string{}, nil, nil,
-			func(solution [][]string) bool {
-				count++
-				return true
-			})
+		for _, err := range XCC(items, options, []string{}, nil, nil) {
+			if err != nil {
+				t.Errorf("Error in XCC: %v", err)
+				break
+			}
+			count++
+		}
 
 		if count != c.count {
 			t.Errorf("Got %d solutions for n=%d; want %d",
@@ -284,11 +286,14 @@ func TestPolyominoXC(t *testing.T) {
 
 		count := 0
 		// stats := &ExactCoverStats{Progress: true, Delta: 100000000}
-		XCC(items, options, []string{}, nil, nil,
-			func(solution [][]string) bool {
-				count++
-				return true
-			})
+		for _, err := range XCC(items, options, []string{}, nil, nil) {
+			if err != nil {
+				t.Errorf("Error in XCC: %v", err)
+				break
+			}
+
+			count++
+		}
 
 		if count != c.count {
 			t.Errorf("Got %d solutions for n=%d; want %d",
@@ -380,11 +385,13 @@ func TestPolyominoFill(t *testing.T) {
 		// Solve using XC
 		count := 0
 		// stats := &ExactCoverStats{Progress: true, Delta: 100000000}
-		XCC(items, options, []string{}, nil, nil,
-			func(solution [][]string) bool {
-				count++
-				return true
-			})
+		for _, err := range XCC(items, options, []string{}, nil, nil) {
+			if err != nil {
+				t.Errorf("Error in XCC: %v", err)
+				break
+			}
+			count++
+		}
 
 		if count != c.count {
 			t.Errorf("Got %d solutions; want %d", count, c.count)
