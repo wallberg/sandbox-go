@@ -29,12 +29,10 @@ func TestSatAlgorithmAAll(t *testing.T) {
 		options := SatOptions{}
 
 		got := false
-		SatAlgorithmAAll(c.n, c.clauses, &stats, &options,
-			func(solution []int) bool {
-				got = true
-				// log.Printf("solution=%v", solution)
-				return true
-			})
+		for range SatAlgorithmAAll(c.n, c.clauses, &stats, &options) {
+			got = true
+			break
+		}
 
 		if got != c.sat {
 			t.Errorf("expected satisfiable=%t for clauses %v; got %t", c.sat, c.clauses, got)
