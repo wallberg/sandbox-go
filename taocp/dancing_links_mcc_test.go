@@ -228,14 +228,12 @@ func TestMCC(t *testing.T) {
 			Debug:     false,
 			Verbosity: 2,
 		}
-		err := MCC(c.items, c.multiplicities, c.options, c.secondary, stats,
-			func(solution [][]string) bool {
-				got = append(got, solution)
-				return true
-			})
-
-		if err != nil {
-			t.Error(err)
+		for solution, err := range MCC(c.items, c.multiplicities, c.options, c.secondary, stats) {
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			got = append(got, solution)
 		}
 
 		sortSolutions(got)
@@ -349,15 +347,15 @@ func TestExercise_7221_69(t *testing.T) {
 			// Delta:    100000000,
 			// Debug:    true,
 		}
-		err := MCC(items, multiplicities, options, []string{}, stats,
-			func(solution [][]string) bool {
-				count++
-				return true
-			})
+		for _, err := range MCC(items, multiplicities, options, []string{}, stats) {
+			if err != nil {
+				t.Errorf("Got error %v for %v", err, c.multiplicities)
+				return
+			}
+			count++
+		}
 
-		if err != nil {
-			t.Errorf("Got error %v for %v", err, c.multiplicities)
-		} else if count != c.count {
+		if count != c.count {
 			t.Errorf("Got %d solutions for %v; want %d", count, c.multiplicities, c.count)
 		}
 	}
