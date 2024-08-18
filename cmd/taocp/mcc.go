@@ -123,32 +123,31 @@ func (command mccCommand) Execute(args []string) error {
 	if !command.Compact {
 		output.WriteString("solutions:\n")
 	}
-	err = taocp.MCC(xcYaml.Items, multiplicities, options, xcYaml.SItems, stats,
-		func(solution [][]string) bool {
-			if !command.Compact {
-				output.WriteString("  -\n")
-				for _, option := range solution {
-					output.WriteString("    - \"")
-					output.WriteString(strings.Join(option, " "))
-					output.WriteString("\"\n")
-				}
-			} else {
-				var s strings.Builder
-				for _, option := range solution {
-					if s.Len() > 0 {
-						s.WriteString(", ")
-					}
-					s.WriteString("\"")
-					s.WriteString(strings.Join(option, " "))
-					s.WriteString("\"")
-				}
-				s.WriteString("\n")
-				output.WriteString(s.String())
+	for solution, err := range taocp.MCC(xcYaml.Items, multiplicities, options, xcYaml.SItems, stats) {
+		if err != nil {
+			return err
+		}
+
+		if !command.Compact {
+			output.WriteString("  -\n")
+			for _, option := range solution {
+				output.WriteString("    - \"")
+				output.WriteString(strings.Join(option, " "))
+				output.WriteString("\"\n")
 			}
-			return true
-		})
-	if err != nil {
-		return err
+		} else {
+			var s strings.Builder
+			for _, option := range solution {
+				if s.Len() > 0 {
+					s.WriteString(", ")
+				}
+				s.WriteString("\"")
+				s.WriteString(strings.Join(option, " "))
+				s.WriteString("\"")
+			}
+			s.WriteString("\n")
+			output.WriteString(s.String())
+		}
 	}
 
 	return nil
