@@ -14,7 +14,7 @@ import (
 // the permutations are exhausted or visit returns false.
 func Compositions(n int) iter.Seq[[]int] {
 
-	return func(visit func([]int) bool) {
+	return func(yield func([]int) bool) {
 
 		if n <= 1 {
 			panic(fmt.Sprintf("Expected n > 1; got %d", n))
@@ -27,7 +27,7 @@ func Compositions(n int) iter.Seq[[]int] {
 
 	C2:
 		// C2. [Visit.]
-		if !visit(s[1 : t+1]) {
+		if !yield(s[1 : t+1]) {
 			return
 		}
 		if t%2 == 0 {
