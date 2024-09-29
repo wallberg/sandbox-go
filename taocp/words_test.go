@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"reflect"
+	"slices"
 	"testing"
 
 	"github.com/wallberg/sandbox-go/sgb"
@@ -511,10 +512,14 @@ func TestExercise_7221_90(t *testing.T) {
 		// Check that we got a matching cycle of words
 		isCycle := false
 		for _, s := range got {
+			sReverse := make([]string, len(s))
+			copy(sReverse, s)
+			slices.Reverse(sReverse[:c.p])
+			slices.Reverse(sReverse[c.p:])
 			if slice.IsCycleString(s[:c.p], c.solution) ||
 				slice.IsCycleString(s[c.p:], c.solution) ||
-				slice.IsCycleString(slice.ReverseString(s[:c.p]), c.solution) ||
-				slice.IsCycleString(slice.ReverseString(s[c.p:]), c.solution) {
+				slice.IsCycleString(sReverse[:c.p], c.solution) ||
+				slice.IsCycleString(sReverse[c.p:], c.solution) {
 				isCycle = true
 				break
 			}

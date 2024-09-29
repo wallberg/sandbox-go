@@ -41,15 +41,6 @@ func IsCycleString(a []string, b []string) bool {
 
 }
 
-// ReverseString reverses the slice of strings
-func ReverseString(a []string) []string {
-	reverse := make([]string, len(a))
-	for i, v := range a {
-		reverse[len(a)-1-i] = v
-	}
-	return reverse
-}
-
 // AppendUniqueString inserts x into a, if not already present.  Returns new value of a, a la append()
 func AppendUniqueString(a [][]string, x []string) [][]string {
 

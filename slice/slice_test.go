@@ -54,27 +54,6 @@ func TestIsCycleString(t *testing.T) {
 	}
 }
 
-func TestReverseString(t *testing.T) {
-
-	cases := []struct {
-		a      []string
-		result []string
-	}{
-		{[]string{}, []string{}},
-		{[]string{"x"}, []string{"x"}},
-		{[]string{"w", "y", "z"}, []string{"z", "y", "w"}},
-	}
-
-	for i, c := range cases {
-
-		result := ReverseString(c.a)
-
-		if !reflect.DeepEqual(result, c.result) {
-			t.Errorf("For case #%d (a=%v) got %v; want %v", i, c.a, result, c.result)
-		}
-	}
-}
-
 func TestAppendUniqueString(t *testing.T) {
 
 	cases := []struct {
