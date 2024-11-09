@@ -337,31 +337,31 @@ func TestExercise_7221_90(t *testing.T) {
 			},
 			1561,
 		},
+		{
+			4,
+			true,
+			[]string{
+				"there", "share", "whole", "whose",
+			},
+			500,
+		},
+		{
+			4,
+			false,
+			[]string{
+				"mixed", "tears", "slept", "salad",
+			},
+			1300,
+		},
+		{
+			5,
+			true,
+			[]string{
+				"stood", "thank", "share", "ships", "store",
+			},
+			500,
+		},
 		// too slow
-		// {
-		// 	4,
-		// 	true,
-		// 	[]string{
-		// 		"there", "share", "whole", "whose",
-		// 	},
-		// 	500,
-		// },
-		// {
-		// 	4,
-		// 	false,
-		// 	[]string{
-		// 		"mixed", "tears", "slept", "salad",
-		// 	},
-		// 	1300,
-		// },
-		// {
-		// 	5,
-		// 	true,
-		// 	[]string{
-		// 		"stood", "thank", "share", "ships", "store",
-		// 	},
-		// 	500,
-		// },
 		// {
 		// 	5,
 		// 	false,
