@@ -227,30 +227,36 @@ func TestPolyominoXC(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		board := make(Polyomino, 0)
-		for x := 0; x < c.n; x++ {
-			for y := 0; y < c.n; y++ {
-				board = append(board, Point{X: x, Y: y})
+		name := fmt.Sprintf("p=%v", c.n)
+
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			board := make(Polyomino, 0)
+			for x := 0; x < c.n; x++ {
+				for y := 0; y < c.n; y++ {
+					board = append(board, Point{X: x, Y: y})
+				}
 			}
-		}
 
-		shapes := PolyominoPacking(c.n, c.n, c.n, false, true)
+			shapes := PolyominoPacking(c.n, c.n, c.n, false, true)
 
-		items, options := PolyominoXC(board, shapes)
+			items, options := PolyominoXC(board, shapes)
 
-		count := 0
-		for _, err := range XCC(items, options, []string{}, nil, nil) {
-			if err != nil {
-				t.Errorf("Error in XCC: %v", err)
-				break
+			count := 0
+			for _, err := range XCC(items, options, []string{}, nil, nil) {
+				if err != nil {
+					t.Errorf("Error in XCC: %v", err)
+					break
+				}
+				count++
 			}
-			count++
-		}
 
-		if count != c.count {
-			t.Errorf("Got %d solutions for n=%d; want %d",
-				count, c.n, c.count)
-		}
+			if count != c.count {
+				t.Errorf("Got %d solutions for n=%d; want %d",
+					count, c.n, c.count)
+			}
+		})
 	}
 
 	// These tests verify Exercise 7.2.2.1-68a
@@ -269,36 +275,42 @@ func TestPolyominoXC(t *testing.T) {
 	}
 
 	for _, c := range cases2 {
-		board := make(Polyomino, 0)
-		for x := 0; x < c.n; x++ {
-			for y := 0; y < c.n; y++ {
-				board = append(board, Point{X: x, Y: y})
-			}
-		}
+		name := fmt.Sprintf("n=%v, placements=%v", c.n, c.placements)
 
-		shapes := PolyominoPacking(c.n, c.n, c.n, true, false)
-		items, options := PolyominoXC(board, shapes)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-		if len(options) != c.placements {
-			t.Errorf("Got %d placements for n=%d; want %d", len(options), c.n,
-				c.placements)
-		}
-
-		count := 0
-		// stats := &ExactCoverStats{Progress: true, Delta: 100000000}
-		for _, err := range XCC(items, options, []string{}, nil, nil) {
-			if err != nil {
-				t.Errorf("Error in XCC: %v", err)
-				break
+			board := make(Polyomino, 0)
+			for x := 0; x < c.n; x++ {
+				for y := 0; y < c.n; y++ {
+					board = append(board, Point{X: x, Y: y})
+				}
 			}
 
-			count++
-		}
+			shapes := PolyominoPacking(c.n, c.n, c.n, true, false)
+			items, options := PolyominoXC(board, shapes)
 
-		if count != c.count {
-			t.Errorf("Got %d solutions for n=%d; want %d",
-				count, c.n, c.count)
-		}
+			if len(options) != c.placements {
+				t.Errorf("Got %d placements for n=%d; want %d", len(options), c.n,
+					c.placements)
+			}
+
+			count := 0
+			// stats := &ExactCoverStats{Progress: true, Delta: 100000000}
+			for _, err := range XCC(items, options, []string{}, nil, nil) {
+				if err != nil {
+					t.Errorf("Error in XCC: %v", err)
+					break
+				}
+
+				count++
+			}
+
+			if count != c.count {
+				t.Errorf("Got %d solutions for n=%d; want %d",
+					count, c.n, c.count)
+			}
+		})
 	}
 
 }

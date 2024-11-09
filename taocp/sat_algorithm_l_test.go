@@ -70,14 +70,14 @@ func TestSatAlgorithmL(t *testing.T) {
 		optionsL.CompensationResolvants = false
 		optionsL.SuppressBigClauses = !c.bigClauses
 
-		var clausesStr string
-		if len(c.clauses) < 10 {
-			clausesStr = fmt.Sprintf("%v", c.clauses)
-		} else {
-			clausesStr = fmt.Sprintf("#%d", len(c.clauses))
-		}
+		// var clausesStr string
+		// if len(c.clauses) < 10 {
+		// 	clausesStr = fmt.Sprintf("%v", c.clauses)
+		// } else {
+		// 	clausesStr = fmt.Sprintf("#%d", len(c.clauses))
+		// }
 
-		t.Logf("Executing test case #%d, n=%d, sat=%t, bigc=%t, clauses=%s", i, c.n, c.sat, c.bigClauses, clausesStr)
+		// t.Logf("Executing test case #%d, n=%d, sat=%t, bigc=%t, clauses=%s", i, c.n, c.sat, c.bigClauses, clausesStr)
 
 		sat, solution := SatAlgorithmL(c.n, c.clauses, &stats, &options, optionsL)
 
@@ -115,6 +115,7 @@ func TestSatAlgorithmLFromFile(t *testing.T) {
 	for _, c := range cases {
 
 		t.Run(c.filename, func(t *testing.T) {
+			t.Parallel()
 
 			clauses, variables, err := SatRead(c.filename)
 
@@ -161,6 +162,8 @@ func TestSatAlgorithmLLangford(t *testing.T) {
 	for n := 2; n <= 12; n++ {
 
 		t.Run(fmt.Sprintf("langford(%d)", n), func(t *testing.T) {
+			t.Parallel()
+
 			stats := SatStats{
 				// Debug: true,
 				// Progress: true,

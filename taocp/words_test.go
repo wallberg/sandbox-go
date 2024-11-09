@@ -1,6 +1,7 @@
 package taocp
 
 import (
+	"fmt"
 	"log"
 	"math"
 	"reflect"
@@ -472,66 +473,72 @@ func TestExercise_7221_90(t *testing.T) {
 
 	for i, c := range cases {
 
-		stats := &ExactCoverStats{
-			// Progress: true,
-			// Delta:    20000000,
-			// Debug:        true,
-			// Verbosity:    2,
-			// SuppressDump: true,
-		}
+		name := fmt.Sprintf("p=%v, left=%v, mMin=%v", c.p, c.left, c.mMin)
 
-		xccOptions := &XCCOptions{
-			Minimax:       true,
-			MinimaxSingle: true,
-			Exercise83:    true,
-		}
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
 
-		mMin := math.MaxInt64
-		var got [][]string // list of solutions with the minimum m value
-
-		for s := range WordStair(words, c.p, c.left, stats, xccOptions) {
-			// Determine max word position
-			m, mWords := getM(s)
-			if stats.Debug || stats.Progress {
-				log.Printf("m=%d, %v, %v", m, s, mWords)
+			stats := &ExactCoverStats{
+				// Progress: true,
+				// Delta:    20000000,
+				// Debug:        true,
+				// Verbosity:    2,
+				// SuppressDump: true,
 			}
 
-			if m < mMin {
-				mMin = m
-				got = nil
+			xccOptions := &XCCOptions{
+				Minimax:       true,
+				MinimaxSingle: true,
+				Exercise83:    true,
 			}
 
-			got = append(got, s)
-		}
+			mMin := math.MaxInt64
+			var got [][]string // list of solutions with the minimum m value
 
-		if mMin >= c.mMin {
-			t.Errorf("For case #%d, p=%d, left=%t, got m=%d; want m < %d",
-				i, c.p, c.left, mMin, c.mMin)
-		}
+			for s := range WordStair(words, c.p, c.left, stats, xccOptions) {
+				// Determine max word position
+				m, mWords := getM(s)
+				if stats.Debug || stats.Progress {
+					log.Printf("m=%d, %v, %v", m, s, mWords)
+				}
 
-		// Check that we got a matching cycle of words
-		isCycle := false
-		for _, s := range got {
-			sReverse := make([]string, len(s))
-			copy(sReverse, s)
-			slices.Reverse(sReverse[:c.p])
-			slices.Reverse(sReverse[c.p:])
-			if slice.IsCycleString(s[:c.p], c.solution) ||
-				slice.IsCycleString(s[c.p:], c.solution) ||
-				slice.IsCycleString(sReverse[:c.p], c.solution) ||
-				slice.IsCycleString(sReverse[c.p:], c.solution) {
-				isCycle = true
-				break
+				if m < mMin {
+					mMin = m
+					got = nil
+				}
+
+				got = append(got, s)
 			}
-		}
 
-		if !isCycle {
-			m, mWords := getM(c.solution)
-			if stats.Debug || stats.Progress {
-				log.Printf("Expected: m=%d, %v, %v", m, c.solution, mWords)
+			if mMin >= c.mMin {
+				t.Errorf("For case #%d, p=%d, left=%t, got m=%d; want m < %d",
+					i, c.p, c.left, mMin, c.mMin)
 			}
-			t.Errorf("For case #%d, p=%d, left=%t, got solutions %v; want %v",
-				i, c.p, c.left, got, c.solution)
-		}
+
+			// Check that we got a matching cycle of words
+			isCycle := false
+			for _, s := range got {
+				sReverse := make([]string, len(s))
+				copy(sReverse, s)
+				slices.Reverse(sReverse[:c.p])
+				slices.Reverse(sReverse[c.p:])
+				if slice.IsCycleString(s[:c.p], c.solution) ||
+					slice.IsCycleString(s[c.p:], c.solution) ||
+					slice.IsCycleString(sReverse[:c.p], c.solution) ||
+					slice.IsCycleString(sReverse[c.p:], c.solution) {
+					isCycle = true
+					break
+				}
+			}
+
+			if !isCycle {
+				m, mWords := getM(c.solution)
+				if stats.Debug || stats.Progress {
+					log.Printf("Expected: m=%d, %v, %v", m, c.solution, mWords)
+				}
+				t.Errorf("For case #%d, p=%d, left=%t, got solutions %v; want %v",
+					i, c.p, c.left, got, c.solution)
+			}
+		})
 	}
 }

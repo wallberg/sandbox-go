@@ -115,6 +115,8 @@ func TestSatAlgorithmDLangford(t *testing.T) {
 	for n := 2; n <= 12; n++ {
 
 		t.Run(fmt.Sprintf("langford(%d)", n), func(t *testing.T) {
+			t.Parallel()
+
 			stats := SatStats{
 				// Debug: true,
 				// Progress: true,
