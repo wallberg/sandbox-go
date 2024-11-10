@@ -7,13 +7,13 @@ tasks:
 
   build:
     desc:
-      "Build"
+      Build
     cmds:
     - go build -v {{.GOPACKAGES}}
 
   install:
     desc:
-      "Install"
+      Install
     cmds:
     - go install -v {{.GOPACKAGES}}
 
@@ -22,6 +22,12 @@ tasks:
       Test
     cmds:
     - go test {{.GOPACKAGES}}
+
+  test:long:
+    desc:
+      Long Tests
+    cmds:
+    - go test -v {{.GOPACKAGES}} --tags=longtests '-run=^TestLong$' -timeout 24h
 
   doc:
     desc:
