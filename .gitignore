@@ -16,3 +16,4 @@ com/github/wallberg/euler
 cmd/test/
 template_test.go
 sat_rand
+.task
