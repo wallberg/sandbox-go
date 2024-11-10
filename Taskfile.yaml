@@ -1,0 +1,32 @@
+version: '3'
+
+vars:
+  GOPACKAGES: ./cmd/taocp ./graph ./math ./sgb ./slice ./sortx ./taocp
+
+tasks:
+
+  build:
+    desc:
+      "Build"
+    cmds:
+    - go build -v {{.GOPACKAGES}}
+
+  install:
+    desc:
+      "Install"
+    cmds:
+    - go install -v {{.GOPACKAGES}}
+
+  test:
+    desc:
+      Test
+    cmds:
+    - go test {{.GOPACKAGES}}
+
+  doc:
+    desc:
+      Documentation
+    cmds:
+    - dot -Tpdf doc/taocp-7-2-2-2-AlgorithmL.dot -o doc/taocp-7-2-2-2-AlgorithmL.pdf
+    sources:
+    - "doc/*.dot"
