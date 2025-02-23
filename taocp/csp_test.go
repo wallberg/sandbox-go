@@ -7,7 +7,7 @@ import (
 )
 
 // Explore Constraint Satisfication Problems from The Art of Computer Programming, Volume 4,
-// Fascicle 7, Constraint Satisfaction, 2024?
+// Fascicle 7, Constraint Satisfaction, 2025
 //
 // §7.2.2.3 Constraint Satisfaction (CSP)
 

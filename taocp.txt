@@ -45,10 +45,9 @@ Volume 4B. Combinatorial Algorithms, Part 2
             7.2.2 Backtrack Programming                            (Fascicle 5)
                 7.2.2.1 Dancing Links
                 7.2.2.2 Satisfiability                             (Fascicle 6)
+
+Volume 4C, 4D. Combinatorial Algorithms, Part 3, 4
                 7.2.2.3 Constraint satisfaction                    (Fascicle 7)
-
-Volume 4C, 4D. Combinatorial Algorithms
-
                 7.2.2.4 Hamiltonian paths and cycles          (Pre-Fascicle 8a)
                 7.2.2.5 Cliques
                 7.2.2.6 Covers
