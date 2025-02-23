@@ -5,6 +5,15 @@ import (
 	"testing"
 )
 
+// Figure 7.2.2.2-(3)
+var ClausesF = SatClauses{
+	{1, -2},
+	{2, 3},
+	{-1, -3},
+	{-1, -2, 3},
+}
+
+// Figure 7.2.2.2-(6)
 var ClausesR = SatClauses{
 	{1, 2, -3},
 	{2, 3, -4},
@@ -16,6 +25,7 @@ var ClausesR = SatClauses{
 	{-4, 1, -2},
 }
 
+// Figure 7.2.2.2-(7)
 var ClausesRPrime = ClausesR[0:7]
 
 var ClausesWaerden339 = SatWaerdan(3, 3, 9)

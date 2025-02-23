@@ -22,7 +22,7 @@ type XCCOptions struct {
 	// Use the curious extension of Exercise 7.2.2.1-83
 	Exercise83 bool
 
-	// Enable sharp heuristic preference
+	// Enable sharp preference heuristic of Exercise 7.2.2.1-10
 	EnableSharpPreference bool
 }
 
