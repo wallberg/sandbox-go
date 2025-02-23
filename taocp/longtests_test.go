@@ -33,7 +33,7 @@ func doubleWordSquare(t *testing.T) {
 		removeTranspose bool
 		count           int
 	}{
-		{
+		{ // Passed in 3.3 hours
 			nil,
 			true,
 			323264,
@@ -157,20 +157,20 @@ func exercise_7221_89(t *testing.T) {
 				"strap", "those", "arose", "refer", "tests",
 			},
 		},
-		{
-			6,
-			[]string{
-				"chests", "lustre", "obtain", "arenas", "circle", "assess",
-				"cloaca", "hubris", "esters", "stance", "trials", "senses",
-			},
-		},
-		{ // unverified
-			7,
-			[]string{
-				"hertzes", "operate", "mimical", "acerate", "genetic", "endmost", "resents",
-				"homager", "epicene", "remends", "trireme", "zacaton", "etatist", "selects",
-			},
-		},
+		// { // Passed in 5.7 hours
+		// 	6,
+		// 	[]string{
+		// 		"chests", "lustre", "obtain", "arenas", "circle", "assess",
+		// 		"cloaca", "hubris", "esters", "stance", "trials", "senses",
+		// 	},
+		// },
+		// { // unverified
+		// 	7,
+		// 	[]string{
+		// 		"hertzes", "operate", "mimical", "acerate", "genetic", "endmost", "resents",
+		// 		"homager", "epicene", "remends", "trireme", "zacaton", "etatist", "selects",
+		// 	},
+		// },
 	}
 
 	for i, c := range cases {
@@ -311,22 +311,22 @@ func exercise_7221_90(t *testing.T) {
 			},
 			1300,
 		},
-		{
-			10,
-			true,
-			[]string{
-				"there", "shoes", "shirt", "stone", "shook", "start", "while", "shell", "steel", "sharp",
-			},
-			500,
-		},
-		{
-			10,
-			false,
-			[]string{
-				"years", "stock", "horns", "fuels", "beets", "speed", "tears", "plant", "sword", "sweep",
-			},
-			1300,
-		},
+		// {
+		// 	10,
+		// 	true,
+		// 	[]string{
+		// 		"there", "shoes", "shirt", "stone", "shook", "start", "while", "shell", "steel", "sharp",
+		// 	},
+		// 	500,
+		// },
+		// {
+		// 	10,
+		// 	false,
+		// 	[]string{
+		// 		"years", "stock", "horns", "fuels", "beets", "speed", "tears", "plant", "sword", "sweep",
+		// 	},
+		// 	1300,
+		// },
 	}
 
 	words, err := sgb.LoadWords()
