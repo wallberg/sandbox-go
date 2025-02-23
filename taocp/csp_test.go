@@ -11,8 +11,8 @@ import (
 //
 // §7.2.2.3 Constraint Satisfaction (CSP)
 
-// Exercise_7222_3 expresses CSP of (1) and (2) as a SAT problem.
-func TestExercise_7222_3(t *testing.T) {
+// Exercise_7223_3 expresses CSP of (1) and (2) as a SAT problem.
+func TestExercise_7223_3(t *testing.T) {
 
 	const (
 
@@ -153,8 +153,8 @@ func TestExercise_7222_3(t *testing.T) {
 	}
 }
 
-// Exercise_7222_4 expresses CSP of (1) and (2) as an XCC problem.
-func TestExercise_7222_4(t *testing.T) {
+// Exercise_7223_4 expresses CSP of (1) and (2) as an XCC problem.
+func TestExercise_7223_4(t *testing.T) {
 
 	items := []string{"r1", "r2", "r3"}
 
