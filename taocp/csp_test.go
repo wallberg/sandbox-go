@@ -156,11 +156,11 @@ func TestExercise_7222_3(t *testing.T) {
 // Exercise_7222_4 expresses CSP of (1) and (2) as an XCC problem.
 func TestExercise_7222_4(t *testing.T) {
 
-	items = []string{"r1", "r2", "r3"}
+	items := []string{"r1", "r2", "r3"}
 
-	sitems = []string{"x1", "x2", "x3", "x4", "x5"}
+	sitems := []string{"x1", "x2", "x3", "x4", "x5"}
 
-	options = [][]string{
+	options := [][]string{
 		// R1
 		{"r1", "x1:B", "x3:A", "x5:N"},
 		{"r1", "x1:B", "x3:U", "x5:D"},
