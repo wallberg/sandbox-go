@@ -1135,7 +1135,7 @@ func SudokuCards(cards [9][3][3]int, stats *ExactCoverStats) iter.Seq2[[9]int, [
 		}
 
 		// each slot is an item
-		for x = 0; x < 9; x++ {
+		for x = range 9 {
 			itemSet[fmt.Sprintf("s%d", x)] = true
 		}
 
@@ -1149,8 +1149,8 @@ func SudokuCards(cards [9][3][3]int, stats *ExactCoverStats) iter.Seq2[[9]int, [
 			for x = 0; x < 9 && !(c == 1 && x > 0); x++ {
 				option := []string{strconv.Itoa(c), fmt.Sprintf("s%d", x)}
 				// Iterate over values in this card
-				for iCard := 0; iCard < 3; iCard++ {
-					for jCard := 0; jCard < 3; jCard++ {
+				for iCard := range 3 {
+					for jCard := range 3 {
 						k = cards[c-1][iCard][jCard]
 						if k > 0 {
 							i, j := (x/3)*3, (x%3)*3
@@ -1293,8 +1293,8 @@ func WordSearch(m int, n int, words []string, stats *ExactCoverStats) iter.Seq[[
 
 		// secondary items
 		secondary := make([]string, m*n)
-		for i := 0; i < m; i++ {
-			for j := 0; j < n; j++ {
+		for i := range m {
+			for j := range n {
 				secondary[i*n+j] = coord(i, j)
 			}
 		}
@@ -1303,15 +1303,15 @@ func WordSearch(m int, n int, words []string, stats *ExactCoverStats) iter.Seq[[
 		options := make([][]string, 0)
 		for x, word := range words {
 
-			for i := 0; i < m; i++ {
-				for j := 0; j < n; j++ {
+			for i := range m {
+				for j := range n {
 					// Eight directions for each starting position (i,j)
 					var wordDs [8][]string // word directions
-					for d := 0; d < 8; d++ {
+					for d := range 8 {
 						wordDs[d] = []string{word}
 					}
 
-					for k := 0; k < len(word); k++ {
+					for k := range len(word) {
 						// right
 						if j+k < n {
 							wordDs[0] = append(wordDs[0], coord(i, j+k)+":"+word[k:k+1])
@@ -1366,6 +1366,144 @@ func WordSearch(m int, n int, words []string, stats *ExactCoverStats) iter.Seq[[
 
 		for solution := range XCC(words, options, secondary, stats, nil) {
 			if !yield(solution) {
+				return
+			}
+		}
+	}
+}
+
+// MagicHexagon uses XCC to solve a normal magic hexagon of order n=3, M=38
+func MagicHexagon(stats *ExactCoverStats) iter.Seq[[][]string] {
+
+	return func(yield func([][]string) bool) {
+
+		// Items are the rows in this hexagon, of length 3-5 on 3 axes
+		//       a b c
+		//      d e f g
+		//     h i j k l
+		//      m n o p
+		//       q r s
+		items := []string{
+			"abc",
+			"cgl",
+			"lps",
+			"adh",
+			"hmq",
+			"qrs",
+			"defg",
+			"mnop",
+			"bfkp",
+			"dinr",
+			"beim",
+			"gkor",
+			"hijkl",
+			"aejos",
+			"cfjnq",
+		}
+
+		// secondary items are the values 1-9 which can occur
+		// in only one cell (a-s)
+		secondary := []string{}
+		for cell := range 19 {
+			secondary = append(secondary, strconv.Itoa(cell+1))
+		}
+
+		// options
+		options := make([][]string, 0)
+
+		// Gather partitions of 38 of size 3,4,5
+		partitions := [][]int{}
+
+		for partition := range StrictPartitions(38, 3, 5) {
+			// Exclude partitions with values  > 19
+			for _, v := range partition {
+				if v > 19 {
+					goto Skip
+				}
+			}
+			partitions = append(partitions, partition)
+		Skip:
+		}
+
+		for _, row := range items {
+
+			for _, partition := range partitions {
+
+				if len(row) != len(partition) {
+					continue
+				}
+
+				switch len(row) {
+
+				case 3:
+					ordering := []int{0, 1, 2}
+					Permutations(ordering, func() bool {
+
+						options = append(options, []string{
+							row,
+							fmt.Sprintf("%d:%c", partition[ordering[0]], row[0]),
+							fmt.Sprintf("%d:%c", partition[ordering[1]], row[1]),
+							fmt.Sprintf("%d:%c", partition[ordering[2]], row[2]),
+						})
+
+						return true
+
+					})
+
+				case 4:
+					ordering := []int{0, 1, 2, 3}
+					Permutations(ordering, func() bool {
+
+						options = append(options, []string{
+							row,
+							fmt.Sprintf("%d:%c", partition[ordering[0]], row[0]),
+							fmt.Sprintf("%d:%c", partition[ordering[1]], row[1]),
+							fmt.Sprintf("%d:%c", partition[ordering[2]], row[2]),
+							fmt.Sprintf("%d:%c", partition[ordering[3]], row[3]),
+						})
+
+						return true
+
+					})
+
+				case 5:
+					ordering := []int{0, 1, 2, 3, 4}
+					Permutations(ordering, func() bool {
+
+						options = append(options, []string{
+							row,
+							fmt.Sprintf("%d:%c", partition[ordering[0]], row[0]),
+							fmt.Sprintf("%d:%c", partition[ordering[1]], row[1]),
+							fmt.Sprintf("%d:%c", partition[ordering[2]], row[2]),
+							fmt.Sprintf("%d:%c", partition[ordering[3]], row[3]),
+							fmt.Sprintf("%d:%c", partition[ordering[4]], row[4]),
+						})
+
+						return true
+
+					})
+				}
+			}
+		}
+
+		// Solve using XCC
+		for solution := range XCC(items, options, secondary, stats, nil) {
+
+			mapped := [][]string{}
+			for _, row := range []string{
+				"abc",
+				"defg",
+				"hijkl",
+				"mnop",
+				"qrs",
+			} {
+				for _, option := range solution {
+					if row == option[0] {
+						mapped = append(mapped, option)
+					}
+				}
+			}
+			if !yield(mapped) {
 				return
 			}
 		}

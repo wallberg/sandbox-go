@@ -22,6 +22,7 @@ func TestLong(t *testing.T) {
 		t.Run("DoubleWordSquareMinimax", doubleWordSquareMinimax)
 		t.Run("Exercise 7.2.2.1-89", exercise_7221_89)
 		t.Run("Exercise 7.2.2.1-90", exercise_7221_90)
+		t.Run("MagicHexagon", magicHexagon)
 	})
 }
 
@@ -417,5 +418,32 @@ func exercise_7221_90(t *testing.T) {
 					i, c.p, c.left, got, c.solution)
 			}
 		})
+	}
+}
+
+func magicHexagon(t *testing.T) {
+
+	stats := &ExactCoverStats{
+		// Progress: true,
+		// Delta:    10000,
+		// Debug:    true,
+		// Verbosity: 2,
+	}
+
+	for got := range MagicHexagon(stats) {
+
+		want := [][]string{
+			{"abc", "16:a", "19:b", "3:c"},
+			{"defg", "12:d", "2:e", "7:f", "17:g"},
+			{"hijkl", "10:h", "4:i", "5:j", "1:k", "18:l"},
+			{"mnop", "13:m", "8:n", "6:o", "11:p"},
+			{"qrs", "15:q", "14:r", "9:s"},
+		}
+
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("Expected solution %v; got %v", want, got)
+		}
+
+		break
 	}
 }
