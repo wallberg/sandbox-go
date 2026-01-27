@@ -158,9 +158,4 @@ func TestStrictPartitions(t *testing.T) {
 			t.Errorf("For case #%d, n=%d, min=%d, max=%d, got solutions %v; want %v", i, c.n, c.min, c.max, got, c.want)
 		}
 	}
-
-	for partition := range StrictPartitions(38, 3, 5) {
-		log.Printf("%v", partition)
-	}
-	t.Errorf("Done")
 }
