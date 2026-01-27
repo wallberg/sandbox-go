@@ -7,6 +7,7 @@ import (
 // StrictPartitions returns all integer partitions of n, with distinct values,
 // with partition size between min and max (inclusive).
 // Not a TAOCP implementation.
+// Co-Authored-By: GitHub Copilot
 func StrictPartitions(n int, min int, max int) iter.Seq[[]int] {
 	return func(yield func([]int) bool) {
 		var partition []int
