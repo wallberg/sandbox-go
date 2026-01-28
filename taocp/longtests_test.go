@@ -312,22 +312,22 @@ func exercise_7221_90(t *testing.T) {
 			},
 			1300,
 		},
-		// {
-		// 	10,
-		// 	true,
-		// 	[]string{
-		// 		"there", "shoes", "shirt", "stone", "shook", "start", "while", "shell", "steel", "sharp",
-		// 	},
-		// 	500,
-		// },
-		// {
-		// 	10,
-		// 	false,
-		// 	[]string{
-		// 		"years", "stock", "horns", "fuels", "beets", "speed", "tears", "plant", "sword", "sweep",
-		// 	},
-		// 	1300,
-		// },
+		{
+			10,
+			true,
+			[]string{
+				"there", "shoes", "shirt", "stone", "shook", "start", "while", "shell", "steel", "sharp",
+			},
+			500,
+		},
+		{
+			10,
+			false,
+			[]string{
+				"years", "stock", "horns", "fuels", "beets", "speed", "tears", "plant", "sword", "sweep",
+			},
+			1300,
+		},
 	}
 
 	words, err := sgb.LoadWords()
