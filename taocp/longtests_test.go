@@ -158,7 +158,7 @@ func exercise_7221_89(t *testing.T) {
 				"strap", "those", "arose", "refer", "tests",
 			},
 		},
-		// { // Passed in 5.7 hours
+		// { // Passed in 4.5 hours
 		// 	6,
 		// 	[]string{
 		// 		"chests", "lustre", "obtain", "arenas", "circle", "assess",
