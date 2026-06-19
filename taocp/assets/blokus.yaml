@@ -1,0 +1,47 @@
+--- # Blokus Test Covering
+
+items:
+
+# Pieces
+- s1pA # Size 1, Piece A
+- s2pB # Size 2, Piece B
+
+# Board Squares - initial corners
+- 00
+
+sitems:
+
+# Board Squares (width=3, height=2)
+# Count: width x height
+- 01
+- 02
+- 10
+- 11
+- 12
+
+# Board Edges - named by 2 squares in contact
+# Count = (width-1 x height) + (width x height-1)
+# Each color piece can touch an edge at most once
+- e0001
+- e0010
+- e0102
+- e0111
+- e0212
+- e1011
+- e1112
+
+options:
+- s1pA 00 e0001 e0010
+- s1pA 01 e0001 e0102 e0111
+- s1pA 02 e0102 e0212
+- s1pA 10 e0010 e1011
+- s1pA 11 e0111 e1011 e1112
+- s1pA 12 e0212 e1112
+- s2pB 00 01 e0102 e0010 e0111
+- s2pB 01 02 e0001 e0111 e0212
+- s2pB 10 11 e0010 e0111 e1112
+- s2pB 11 12 e1011 e0111 e0212
+- s2pB 00 10 e0001 e1011
+- s2pB 01 11 e0001 e0102 e1011 e1112
+- s2pB 02 12 e0102 e1112
+
