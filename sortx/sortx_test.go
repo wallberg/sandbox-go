@@ -11,8 +11,12 @@ func TestInsertInt(t *testing.T) {
 
 	values := make([]int, 0)
 
+	// Seed the pseudorandom generator
+	src := rand.NewSource(seed)
+	localRand := rand.New(src)
+
 	// Insert new values
-	for _, value := range rand.Perm(n) {
+	for _, value := range localRand.Perm(n) {
 		InsertInt(&values, value)
 	}
 

@@ -407,7 +407,8 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 	}
 
 	// Seed the pseudorandom generator
-	rand.Seed(seed)
+	src := rand.NewSource(seed)
+	localRand := rand.New(src)
 
 	// Generate m clauses
 	clauses = make(SatClauses, m)
@@ -415,7 +416,7 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 	for i := 0; i < m; i++ {
 
 		// Generate a single clause
-		clauses[i] = SatClause(rand.Perm(n)[0:k])
+		clauses[i] = SatClause(localRand.Perm(n)[0:k])
 
 		// Sort the clause
 		sort.IntSlice(clauses[i]).Sort()
@@ -424,7 +425,7 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 		// determine which variables are negated
 		for j := 0; j < k; j++ {
 			clauses[i][j] += 1
-			if rand.Intn(2) == 1 {
+			if localRand.Intn(2) == 1 {
 				clauses[i][j] *= -1
 			}
 		}
