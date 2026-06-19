@@ -12,7 +12,7 @@ func TestInsertInt(t *testing.T) {
 	values := make([]int, 0)
 
 	// Seed the pseudorandom generator
-	src := rand.NewSource(seed)
+	src := rand.NewSource(0)
 	localRand := rand.New(src)
 
 	// Insert new values
