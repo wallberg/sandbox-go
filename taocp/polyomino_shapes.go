@@ -166,11 +166,11 @@ func (po Polyomino) TranslateToOrigin() Polyomino {
 // All the plane symmetries of a rectangular region.
 func (po Polyomino) rotationsAndReflections() []Polyomino {
 	rr := make([]Polyomino, 8)
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		rr[i] = make(Polyomino, len(po))
 	}
 	copy(rr[0], po)
-	for j := 0; j < len(po); j++ {
+	for j := range po {
 		rr[1][j] = po[j].rotate90()
 		rr[2][j] = po[j].rotate180()
 		rr[3][j] = po[j].rotate270()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"slices"
 	"strings"
 )
 
@@ -791,7 +792,7 @@ func SatAlgorithmL(n int, clauses SatClauses,
 			for c, clause := range CINX {
 
 				// Look for l in c
-				for i := 0; i < len(clause); i++ {
+				for i := range clause {
 					u := clause[i]
 					if l == u {
 						// Found l in clause c
@@ -1145,7 +1146,7 @@ L6:
 					// Swap c out of u's clause list
 					s := KSIZE[u] - 1
 					KSIZE[u] = s
-					for t := 0; t < s; t++ {
+					for t := range s {
 						if KINX[u][t] == c {
 							KINX[u][t] = KINX[u][s]
 							KINX[u][s] = c
@@ -1214,7 +1215,7 @@ L6:
 				for _, u := range CINX[c][0:2] {
 					s := KSIZE[u] - 1
 					KSIZE[u] = s
-					for t := 0; t < s; t++ {
+					for t := range s {
 						if KINX[u][t] == c {
 							KINX[u][t] = KINX[u][s]
 							KINX[u][s] = c
@@ -1608,8 +1609,7 @@ L12:
 				c := KINX[L][i]
 
 				// ∀ u ∈ CINX[c] (reverse order from L7)
-				for j := len(CINX[c]) - 1; j >= 0; j-- {
-					u := CINX[c][j]
+				for _, u := range slices.Backward(CINX[c]) {
 
 					// Check if u is a free literal
 					if u == L || VAL[u>>1] < rt {

@@ -25,7 +25,7 @@ func TestInsertInt(t *testing.T) {
 		InsertInt(&values, value)
 	}
 
-	for i := 0; i < n; i++ {
+	for i := range n {
 		if values[i] != i {
 			t.Errorf("values[%d] = %d; want %d", i, i, i)
 		}

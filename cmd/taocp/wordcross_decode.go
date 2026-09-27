@@ -81,8 +81,8 @@ func (command wcDecodeCommand) Execute(args []string) error {
 	// getKey creates a key to uniquely identify a grid
 	getKey := func(grid [][]string) string {
 		var key strings.Builder
-		for i = 0; i < m; i++ {
-			for j = 0; j < n; j++ {
+		for i = range m {
+			for j = range n {
 				key.WriteString(grid[i][j])
 			}
 		}
@@ -99,14 +99,14 @@ func (command wcDecodeCommand) Execute(args []string) error {
 		grid := make([][]string, m)
 		for i = 0; i < m; i++ {
 			grid[i] = make([]string, n)
-			for j = 0; j < n; j++ {
+			for j = range n {
 				grid[i][j] = " "
 			}
 		}
 
 		// Fill out the grid
 		for _, option := range solution {
-			for _, item := range strings.Fields(string(option)) {
+			for item := range strings.FieldsSeq(string(option)) {
 				if match := reCell.FindStringSubmatch(item); match != nil {
 					if i, j, err = taocp.DecodeCell(match[1]); err != nil {
 						return err
@@ -127,7 +127,7 @@ func (command wcDecodeCommand) Execute(args []string) error {
 		// Determine if connected
 		g := graph.New(m * n)
 		for i = 0; i < m; i++ {
-			for j = 0; j < n; j++ {
+			for j = range n {
 				if grid[i][j] != " " {
 					if i+1 < m && grid[i+1][j] != " " {
 						g.AddBoth(i*n+j, (i+1)*n+j)
@@ -144,7 +144,7 @@ func (command wcDecodeCommand) Execute(args []string) error {
 		if (!command.Distinct || distinct) && (!command.Connected || connected) {
 
 			// Print out the grid as a valid solution
-			for i = 0; i < m; i++ {
+			for i = range m {
 				fmt.Println(grid[i])
 			}
 			fmt.Println("---")

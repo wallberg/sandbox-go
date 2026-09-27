@@ -34,8 +34,8 @@ func Cycle(n int) (g *graph.Mutable) {
 // Complete generates a complete graph (K) of order n.
 func Complete(n int) (g *graph.Mutable) {
 	g = graph.New(n)
-	for i := 0; i < n; i++ {
-		for j := 0; j < n; j++ {
+	for i := range n {
+		for j := range n {
 			if i != j {
 				g.AddBoth(i, j)
 			}
@@ -51,13 +51,13 @@ func CartesianProduct(g graph.Iterator, h graph.Iterator) *graph.Mutable {
 	gh := graph.New(gOrder * hOrder)
 
 	// Iterate over g vertices
-	for gFrom := 0; gFrom < gOrder; gFrom++ {
+	for gFrom := range gOrder {
 
 		// Iterate over g edges
 		g.Visit(gFrom, func(gTo int, gCost int64) bool {
 
 			// Iterate over h vertices
-			for hFrom := 0; hFrom < hOrder; hFrom++ {
+			for hFrom := range hOrder {
 
 				// Iterate over  h edges
 				h.Visit(hFrom, func(hTo int, hCost int64) bool {

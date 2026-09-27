@@ -14,7 +14,7 @@ func BenchmarkMatrix2DNew(b *testing.B) {
 		b.Run(msg, func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
 				m := make([][]float32, size)
-				for i := 0; i < size; i++ {
+				for i := range size {
 					m[i] = make([]float32, size)
 				}
 			}
@@ -39,14 +39,14 @@ func BenchmarkMatrix2DAccess(b *testing.B) {
 	for _, size := range []int{2, 3, 4} {
 		msg := fmt.Sprintf("%dx%d", size, size)
 		m := make([][]float32, size)
-		for i := 0; i < size; i++ {
+		for i := range size {
 			m[i] = make([]float32, size)
 		}
 		b.Run(msg, func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
 				f := (float32)(b.N)
-				for i := 0; i < size; i++ {
-					for j := 0; j < size; j++ {
+				for i := range size {
+					for j := range size {
 						_ = m[i][j]
 						m[i][j] = f
 					}
@@ -64,8 +64,8 @@ func BenchmarkMatrix1DAccess(b *testing.B) {
 		b.Run(msg, func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
 				f := (float32)(b.N)
-				for i := 0; i < size; i++ {
-					for j := 0; j < size; j++ {
+				for i := range size {
+					for j := range size {
 						k := i*size + j
 						_ = m[k]
 						m[k] = f
@@ -94,8 +94,8 @@ func BenchmarkMatrix1DFunc(b *testing.B) {
 		b.Run(msg, func(b *testing.B) {
 			for repeat := 0; repeat < b.N; repeat++ {
 				f := (float32)(b.N)
-				for i := 0; i < size; i++ {
-					for j := 0; j < size; j++ {
+				for i := range size {
+					for j := range size {
 						_ = get(&m, i, j, size)
 						set(&m, i, j, size, f)
 					}

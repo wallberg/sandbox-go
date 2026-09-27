@@ -527,7 +527,7 @@ func LangfordPairs(n int, stats *ExactCoverStats) iter.Seq[[]int] {
 	return func(yield func([]int) bool) {
 		// Build the list of items
 		items := make([]string, 3*n)
-		for i := 0; i < n; i++ {
+		for i := range n {
 			items[i] = strconv.Itoa(i + 1)
 		}
 		for i := 0; i < 2*n; i++ {
@@ -584,10 +584,10 @@ func NQueens(n int, stats *ExactCoverStats) iter.Seq[[]string] {
 		options := make([][]string, n*n)
 
 		k := 0
-		for i := 0; i < n; i++ {
+		for i := range n {
 			row := "r" + strconv.Itoa(i+1)
 			items[i] = row
-			for j := 0; j < n; j++ {
+			for j := range n {
 				col := "c" + strconv.Itoa(j+1)
 				if i == n-1 {
 					items[j+n] = col
@@ -654,7 +654,7 @@ func Sudoku(grid [9][9]int, stats *ExactCoverStats) iter.Seq[[9][9]int] {
 		// Get the known items (non zero) provided in the grid
 		knownItems := make(map[string]bool)
 		for i = 0; i < 9; i++ {
-			for j = 0; j < 9; j++ {
+			for j = range 9 {
 				k = grid[i][j]
 				if k > 0 {
 					x = 3*(i/3) + (j / 3)
@@ -669,7 +669,7 @@ func Sudoku(grid [9][9]int, stats *ExactCoverStats) iter.Seq[[9][9]int] {
 		itemSet := make(map[string]bool)
 		options := make([][]string, 0)
 		for i = 0; i < 9; i++ {
-			for j = 0; j < 9; j++ {
+			for j = range 9 {
 				x = 3*(i/3) + (j / 3)
 				for k = 1; k < 10; k++ {
 					option := buildOption()
@@ -695,8 +695,8 @@ func Sudoku(grid [9][9]int, stats *ExactCoverStats) iter.Seq[[9][9]int] {
 		for solution := range ExactCover(items, options, []string{}, stats) {
 			// Make a copy of the original grid
 			var x [9][9]int
-			for i := 0; i < 9; i++ {
-				for j := 0; j < 9; j++ {
+			for i := range 9 {
+				for j := range 9 {
 					x[i][j] = grid[i][j]
 				}
 			}

@@ -93,7 +93,7 @@ func MaximalSubcubes(n int, v []int) iter.Seq2[int, int] {
 		T := make([]int, 2*m+n)
 
 		// Determine the j-buddy pairs for the initial subcube list
-		for j := 0; j < n; j++ {
+		for j := range n {
 			for k, kp := range BitPairs(v, j) {
 				T[k] |= (1 << j)
 				T[kp] |= (1 << j)

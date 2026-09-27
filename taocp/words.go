@@ -142,13 +142,13 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 		)
 
 		// Setup the 2p primary items
-		for i := 0; i < p; i++ {
+		for i := range p {
 			items = append(items, fmt.Sprintf("a%d", i)) // across
 			items = append(items, fmt.Sprintf("d%d", i)) // down
 		}
 
 		// Setup the pn + W secondary items
-		for i := 0; i < p; i++ {
+		for i := range p {
 			for j := 1; j <= n; j++ {
 				sitems = append(sitems, fmt.Sprintf("%d%d", i, j))
 			}
@@ -164,7 +164,7 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 		// Setup the 2Wp options
 		for _, word := range words {
 			// across
-			for i := 0; i < p; i++ {
+			for i := range p {
 				aOption := []string{fmt.Sprintf("a%d", i)}
 				for c, char := range word {
 					aOption = append(aOption, fmt.Sprintf("%d%d:%c", i, c+1, char))
@@ -180,7 +180,7 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 			}
 
 			// down
-			for i := 0; i < p; i++ {
+			for i := range p {
 				dOption := []string{fmt.Sprintf("d%d", i)}
 				for c, char := range word {
 					if left {
@@ -220,7 +220,7 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 
 			// Build the solution, a_0 .. a_(p-1), then d_0 .. d_(p-1)
 			var x []string
-			for i := 0; i < p; i++ {
+			for i := range p {
 				a := fmt.Sprintf("a%d", i)
 				for _, option := range solution {
 					if option[0] == a {
@@ -229,7 +229,7 @@ func WordStair(words []string, p int, left bool, stats *ExactCoverStats,
 					}
 				}
 			}
-			for i := 0; i < p; i++ {
+			for i := range p {
 				d := fmt.Sprintf("d%d", i)
 				for _, option := range solution {
 					if option[0] == d {

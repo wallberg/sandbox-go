@@ -250,8 +250,8 @@ func TestExercise_7221_69(t *testing.T) {
 
 	// the board
 	board := make(Polyomino, 0)
-	for x := 0; x < 9; x++ {
-		for y := 0; y < 9; y++ {
+	for x := range 9 {
+		for y := range 9 {
 			board = append(board, Point{X: x, Y: y})
 		}
 	}
@@ -303,7 +303,7 @@ func TestExercise_7221_69(t *testing.T) {
 		)
 
 		// Generate the N_k items with multiplicity > 0
-		for k := 0; k < 10; k++ {
+		for k := range 10 {
 			if c.multiplicities[k] > 0 {
 				items = append(items, fmt.Sprintf("N%d", k))
 				multiplicities = append(multiplicities,
@@ -315,8 +315,8 @@ func TestExercise_7221_69(t *testing.T) {
 		}
 
 		// Add the board cell items
-		for x := 0; x < 9; x++ {
-			for y := 0; y < 9; y++ {
+		for x := range 9 {
+			for y := range 9 {
 				items = append(items, fmt.Sprintf("%d%d", x, y))
 				multiplicities = append(multiplicities, [2]int{1, 1})
 			}

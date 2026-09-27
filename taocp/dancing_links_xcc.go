@@ -1116,7 +1116,7 @@ func SudokuCards(cards [9][3][3]int, stats *ExactCoverStats) iter.Seq2[[9]int, [
 
 		// Placements within the grid
 		for i = 0; i < 9; i++ {
-			for j = 0; j < 9; j++ {
+			for j = range 9 {
 				sitemSet[fmt.Sprintf("%d%d", i, j)] = true
 				x = 3*(i/3) + (j / 3)
 				for k = 1; k < 10; k++ {

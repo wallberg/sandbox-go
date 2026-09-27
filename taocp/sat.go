@@ -106,7 +106,7 @@ func SatRead(filename string) (SatClauses, map[int]string, error) {
 			var clause SatClause
 
 			// Iterate over the literals of the clause
-			for _, name := range strings.Fields(line) {
+			for name := range strings.FieldsSeq(line) {
 
 				// Determine if the literal is negated
 				sign := 1
@@ -181,7 +181,7 @@ func SatLangford(n int) (clauses SatClauses, options []LangfordOption) {
 
 	symmetric2sat := func(symmetric []int) (clauses [][]int) {
 		clauses = append(clauses, symmetric)
-		for j := 0; j < len(symmetric); j++ {
+		for j := range symmetric {
 			for k := j + 1; k < len(symmetric); k++ {
 				clauses = append(clauses, []int{-1 * symmetric[j], -1 * symmetric[k]})
 			}
@@ -413,7 +413,7 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 	// Generate m clauses
 	clauses = make(SatClauses, m)
 
-	for i := 0; i < m; i++ {
+	for i := range m {
 
 		// Generate a single clause
 		clauses[i] = SatClause(localRand.Perm(n)[0:k])
@@ -423,7 +423,7 @@ func SatRand(k, m, n int, seed int64) (clauses SatClauses) {
 
 		// Shift variables to begin at 1, and
 		// determine which variables are negated
-		for j := 0; j < k; j++ {
+		for j := range k {
 			clauses[i][j] += 1
 			if localRand.Intn(2) == 1 {
 				clauses[i][j] *= -1
@@ -438,7 +438,7 @@ func SatComplete(n int) (clauses SatClauses) {
 
 	numClauses := int(math.Pow(2, float64(n)))
 
-	for state := 0; state < numClauses; state++ {
+	for state := range numClauses {
 
 		// Add a new clause
 		clause := SatClause{}

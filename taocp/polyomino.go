@@ -111,7 +111,7 @@ func ParsePlacementPairs(s string) (Polyomino, error) {
 	pset := make(pointset)
 
 	// Split on single space
-	for _, pairString := range strings.Split(s, " ") {
+	for pairString := range strings.SplitSeq(s, " ") {
 
 		// Find 2 values in each pair
 		m := rePair.FindAllStringSubmatch(pairString, -1)
@@ -182,7 +182,7 @@ func BasePlacements(first Polyomino, transform bool) []Polyomino {
 				// Iterate over each existing placement
 				for j := range placements {
 					same := true
-					for k := 0; k < n; k++ {
+					for k := range n {
 						if placement[k] != placements[j][k] {
 							same = false
 							break

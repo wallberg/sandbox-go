@@ -3,6 +3,7 @@ package taocp
 import (
 	"bytes"
 	"iter"
+	"slices"
 	"sync"
 )
 
@@ -94,13 +95,7 @@ func WordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 				skipLetter := false
 				if l == 0 && initials != nil {
 					// Check if this is an initial letter we should process
-					skipLetter = true
-					for _, initial := range initials {
-						if x[0] == initial {
-							skipLetter = false
-							break
-						}
-					}
+					skipLetter = !slices.Contains(initials, x[0])
 				}
 
 				// Test if P_l holds
@@ -183,7 +178,7 @@ func MultiWordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 		// Initial letters for each WordRectangles() thread to process
 		// Results are certainly not evenly distributed across initial letters
 		initials := [26]byte{}
-		for i := 0; i < 26; i++ {
+		for i := range 26 {
 			initials[i] = byte(i)
 		}
 
@@ -191,10 +186,7 @@ func MultiWordRectangles(mTrie *CPrefixTrie, nTrie *PrefixTrie,
 
 		j := 1
 		for start := 0; start < 26; start += chunkSize {
-			end := start + chunkSize
-			if end > 26 {
-				end = 26
-			}
+			end := min(start+chunkSize, 26)
 
 			if i == 0 || i == j {
 				go fanin(WordRectangles(mTrie, nTrie, max, initials[start:end]))
