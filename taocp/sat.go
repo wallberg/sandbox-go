@@ -386,16 +386,16 @@ func SatTest(n int, clauses SatClauses, solution []int) bool {
 	return true
 }
 
-// binomial efficiently computes the binomial coefficient (n pick k)
-func binomial(n, k int64) int64 {
-	if k == 0 {
-		return 1
-	} else if k > n/2 {
-		return binomial(n, n-k)
-	} else {
-		return n * binomial(n-1, k-1) / k
-	}
-}
+// // binomial efficiently computes the binomial coefficient (n pick k)
+// func binomial(n, k int64) int64 {
+// 	if k == 0 {
+// 		return 1
+// 	} else if k > n/2 {
+// 		return binomial(n, n-k)
+// 	} else {
+// 		return n * binomial(n-1, k-1) / k
+// 	}
+// }
 
 // SatRand returns m pseudorandom k-SAT clauses on n variables,
 // sampled with replacement (not distinct).

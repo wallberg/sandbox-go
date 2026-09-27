@@ -34,7 +34,7 @@ func NewSatAlgorithmLOptions() *SatAlgorithmLOptions {
 	return &SatAlgorithmLOptions{
 		CompensationResolvants: false,
 		SuppressBigClauses:     false,
-		Theta:                  25 / 64,
+		Theta:                  25.0 / 64.0,
 	}
 }
 
