@@ -315,59 +315,78 @@ func TestXCCminimax(t *testing.T) {
 		// Run twice, once with MinimaxSingle = true and once with false
 		for _, single := range []bool{true, false} {
 
-			got := make([][][]string, 0)
-			stats := &ExactCoverStats{
-				// Progress:  true,
-				// Delta:     0,
-				// Debug:     true,
-				// Verbosity: 2,
-			}
-			xccOptions := &XCCOptions{
-				Minimax:       true,
-				MinimaxSingle: single,
-			}
-			for solution, err := range XCC(c.items, c.options, c.secondary, stats, xccOptions) {
-				if err != nil {
-					t.Errorf("For case #%d, single=%t, XCC returned error %v", i, single, err)
-					break
-				} else {
-					got = append(got, solution)
-				}
-			}
+			// Run twice, once with DisableYield = true and once with false
+			// For DisableYeild = true, use ExactCoverStats.Solutions for the count
+			for _, disableYield := range []bool{true, false} {
 
-			if len(got) == 0 {
-				t.Errorf("For case #%d, single=%t, XCC returned no solutions", i, single)
-			}
+				if !(single && disableYield) {
+					t.Logf("Case #%d, single=%t, disableYield=%t", i, single, disableYield)
 
-			// Determine how many of the final solutions we want
-			if single {
-				got = got[len(got)-1:]
-			} else {
-				got = got[len(got)-len(c.solutions):]
-			}
-
-			// Sort the solutions
-			sortSolutions(got)
-			sortSolutions(c.solutions)
-
-			if single {
-				// We want one of the solutions
-				contains := false
-				for _, solution := range c.solutions {
-					if reflect.DeepEqual(got[0], solution) {
-						contains = true
-						break
+					got := make([][][]string, 0)
+					stats := &ExactCoverStats{
+						// Progress:  true,
+						// Delta:     0,
+						// Debug:     true,
+						// Verbosity: 2,
 					}
-				}
+					if i == 6 && single == false && disableYield == false {
+						stats.Debug = true
+					}
+					xccOptions := &XCCOptions{
+						Minimax:       true,
+						MinimaxSingle: single,
+						DisableYield:  disableYield,
+					}
+					for solution, err := range XCC(c.items, c.options, c.secondary, stats, xccOptions) {
+						if err != nil {
+							t.Errorf("For case #%d, single=%t, XCC returned error %v", i, single, err)
+							break
+						} else {
+							got = append(got, solution)
+						}
+					}
 
-				if !contains {
-					t.Errorf("For case #%d, single=%t, got solution %v; want one of %v", i, single, got[0], c.solutions)
-				}
+					if disableYield {
+						if stats.Solutions != len(c.solutions) {
+							t.Errorf("For case #%d, single=%t, disableYield=%t, got %v solutions; want %v", i, single, disableYield, stats.Solutions, len(c.solutions))
+						}
+					} else {
+						if len(got) == 0 {
+							t.Errorf("For case #%d, single=%t, XCC returned no solutions", i, single)
+						}
 
-			} else {
-				// We want all of the solutions
-				if !reflect.DeepEqual(got, c.solutions) {
-					t.Errorf("For case #%d, single=%t, got solutions %v; want %v", i, single, got, c.solutions)
+						// Determine how many of the final solutions we want
+						if single {
+							got = got[len(got)-1:]
+						} else {
+							got = got[len(got)-len(c.solutions):]
+						}
+
+						// Sort the solutions
+						sortSolutions(got)
+						sortSolutions(c.solutions)
+
+						if single {
+							// We want one of the solutions
+							contains := false
+							for _, solution := range c.solutions {
+								if reflect.DeepEqual(got[0], solution) {
+									contains = true
+									break
+								}
+							}
+
+							if !contains {
+								t.Errorf("For case #%d, single=%t, got solution %v; want one of %v", i, single, got[0], c.solutions)
+							}
+
+						} else {
+							// We want all of the solutions
+							if !reflect.DeepEqual(got, c.solutions) {
+								t.Errorf("For case #%d, single=%t, got solutions %v; want %v", i, single, got, c.solutions)
+							}
+						}
+					}
 				}
 			}
 		}

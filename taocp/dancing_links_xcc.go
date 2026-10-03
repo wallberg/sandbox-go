@@ -24,6 +24,9 @@ type XCCOptions struct {
 
 	// Enable sharp preference heuristic of Exercise 7.2.2.1-10
 	EnableSharpPreference bool
+
+	// Disable yielding solutions (use with ExactCoverStats)
+	DisableYield bool
 }
 
 // XCC implements Algorithm C (7.2.2.1), exact covering with colors via
@@ -118,7 +121,8 @@ func XCC(items []string, options [][]string, secondary []string,
 			i := 0
 			for rlink[i] != 0 {
 				i = rlink[i]
-				b.WriteString(" " + name[i])
+				b.WriteByte(' ')
+				b.WriteString(name[i])
 			}
 			b.WriteString("\n")
 
@@ -782,51 +786,55 @@ func XCC(items []string, options [][]string, secondary []string,
 
 		lvisit := func() bool {
 
-			pMax := 0 // Track max p for minimax
-			kMax := 0 // level for max p
+			if !xccOptions.DisableYield {
+				// Only one of the secondary items will have it's color value, the
+				// others will have -1. Save the color and add it to all the matching
+				// secondary items at the end.
+				sitemColor := sitemColors()
 
-			// Only one of the secondary items will have it's color value, the
-			// others will have -1. Save the color and add it to all the matching
-			// secondary items at the end.
-			sitemColor := sitemColors()
+				// Iterate over the options
+				options := make([][]string, 0)
+				for i, p := range state[0:level] {
+					options = append(options, make([]string, 0))
 
-			// Iterate over the options
-			options := make([][]string, 0)
-			for i, p := range state[0:level] {
-				if p > pMax {
-					pMax = p
-					kMax = i
-				}
-				options = append(options, make([]string, 0))
-
-				// Move back to first item in the option
-				for top[p-1] > 0 {
-					p--
-				}
-
-				// Iterate over items in the option
-				q := p
-				for top[q] > 0 {
-					name := name[top[q]]
-					if color, ok := (*sitemColor)[name]; ok {
-						options[i] = append(options[i], name+":"+color)
-					} else {
-						options[i] = append(options[i], name)
+					// Move back to first item in the option
+					for top[p-1] > 0 {
+						p--
 					}
-					q++
+
+					// Iterate over items in the option
+					q := p
+					for top[q] > 0 {
+						name := name[top[q]]
+						if color, ok := (*sitemColor)[name]; ok {
+							options[i] = append(options[i], name+":"+color)
+						} else {
+							options[i] = append(options[i], name)
+						}
+						q++
+					}
 				}
-			}
 
-			if debug {
-				log.Printf("visit(%v)", options)
-			}
+				if debug {
+					log.Printf("visit(%v)", options)
+				}
 
-			if !yield(options, nil) {
-				return false
+				if !yield(options, nil) {
+					return false
+				}
 			}
 
 			// For minimax, remove all nodes > cutoff (new value)
 			if xccOptions.Minimax {
+				pMax := 0 // Track max p for minimax
+				kMax := 0 // level for max p
+				for i, p := range state[0:level] {
+					if p > pMax {
+						pMax = p
+						kMax = i
+					}
+				}
+
 				// Find spacer at the end of the option for max x_k
 				// For minimaxSingle=true find the spacer before the
 				// solution, otherwise the spacer after the solution
