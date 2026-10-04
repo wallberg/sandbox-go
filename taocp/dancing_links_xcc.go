@@ -26,35 +26,18 @@ type XCCOptions struct {
 	EnableSharpPreference bool
 }
 
-// XCC implements Algorithm C (7.2.2.1), exact covering with colors via
-// dancing links.  The task is to find all subsets of options such
-// that:
+// XCC implements Algorithm C (7.2.2.1), exact covering with colors via dancing links.
 //
-// 1) each primary item j occurs exactly once
-// 2) every secondary item has been assigned at most one color
+// The task is to find all subsets of options such that 1) each primary item j occurs exactly once;
+// and 2) every secondary item has been assigned at most one color.
 //
 // Arguments:
-// items     -- sorted list of primary items
-// options   -- list of list of options; every option must contain at least one
 //
-//	primary item
-//
-// secondary -- sorted list of secondary items; can contain an optional
-//
-//	"color" appended after a colon, eg "sitem:color"
-//
-// stats     -- structure to capture runtime statistics and provide feedback on
-//
-//	progress
-//
-// xccOptions
-//
-//	-- various processing options for XCC; nil value is equivalent to
-//	   &XCCOptions{} with all default values
-//
-// visit     -- function called with each discovered solution, returns true
-//
-//	if the search should continue
+//   - items     -- sorted list of primary items
+//   - options   -- list of options; every option is a list of items containing at least one primary item and an optional "color" on secondary items ("sitem:color")
+//   - secondary -- sorted list of secondary items
+//   - stats     -- structure to capture runtime statistics and provide feedback on progress; nil value means no statistics
+//   - xccOptions -- various processing options for XCC; nil value is equivalent to &XCCOptions{} with all default values
 func XCC(items []string, options [][]string, secondary []string,
 	stats *ExactCoverStats, xccOptions *XCCOptions) iter.Seq2[[][]string, error] {
 
