@@ -10,34 +10,17 @@ import (
 	smath "github.com/wallberg/sandbox-go/math"
 )
 
-// MCC implements Algorithm M (7.2.2.1), covering with multiplicities and
-// colors via dancing links. The task is to find all subsets of options such
-// that:
+// MCC implements Algorithm M (7.2.2.1), covering with multiplicities and colors via dancing links.
 //
-// 1) each primary item j occurs at least u_j times and at most v_j times
-// 2) every secondary item has been assigned at most one color
+// The task is to find all subsets of options such that 1) each primary item j occurs at least u_j times and at most v_j times;
+// and 2) every secondary item has been assigned at most one color
 //
 // Arguments:
-// items     -- sorted list of primary items
-// multiplicities
-//
-//	-- list of u, v values corresponding to the list of primary items
-//
-// options   -- list of list of options; every option must contain at least one
-//
-//	primary item
-//
-// secondary -- sorted list of secondary items; can contain an optional
-//
-//	"color" appended after a colon, eg "sitem:color"
-//
-// stats     -- structure to capture runtime statistics and provide feedback on
-//
-//	progress
-//
-// visit     -- function called with each discovered solution, returns true
-//
-//	if the search should continue
+//   - items -- sorted list of primary items
+//   - multiplicities -- list of u, v values corresponding to the list of primary items
+//   - options -- list of options; every option is a list of items containing at least one primary item and an optional "color" on secondary items ("sitem:color")
+//   - secondary -- sorted list of secondary items
+//   - stats -- structure to capture runtime statistics and provide feedback on progress; nil value means no statistics
 func MCC(items []string, multiplicities [][2]int, options [][]string,
 	secondary []string, stats *ExactCoverStats) iter.Seq2[[][]string, error] {
 
