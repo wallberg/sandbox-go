@@ -16,7 +16,8 @@ type Point struct{ X, Y int }
 // Polyomino represents a single polyomino of multiple points
 type Polyomino []Point
 
-type pointset map[Point]bool
+// Pointset represents a set of Points
+type Pointset map[Point]bool
 
 // PolyominoShape holds a single shape
 type PolyominoShape struct {
@@ -64,7 +65,7 @@ func (po Polyomino) Bounds() (int, int, int, int) {
 // squares between any two of its squares that lie in the same row of the same
 // column.
 func (po Polyomino) IsConvex() bool {
-	pset := po.toPointset()
+	pset := po.ToPointset()
 	xMin, yMin, xMax, yMax := po.Bounds()
 
 	// Check each row
@@ -201,8 +202,8 @@ func (po Polyomino) String() string {
 	return fmt.Sprintf("%v", []Point(po))
 }
 
-func (po Polyomino) toPointset() pointset {
-	pset := make(pointset, len(po))
+func (po Polyomino) ToPointset() Pointset {
+	pset := make(Pointset, len(po))
 	for _, p := range po {
 		pset[p] = true
 	}
@@ -211,8 +212,8 @@ func (po Polyomino) toPointset() pointset {
 
 // Finds all distinct points that can be added to a Polyomino.
 func (po Polyomino) newPoints() Polyomino {
-	pset := po.toPointset()
-	m := make(pointset)
+	pset := po.ToPointset()
+	m := make(Pointset)
 	for _, p := range po {
 		pts := p.contiguous()
 		for _, pt := range pts {

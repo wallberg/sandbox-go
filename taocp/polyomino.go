@@ -108,7 +108,7 @@ func ParsePlacementPairs(s string) (Polyomino, error) {
 	}
 
 	var po Polyomino
-	pset := make(pointset)
+	pset := make(Pointset)
 
 	// Split on single space
 	for pairString := range strings.SplitSeq(s, " ") {
@@ -322,7 +322,7 @@ func PolyominoPacking(x int, y int, n int, includeStraight bool,
 func PolyominoXC(board Polyomino, shapes []Polyomino) (items []string, options [][]string) {
 
 	// Create a Poinset for the board points
-	boardSet := board.toPointset()
+	boardSet := board.ToPointset()
 
 	// pointItem generates an item name for a Point
 	pointItem := func(point Point) string {
@@ -367,7 +367,7 @@ func PolyominoFill(board Polyomino, shapes []Polyomino) (boardOut Polyomino, sha
 	_, _, xBoardMax, yBoardMax := boardOut.Bounds()
 
 	// Create a Poinset for the board points
-	boardSet := boardOut.toPointset()
+	boardSet := boardOut.ToPointset()
 
 	seenSet := make(map[string]bool)
 
